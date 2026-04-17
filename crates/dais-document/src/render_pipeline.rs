@@ -41,6 +41,7 @@ pub const FALLBACK_RENDER_SIZE: RenderSize = RenderSize { width: 1920, height: 1
 
 impl RenderPipeline {
     /// Spawn the render pipeline with `num_workers` background threads.
+    #[allow(clippy::needless_pass_by_value)]
     pub fn new(doc: Arc<dyn DocumentSource>, num_workers: usize) -> Self {
         // Bounded request channel — don't queue hundreds of requests
         let (request_tx, request_rx) = crossbeam_channel::bounded::<RenderRequest>(64);
@@ -120,6 +121,7 @@ impl RenderPipeline {
     }
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn render_worker(
     doc: Arc<dyn DocumentSource>,
     rx: Receiver<RenderRequest>,

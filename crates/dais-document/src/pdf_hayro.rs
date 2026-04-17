@@ -42,6 +42,7 @@ impl DocumentSource for HayroDocument {
         PageDimensions { width_pts: w, height_pts: h }
     }
 
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     fn render_page(
         &self,
         page_index: usize,
@@ -180,8 +181,8 @@ mod tests {
             .render_page(0, RenderSize { width: 1280, height: 720 })
             .expect("should render page");
 
-        let aspect = rendered.width as f32 / rendered.height as f32;
-        let expected = 612.0 / 792.0;
+        let aspect = f64::from(rendered.width) / f64::from(rendered.height);
+        let expected = 612.0_f64 / 792.0_f64;
         assert!((aspect - expected).abs() < 0.01, "got aspect {aspect}, expected {expected}");
     }
 

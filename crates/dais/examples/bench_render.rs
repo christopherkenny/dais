@@ -42,7 +42,7 @@ fn main() {
         let _ = doc.render_page(i, RenderSize { width: 1280, height: 720 }).expect("render failed");
     }
     let total = start.elapsed();
-    let avg = total / page_count as u32;
+    let avg = total / u32::try_from(page_count).expect("page_count should fit in u32");
     println!("Total: {total:?}, avg per page: {avg:?}");
 
     // Simulate what happens on slide navigation

@@ -69,11 +69,11 @@ impl PresenterConsole {
 
         let next_page =
             if current_page + 1 < state.total_pages { Some(current_page + 1) } else { None };
-        if let Some(np) = next_page {
-            if let Some(page) = cache.get(np, size) {
-                let page = page.clone();
-                self.next_preview.update(ctx, &page, np);
-            }
+        if let Some(np) = next_page
+            && let Some(page) = cache.get(np, size)
+        {
+            let page = page.clone();
+            self.next_preview.update(ctx, &page, np);
         }
 
         egui::CentralPanel::default()
@@ -128,7 +128,7 @@ impl PresenterConsole {
                 );
 
                 // Status bar
-                self.show_status_bar(ui, layout.status_bar, &state, sender);
+                self.show_status_bar(ui, layout.status_bar, state, sender);
 
                 // Slide overview (modal overlay)
                 if state.overview_visible {

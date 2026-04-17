@@ -42,7 +42,7 @@ impl PresentationEngine {
             (dais_core::state::TimerMode::Elapsed, None) => None,
             (_, Some(minutes)) => Some(std::time::Duration::from_secs(u64::from(minutes) * 60)),
             (dais_core::state::TimerMode::Countdown, None) => {
-                Some(std::time::Duration::from_secs(20 * 60))
+                Some(std::time::Duration::from_mins(20))
             }
         };
         let warning_threshold = match (duration, config.timer.warning_minutes) {

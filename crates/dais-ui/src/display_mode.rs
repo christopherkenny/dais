@@ -166,7 +166,7 @@ pub fn audience_viewport_builder(mode: &DisplayMode) -> egui::ViewportBuilder {
 /// is clamped to fit within that monitor's logical size. If no explicit
 /// presenter monitor is configured, the OS primary monitor is used. If monitor
 /// data is unavailable, we fall back to a normal titled window.
-#[allow(clippy::cast_precision_loss)]
+#[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
 pub fn presenter_viewport_builder(
     config: &Config,
     monitor_mgr: &dyn MonitorManager,

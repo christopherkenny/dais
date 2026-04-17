@@ -68,9 +68,25 @@ pub struct TimerConfig {
 #[serde(default)]
 struct PartialTimerConfig {
     mode: Option<TimerMode>,
-    duration_minutes: Option<Option<u32>>,
-    warning_minutes: Option<Option<u32>>,
+    duration_minutes: Option<OptionalU32Value>,
+    warning_minutes: Option<OptionalU32Value>,
     overrun_color: Option<bool>,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(untagged)]
+enum OptionalU32Value {
+    Value(u32),
+    Null(()),
+}
+
+impl OptionalU32Value {
+    fn into_option(self) -> Option<u32> {
+        match self {
+            Self::Value(value) => Some(value),
+            Self::Null(()) => None,
+        }
+    }
 }
 
 /// Laser/mouse pointer configuration.
@@ -261,10 +277,10 @@ fn apply_partial_config(config: &mut Config, partial: PartialConfig) {
             config.timer.mode = mode;
         }
         if let Some(duration_minutes) = timer.duration_minutes {
-            config.timer.duration_minutes = duration_minutes;
+            config.timer.duration_minutes = duration_minutes.into_option();
         }
         if let Some(warning_minutes) = timer.warning_minutes {
-            config.timer.warning_minutes = warning_minutes;
+            config.timer.warning_minutes = warning_minutes.into_option();
         }
         if let Some(overrun_color) = timer.overrun_color {
             config.timer.overrun_color = overrun_color;
@@ -330,8 +346,8 @@ mod tests {
             }),
             timer: Some(PartialTimerConfig {
                 mode: Some(TimerMode::Countdown),
-                duration_minutes: Some(Some(45)),
-                warning_minutes: Some(Some(10)),
+                duration_minutes: Some(OptionalU32Value::Value(45)),
+                warning_minutes: Some(OptionalU32Value::Value(10)),
                 overrun_color: Some(false),
             }),
             ..Default::default()
@@ -355,8 +371,8 @@ mod tests {
 
         let partial = PartialConfig {
             timer: Some(PartialTimerConfig {
-                duration_minutes: Some(None),
-                warning_minutes: Some(None),
+                duration_minutes: Some(OptionalU32Value::Null(())),
+                warning_minutes: Some(OptionalU32Value::Null(())),
                 ..Default::default()
             }),
             ..Default::default()
