@@ -12,6 +12,7 @@ dais-core = { workspace = true }
 dais-document = { workspace = true }
 dais-engine = { workspace = true }
 dais-platform = { workspace = true }
+dais-sidecar = { workspace = true }
 
 egui = { workspace = true }
 eframe = { workspace = true }

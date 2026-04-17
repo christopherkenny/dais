@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use clap::Parser;
+use dais_ui::display_mode::{DisplayHints, DisplayMode};
 
 /// Dais — A native PDF presenter console.
 #[derive(Parser, Debug)]
@@ -57,6 +58,13 @@ fn main() -> anyhow::Result<()> {
     };
     tracing::info!("Document has {page_count} pages");
 
+    // --- Grouping editor mode ---
+    if cli.edit {
+        return run_grouping_editor(doc, &pdf_path);
+    }
+
+    // --- Presentation mode ---
+
     // Load sidecar metadata
     let embedded_pdfpc = {
         use dais_document::source::DocumentSource;
@@ -65,6 +73,15 @@ fn main() -> anyhow::Result<()> {
     let (metadata, meta_source) =
         dais_sidecar::metadata::load_metadata(Path::new(&pdf_path), embedded_pdfpc.as_deref());
     tracing::info!("Metadata source: {meta_source:?}");
+
+    // Detect monitors and determine display mode
+    let monitor_mgr = dais_platform::create_monitor_manager();
+    let hints = DisplayHints { force_single: cli.single, force_screen_share: cli.screen_share };
+    let display_mode = dais_ui::display_mode::determine_display_mode(hints, &config, &monitor_mgr);
+    tracing::info!("Display mode: {display_mode:?}");
+
+    // Set screen-share mode in engine if needed
+    let is_screen_share = matches!(display_mode, DisplayMode::ScreenShare);
 
     // Create command bus
     let bus = dais_core::bus::CommandBus::new();
@@ -75,9 +92,8 @@ fn main() -> anyhow::Result<()> {
     let (engine, shared_state) =
         dais_engine::engine::PresentationEngine::new(page_count, &metadata, &config, receiver);
 
-    // Start in screen-share mode if requested (or if single-monitor)
-    let screen_share = cli.screen_share || cli.single;
-    if screen_share {
+    // Sync engine state for screen-share
+    if is_screen_share {
         let _ = sender.send(dais_core::commands::Command::ToggleScreenShareMode);
     }
 
@@ -104,8 +120,45 @@ fn main() -> anyhow::Result<()> {
                 doc_box,
                 sender,
                 &config_clone,
-                screen_share,
+                display_mode,
             )))
+        }),
+    )
+    .map_err(|e| anyhow::anyhow!("eframe error: {e}"))?;
+
+    Ok(())
+}
+
+/// Run the grouping editor as a standalone eframe app.
+fn run_grouping_editor(
+    doc: dais_document::pdf_hayro::HayroDocument,
+    pdf_path: &str,
+) -> anyhow::Result<()> {
+    use dais_document::source::DocumentSource;
+
+    tracing::info!("Opening grouping editor");
+
+    // Load existing sidecar metadata (if any)
+    let embedded_pdfpc = doc.embedded_metadata().and_then(|m| m.pdfpc_data);
+    let (metadata, meta_source) =
+        dais_sidecar::metadata::load_metadata(Path::new(pdf_path), embedded_pdfpc.as_deref());
+    tracing::info!("Metadata source: {meta_source:?}");
+
+    let doc_box: Box<dyn DocumentSource> = Box::new(doc);
+    let path = Path::new(pdf_path);
+
+    let native_options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default()
+            .with_title("Dais — Grouping Editor")
+            .with_inner_size(egui::vec2(1200.0, 320.0)),
+        ..Default::default()
+    };
+
+    eframe::run_native(
+        "Dais Grouping Editor",
+        native_options,
+        Box::new(move |_cc| {
+            Ok(Box::new(dais_ui::grouping_editor::GroupingEditor::new(doc_box, path, metadata)))
         }),
     )
     .map_err(|e| anyhow::anyhow!("eframe error: {e}"))?;
