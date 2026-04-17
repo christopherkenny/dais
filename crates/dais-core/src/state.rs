@@ -64,10 +64,51 @@ pub struct PresentationState {
     pub notes_visible: bool,
     /// Current notes font size in points.
     pub notes_font_size: f32,
+    /// Step size for font increment/decrement.
+    pub notes_font_size_step: f32,
 
     // -- Content --
     /// Markdown notes for the current logical slide, if any.
     pub current_notes: Option<String>,
+}
+
+impl PresentationState {
+    /// Create a new state for a presentation with the given slide groups.
+    pub fn new(total_pages: usize, slide_groups: Vec<SlideGroup>) -> Self {
+        let total_logical_slides = slide_groups.len();
+        let current_notes = slide_groups.first().and_then(|g| g.notes.clone());
+        Self {
+            total_pages,
+            slide_groups,
+            total_logical_slides,
+            current_page: 0,
+            current_logical_slide: 0,
+            current_overlay_within_group: 0,
+            frozen: false,
+            frozen_page: None,
+            blacked_out: false,
+            screen_share_mode: false,
+            laser_active: false,
+            pointer_position: None,
+            ink_active: false,
+            ink_strokes: Vec::new(),
+            spotlight_active: false,
+            spotlight_position: None,
+            zoom_active: false,
+            zoom_region: None,
+            timer: TimerState::default(),
+            overview_visible: false,
+            notes_visible: true,
+            notes_font_size: 16.0,
+            notes_font_size_step: 2.0,
+            current_notes,
+        }
+    }
+
+    /// The page the audience should see (respects freeze).
+    pub fn audience_page(&self) -> usize {
+        self.frozen_page.unwrap_or(self.current_page)
+    }
 }
 
 /// A single ink stroke drawn on a slide.
@@ -79,6 +120,8 @@ pub struct InkStroke {
     pub color: [u8; 4],
     /// Stroke width in logical pixels.
     pub width: f32,
+    /// Whether this stroke is complete (pen lifted).
+    pub finished: bool,
 }
 
 /// Defines a zoom region on the slide.
@@ -129,25 +172,22 @@ pub enum TimerPhase {
 impl TimerState {
     /// Compute the current timer phase.
     pub fn phase(&self) -> TimerPhase {
+        if self.elapsed >= self.duration {
+            TimerPhase::Overrun
+        } else if self.elapsed + self.warning_threshold >= self.duration {
+            TimerPhase::Warning
+        } else {
+            TimerPhase::Normal
+        }
+    }
+
+    /// The display time for the timer.
+    /// For countdown mode, returns time remaining (clamped to 0).
+    /// For elapsed mode, returns time elapsed.
+    pub fn display_time(&self) -> Duration {
         match self.mode {
-            TimerMode::Countdown => {
-                if self.elapsed >= self.duration {
-                    TimerPhase::Overrun
-                } else if self.elapsed + self.warning_threshold >= self.duration {
-                    TimerPhase::Warning
-                } else {
-                    TimerPhase::Normal
-                }
-            }
-            TimerMode::Elapsed => {
-                if self.elapsed >= self.duration {
-                    TimerPhase::Overrun
-                } else if self.elapsed + self.warning_threshold >= self.duration {
-                    TimerPhase::Warning
-                } else {
-                    TimerPhase::Normal
-                }
-            }
+            TimerMode::Countdown => self.duration.saturating_sub(self.elapsed),
+            TimerMode::Elapsed => self.elapsed,
         }
     }
 }
