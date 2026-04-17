@@ -8,11 +8,11 @@ use super::PdfpcFormat;
 impl SidecarFormat for PdfpcFormat {
     fn read(&self, path: &Path) -> Result<PresentationMetadata, SidecarError> {
         let content = std::fs::read_to_string(path)?;
-        Ok(parse_pdfpc(&content))
+        Ok(parse_pdfpc_str(&content))
     }
 
-    fn write(&self, _path: &Path, _metadata: &PresentationMetadata) -> Result<(), SidecarError> {
-        todo!("pdfpc writer not yet implemented")
+    fn write(&self, path: &Path, metadata: &PresentationMetadata) -> Result<(), SidecarError> {
+        crate::pdfpc::writer::write_pdfpc(path, metadata)
     }
 
     fn file_extension(&self) -> &'static str {
@@ -21,7 +21,7 @@ impl SidecarFormat for PdfpcFormat {
 }
 
 /// Parse `.pdfpc` file content into presentation metadata.
-fn parse_pdfpc(content: &str) -> PresentationMetadata {
+pub fn parse_pdfpc_str(content: &str) -> PresentationMetadata {
     let mut metadata = PresentationMetadata::default();
     let mut current_section: Option<String> = None;
     let mut current_note_page: Option<usize> = None;
@@ -133,7 +133,7 @@ with multiple lines
 [duration]
 20
 ";
-        let meta = parse_pdfpc(content);
+        let meta = parse_pdfpc_str(content);
         assert_eq!(meta.title.as_deref(), Some("test.pdf"));
         assert_eq!(meta.notes.len(), 2);
         assert_eq!(meta.notes[&0], "First slide notes");
@@ -148,7 +148,7 @@ with multiple lines
 
     #[test]
     fn parse_empty_pdfpc() {
-        let meta = parse_pdfpc("");
+        let meta = parse_pdfpc_str("");
         assert!(meta.title.is_none());
         assert!(meta.notes.is_empty());
         assert!(meta.groups.is_empty());
@@ -165,8 +165,40 @@ some data
 ### 1
 Note here
 ";
-        let meta = parse_pdfpc(content);
+        let meta = parse_pdfpc_str(content);
         assert_eq!(meta.title.as_deref(), Some("test.pdf"));
         assert_eq!(meta.notes.len(), 1);
+    }
+
+    #[test]
+    fn round_trip_write_and_read() {
+        use crate::format::SidecarFormat;
+        let format = PdfpcFormat;
+        let mut original = PresentationMetadata::default();
+        original.title = Some("test.pdf".to_string());
+        original.last_minutes = Some(30);
+        original.end_slide = Some(9);
+        original.groups.push(crate::types::SlideGroupMeta { start_page: 0, end_page: 2 });
+        original.groups.push(crate::types::SlideGroupMeta { start_page: 3, end_page: 5 });
+        original.notes.insert(0, "First slide".to_string());
+        original.notes.insert(3, "Fourth slide".to_string());
+
+        let dir = std::env::temp_dir().join("dais_test_roundtrip");
+        let _ = std::fs::create_dir_all(&dir);
+        let path = dir.join("roundtrip.pdfpc");
+        format.write(&path, &original).unwrap();
+        let loaded = format.read(&path).unwrap();
+
+        assert_eq!(loaded.title.as_deref(), Some("test.pdf"));
+        assert_eq!(loaded.last_minutes, Some(30));
+        assert_eq!(loaded.end_slide, Some(9));
+        assert_eq!(loaded.groups.len(), 2);
+        assert_eq!(loaded.groups[0].start_page, 0);
+        assert_eq!(loaded.groups[0].end_page, 2);
+        assert_eq!(loaded.notes.len(), 2);
+        assert_eq!(loaded.notes[&0], "First slide");
+        assert_eq!(loaded.notes[&3], "Fourth slide");
+
+        let _ = std::fs::remove_dir_all(dir);
     }
 }

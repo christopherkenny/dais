@@ -2,3 +2,6 @@
 
 pub mod ink_canvas;
 pub mod slide_thumbnail;
+
+pub use ink_canvas::draw_ink_strokes;
+pub use slide_thumbnail::SlideThumbnail;

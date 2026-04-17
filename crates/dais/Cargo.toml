@@ -16,6 +16,8 @@ dais-platform = { workspace = true }
 dais-sidecar = { workspace = true }
 dais-ui = { workspace = true }
 
+egui = { workspace = true }
+eframe = { workspace = true }
 clap = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }

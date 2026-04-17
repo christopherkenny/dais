@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use clap::Parser;
 
 /// Dais — A native PDF presenter console.
@@ -36,7 +38,6 @@ fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     if cli.pdf_path.is_none() {
-        // TODO: Show a file picker or usage help via GUI
         anyhow::bail!("Usage: dais <file.pdf>");
     }
 
@@ -47,19 +48,67 @@ fn main() -> anyhow::Result<()> {
     let config = dais_core::config::load_config();
     tracing::debug!("Config loaded: {config:?}");
 
-    // TODO: Phase 5.1 — full startup sequence:
-    // 1. Load document via DocumentSource
-    // 2. Load sidecar metadata (priority chain)
-    // 3. Build slide groups
-    // 4. Initialize CommandBus
-    // 5. Initialize PresentationEngine
-    // 6. Detect monitors
-    // 7. Create windows and enter render loop
+    // Open document
+    let doc = dais_document::pdf_hayro::HayroDocument::open(Path::new(&pdf_path))?;
+
+    let page_count = {
+        use dais_document::source::DocumentSource;
+        doc.page_count()
+    };
+    tracing::info!("Document has {page_count} pages");
+
+    // Load sidecar metadata
+    let embedded_pdfpc = {
+        use dais_document::source::DocumentSource;
+        doc.embedded_metadata().and_then(|m| m.pdfpc_data)
+    };
+    let (metadata, meta_source) =
+        dais_sidecar::metadata::load_metadata(Path::new(&pdf_path), embedded_pdfpc.as_deref());
+    tracing::info!("Metadata source: {meta_source:?}");
+
+    // Create command bus
+    let bus = dais_core::bus::CommandBus::new();
+    let sender = bus.sender();
+    let receiver = bus.into_receiver();
+
+    // Create presentation engine
+    let (engine, shared_state) =
+        dais_engine::engine::PresentationEngine::new(page_count, &metadata, &config, receiver);
+
+    // Start in screen-share mode if requested (or if single-monitor)
+    let screen_share = cli.screen_share || cli.single;
+    if screen_share {
+        let _ = sender.send(dais_core::commands::Command::ToggleScreenShareMode);
+    }
 
     tracing::info!("Dais v{} starting", env!("CARGO_PKG_VERSION"));
-    println!("Dais — PDF presenter console");
-    println!("Opening: {pdf_path}");
-    println!("(Full UI not yet implemented — see Phase 5 in the implementation plan)");
+
+    // Create and run the eframe application
+    let doc_box: Box<dyn dais_document::source::DocumentSource> = Box::new(doc);
+
+    let native_options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default()
+            .with_title("Dais — Presenter Console")
+            .with_inner_size(egui::vec2(1400.0, 900.0)),
+        ..Default::default()
+    };
+
+    let config_clone = config.clone();
+    eframe::run_native(
+        "Dais",
+        native_options,
+        Box::new(move |_cc| {
+            Ok(Box::new(dais_ui::app::DaisApp::new(
+                engine,
+                shared_state,
+                doc_box,
+                sender,
+                &config_clone,
+                screen_share,
+            )))
+        }),
+    )
+    .map_err(|e| anyhow::anyhow!("eframe error: {e}"))?;
 
     Ok(())
 }
