@@ -1,0 +1,23 @@
+version: 1
+title: "Quarto Beamer Example"
+end_slide: 5
+last_minutes: 20
+groups: [
+  {
+    start_page: 0
+    end_page: 1
+  }
+  {
+    start_page: 2
+    end_page: 3
+  }
+  {
+    start_page: 4
+    end_page: 4
+  }
+]
+notes: {
+  "0": "Welcome to the presentation. This is a Quarto deck compiled via Beamer."
+  "2": "Key finding: our method outperforms the baseline by 15%."
+  "4": "Thank you for listening. Questions?"
+}

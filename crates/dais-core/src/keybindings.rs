@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use crate::config::Config;
+
 /// Named actions that can be bound to keys.
 ///
 /// These names are the public API for keybinding configuration — they appear in
@@ -27,6 +29,7 @@ pub enum Action {
     IncrementNotesFont,
     DecrementNotesFont,
     ToggleScreenShare,
+    TogglePresentationMode,
     Quit,
     SaveSidecar,
 }
@@ -56,6 +59,7 @@ impl Action {
             Self::IncrementNotesFont => "increment_notes_font",
             Self::DecrementNotesFont => "decrement_notes_font",
             Self::ToggleScreenShare => "toggle_screen_share",
+            Self::TogglePresentationMode => "toggle_presentation_mode",
             Self::Quit => "quit",
             Self::SaveSidecar => "save_sidecar",
         }
@@ -85,6 +89,7 @@ impl Action {
             Self::IncrementNotesFont,
             Self::DecrementNotesFont,
             Self::ToggleScreenShare,
+            Self::TogglePresentationMode,
             Self::Quit,
             Self::SaveSidecar,
         ]
@@ -169,9 +174,34 @@ impl KeybindingMap {
         Self { bindings }
     }
 
+    /// Build a keybinding map from config plus the active clicker profile.
+    pub fn from_full_config(config: &Config) -> Self {
+        let mut map = Self::from_config(&config.keybindings);
+        map.apply_clicker_profile(&config.active_clicker_profile());
+        map
+    }
+
     /// Look up the action bound to a key combination.
     pub fn lookup(&self, combo: &KeyCombo) -> Option<Action> {
         self.bindings.get(combo).copied()
+    }
+
+    fn apply_clicker_profile(&mut self, clicker_bindings: &HashMap<String, String>) {
+        let action_lookup: HashMap<&str, Action> =
+            Action::all().iter().map(|a| (a.config_name(), *a)).collect();
+
+        for (key_name, action_name) in clicker_bindings {
+            let Some(&action) = action_lookup.get(action_name.as_str()) else {
+                tracing::warn!("Unknown action in clicker profile: {action_name}");
+                continue;
+            };
+
+            if let Some(combo) = KeyCombo::parse(key_name) {
+                self.bindings.insert(combo, action);
+            } else {
+                tracing::warn!("Invalid key in clicker profile: {key_name}");
+            }
+        }
     }
 }
 
@@ -199,6 +229,7 @@ fn default_keybindings() -> Vec<(Action, Vec<String>)> {
         (Action::IncrementNotesFont, vec!["+".into(), "Shift+=".into()]),
         (Action::DecrementNotesFont, vec!["-".into()]),
         (Action::ToggleScreenShare, vec!["Shift+s".into()]),
+        (Action::TogglePresentationMode, vec!["F5".into()]),
         (Action::Quit, vec!["q".into(), "Escape".into()]),
         (Action::SaveSidecar, vec!["Ctrl+s".into()]),
     ]
@@ -252,5 +283,19 @@ mod tests {
         // Default "Right" should no longer be bound to next_slide
         let right = KeyCombo::parse("Right").unwrap();
         assert_ne!(map.lookup(&right), Some(Action::NextSlide));
+    }
+
+    #[test]
+    fn clicker_profile_overlays_bindings() {
+        let mut config = Config::default();
+        config.clicker.profile = "custom".to_string();
+        config.clicker.profiles.insert(
+            "custom".to_string(),
+            HashMap::from([("Escape".to_string(), "toggle_blackout".to_string())]),
+        );
+
+        let map = KeybindingMap::from_full_config(&config);
+        let escape = KeyCombo::parse("Escape").unwrap();
+        assert_eq!(map.lookup(&escape), Some(Action::ToggleBlackout));
     }
 }

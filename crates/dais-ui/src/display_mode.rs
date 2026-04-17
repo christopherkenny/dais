@@ -49,20 +49,28 @@ pub fn with_app_icon(builder: egui::ViewportBuilder) -> egui::ViewportBuilder {
     if let Some(icon) = app_icon() { builder.with_icon(icon) } else { builder }
 }
 
+/// Result of display mode determination, including any warnings.
+pub struct DisplayModeResult {
+    pub mode: DisplayMode,
+    pub warnings: Vec<String>,
+}
+
 /// Determine the initial display mode from CLI hints, config, and detected monitors.
 pub fn determine_display_mode(
     hints: DisplayHints,
     config: &Config,
     monitor_mgr: &dyn MonitorManager,
-) -> DisplayMode {
+) -> DisplayModeResult {
+    let mut warnings = Vec::new();
+
     // CLI flags take absolute precedence
     if hints.force_single {
         tracing::info!("Single mode requested via --single flag");
-        return DisplayMode::Single;
+        return DisplayModeResult { mode: DisplayMode::Single, warnings };
     }
     if hints.force_screen_share {
         tracing::info!("Screen-share mode requested via --screen-share flag");
-        return DisplayMode::ScreenShare;
+        return DisplayModeResult { mode: DisplayMode::ScreenShare, warnings };
     }
 
     // Config-based mode preference
@@ -71,7 +79,7 @@ pub fn determine_display_mode(
     let monitors = monitor_mgr.available_monitors();
     log_monitor_topology(&monitors);
 
-    match config_mode.as_str() {
+    let mode = match config_mode.as_str() {
         "single" => {
             tracing::info!("Single mode set in config");
             DisplayMode::Single
@@ -81,8 +89,10 @@ pub fn determine_display_mode(
             DisplayMode::ScreenShare
         }
         // "dual" or "auto" (default) — try to find a secondary monitor
-        _ => resolve_dual_mode(config, &monitors, monitor_mgr),
-    }
+        _ => resolve_dual_mode(config, &monitors, monitor_mgr, &mut warnings),
+    };
+
+    DisplayModeResult { mode, warnings }
 }
 
 /// Attempt to resolve dual mode, falling back gracefully.
@@ -90,9 +100,8 @@ fn resolve_dual_mode(
     config: &Config,
     monitors: &[MonitorInfo],
     monitor_mgr: &dyn MonitorManager,
+    warnings: &mut Vec<String>,
 ) -> DisplayMode {
-    // If a specific audience monitor selector is configured, try to match it.
-    // This accepts a full monitor name/id or a 1-based ordinal like "2".
     let audience_name = &config.display.audience_monitor;
     if audience_name != "auto" && !audience_name.is_empty() {
         if let Some(mon) = monitor_mgr.find_by_selector(audience_name) {
@@ -104,15 +113,15 @@ fn resolve_dual_mode(
             );
             return DisplayMode::Dual { audience_monitor: mon };
         }
-        // Configured name doesn't match — warn and fall back
-        tracing::warn!(
-            "Configured audience monitor '{}' not found. Available monitors: {}",
-            audience_name,
-            monitors.iter().map(|m| m.name.as_str()).collect::<Vec<_>>().join(", ")
+        let available = monitors.iter().map(|m| m.name.as_str()).collect::<Vec<_>>().join(", ");
+        let msg = format!(
+            "Configured audience monitor '{}' not found. Available: {}",
+            audience_name, available
         );
+        tracing::warn!("{msg}");
+        warnings.push(msg);
     }
 
-    // Auto-detect: use first non-primary monitor
     if let Some(secondary) = monitor_mgr.secondary_monitor() {
         tracing::info!(
             "Dual mode: audience on '{}' ({}x{} @ {:?})",
@@ -124,9 +133,10 @@ fn resolve_dual_mode(
         return DisplayMode::Dual { audience_monitor: secondary };
     }
 
-    // Only one monitor — graceful degradation
-    tracing::info!("Single monitor detected, using screen-share mode");
-    DisplayMode::ScreenShare
+    let msg = "Single monitor detected — expected dual. Using single mode.".to_string();
+    tracing::info!("{msg}");
+    warnings.push(msg);
+    DisplayMode::Single
 }
 
 /// Build the audience viewport builder for the given display mode.
@@ -292,7 +302,7 @@ mod tests {
         let hints = DisplayHints { force_single: true, force_screen_share: false };
         let config = Config::default();
         let mgr = dual_monitors();
-        assert!(matches!(determine_display_mode(hints, &config, &mgr), DisplayMode::Single));
+        assert!(matches!(determine_display_mode(hints, &config, &mgr).mode, DisplayMode::Single));
     }
 
     #[test]
@@ -300,27 +310,32 @@ mod tests {
         let hints = DisplayHints { force_single: false, force_screen_share: true };
         let config = Config::default();
         let mgr = dual_monitors();
-        assert!(matches!(determine_display_mode(hints, &config, &mgr), DisplayMode::ScreenShare));
+        assert!(matches!(
+            determine_display_mode(hints, &config, &mgr).mode,
+            DisplayMode::ScreenShare
+        ));
     }
 
     #[test]
     fn auto_dual_with_two_monitors() {
         let hints = DisplayHints { force_single: false, force_screen_share: false };
-        let config = Config::default(); // mode = "dual", audience_monitor = "auto"
+        let config = Config::default();
         let mgr = dual_monitors();
-        let mode = determine_display_mode(hints, &config, &mgr);
-        assert!(matches!(mode, DisplayMode::Dual { .. }));
-        if let DisplayMode::Dual { audience_monitor } = mode {
+        let result = determine_display_mode(hints, &config, &mgr);
+        assert!(matches!(result.mode, DisplayMode::Dual { .. }));
+        if let DisplayMode::Dual { audience_monitor } = result.mode {
             assert_eq!(audience_monitor.name, "DELL U2718Q");
         }
     }
 
     #[test]
-    fn auto_falls_back_to_screen_share_with_one_monitor() {
+    fn auto_falls_back_to_single_with_one_monitor() {
         let hints = DisplayHints { force_single: false, force_screen_share: false };
         let config = Config::default();
         let mgr = single_monitor();
-        assert!(matches!(determine_display_mode(hints, &config, &mgr), DisplayMode::ScreenShare));
+        let result = determine_display_mode(hints, &config, &mgr);
+        assert!(matches!(result.mode, DisplayMode::Single));
+        assert!(!result.warnings.is_empty());
     }
 
     #[test]
@@ -329,8 +344,8 @@ mod tests {
         let mut config = Config::default();
         config.display.audience_monitor = "DELL U2718Q".to_string();
         let mgr = dual_monitors();
-        let mode = determine_display_mode(hints, &config, &mgr);
-        assert!(matches!(mode, DisplayMode::Dual { .. }));
+        let result = determine_display_mode(hints, &config, &mgr);
+        assert!(matches!(result.mode, DisplayMode::Dual { .. }));
     }
 
     #[test]
@@ -339,9 +354,9 @@ mod tests {
         let mut config = Config::default();
         config.display.audience_monitor = "2".to_string();
         let mgr = dual_monitors();
-        let mode = determine_display_mode(hints, &config, &mgr);
-        assert!(matches!(mode, DisplayMode::Dual { .. }));
-        if let DisplayMode::Dual { audience_monitor } = mode {
+        let result = determine_display_mode(hints, &config, &mgr);
+        assert!(matches!(result.mode, DisplayMode::Dual { .. }));
+        if let DisplayMode::Dual { audience_monitor } = result.mode {
             assert_eq!(audience_monitor.name, "DELL U2718Q");
         }
     }
@@ -352,9 +367,10 @@ mod tests {
         let mut config = Config::default();
         config.display.audience_monitor = "NONEXISTENT".to_string();
         let mgr = dual_monitors();
+        let result = determine_display_mode(hints, &config, &mgr);
         // Should still find the secondary via auto-detection
-        let mode = determine_display_mode(hints, &config, &mgr);
-        assert!(matches!(mode, DisplayMode::Dual { .. }));
+        assert!(matches!(result.mode, DisplayMode::Dual { .. }));
+        assert!(!result.warnings.is_empty()); // warns about mismatch
     }
 
     #[test]
@@ -363,7 +379,10 @@ mod tests {
         let mut config = Config::default();
         config.display.mode = "screen-share".to_string();
         let mgr = dual_monitors();
-        assert!(matches!(determine_display_mode(hints, &config, &mgr), DisplayMode::ScreenShare));
+        assert!(matches!(
+            determine_display_mode(hints, &config, &mgr).mode,
+            DisplayMode::ScreenShare
+        ));
     }
 
     #[test]

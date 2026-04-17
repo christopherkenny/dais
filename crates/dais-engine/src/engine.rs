@@ -22,6 +22,12 @@ pub struct PresentationEngine {
     ink_color: [u8; 4],
     /// Ink width from config.
     ink_width: f32,
+    /// Path to the PDF file (used for sidecar save).
+    pdf_path: std::path::PathBuf,
+    /// Sidecar save format: `"dais"` or `"pdfpc"`.
+    sidecar_format: String,
+    /// Original metadata loaded for this presentation.
+    metadata: PresentationMetadata,
 }
 
 impl PresentationEngine {
@@ -33,6 +39,7 @@ impl PresentationEngine {
         metadata: &PresentationMetadata,
         config: &Config,
         receiver: CommandReceiver,
+        pdf_path: std::path::PathBuf,
     ) -> (Self, Arc<RwLock<PresentationState>>) {
         let slide_groups = build_slide_groups(total_pages, metadata);
         let mut state = PresentationState::new(total_pages, slide_groups);
@@ -74,6 +81,9 @@ impl PresentationEngine {
                 slide_start: Instant::now(),
                 ink_color,
                 ink_width,
+                pdf_path,
+                sidecar_format: config.normalized_sidecar_format().to_string(),
+                metadata: metadata.clone(),
             },
             shared_state,
         )
@@ -93,7 +103,12 @@ impl PresentationEngine {
 
         for cmd in &commands {
             if matches!(cmd, Command::Quit) {
-                should_quit = true;
+                if self.state.presentation_mode {
+                    // Escape exits presentation mode instead of quitting
+                    self.state.presentation_mode = false;
+                } else {
+                    should_quit = true;
+                }
             }
             self.process_command(cmd);
         }
@@ -143,7 +158,10 @@ impl PresentationEngine {
             | Command::LastSlide
             | Command::GoToSlide(_) => self.handle_navigation(cmd),
 
-            Command::ToggleFreeze | Command::ToggleBlackout | Command::ToggleScreenShareMode => {
+            Command::ToggleFreeze
+            | Command::ToggleBlackout
+            | Command::ToggleScreenShareMode
+            | Command::TogglePresentationMode => {
                 self.handle_display_mode(cmd);
             }
 
@@ -175,7 +193,7 @@ impl PresentationEngine {
                 tracing::info!("ReloadConfig received — not yet implemented");
             }
             Command::SaveSidecar => {
-                tracing::info!("SaveSidecar received — not yet implemented");
+                self.save_sidecar();
             }
         }
     }
@@ -210,6 +228,9 @@ impl PresentationEngine {
             Command::ToggleBlackout => self.state.blacked_out = !self.state.blacked_out,
             Command::ToggleScreenShareMode => {
                 self.state.screen_share_mode = !self.state.screen_share_mode;
+            }
+            Command::TogglePresentationMode => {
+                self.state.presentation_mode = !self.state.presentation_mode;
             }
             _ => {}
         }
@@ -340,6 +361,48 @@ impl PresentationEngine {
                     (self.state.notes_font_size - self.state.notes_font_size_step).max(8.0);
             }
             _ => {}
+        }
+    }
+
+    // -- Sidecar save --
+
+    fn save_sidecar(&self) {
+        use dais_sidecar::format::SidecarFormat;
+        use dais_sidecar::types::SlideGroupMeta;
+
+        // Reconstruct editable fields from current engine state while preserving
+        // the original metadata fields we loaded from disk.
+        let mut notes = std::collections::HashMap::new();
+        let mut groups = Vec::new();
+        for group in &self.state.slide_groups {
+            if let (Some(&start), Some(&end)) = (group.pages.first(), group.pages.last()) {
+                groups.push(SlideGroupMeta { start_page: start, end_page: end });
+            }
+            if let Some(ref text) = group.notes {
+                if let Some(&page) = group.pages.first() {
+                    notes.insert(page, text.clone());
+                }
+            }
+        }
+
+        let mut metadata = self.metadata.clone();
+        metadata.groups = groups;
+        metadata.notes = notes;
+
+        let (format, sidecar_path): (Box<dyn SidecarFormat>, _) = match self.sidecar_format.as_str()
+        {
+            "dais" => (
+                Box::new(dais_sidecar::dais_format::DaisFormat),
+                self.pdf_path.with_extension("dais"),
+            ),
+            _ => {
+                (Box::new(dais_sidecar::pdfpc::PdfpcFormat), self.pdf_path.with_extension("pdfpc"))
+            }
+        };
+
+        match format.write(&sidecar_path, &metadata) {
+            Ok(()) => tracing::info!("Saved sidecar to {}", sidecar_path.display()),
+            Err(e) => tracing::error!("Failed to save sidecar: {e}"),
         }
     }
 
@@ -524,7 +587,13 @@ mod tests {
         let sender = bus.sender();
         let receiver = bus.into_receiver();
         let config = Config::default();
-        let (engine, shared) = PresentationEngine::new(total_pages, metadata, &config, receiver);
+        let (engine, shared) = PresentationEngine::new(
+            total_pages,
+            metadata,
+            &config,
+            receiver,
+            std::path::PathBuf::from("test.pdf"),
+        );
         (engine, shared, sender)
     }
 
@@ -784,6 +853,37 @@ mod tests {
         sender.send(Command::ToggleScreenShareMode).unwrap();
         engine.tick();
         assert!(engine.state().screen_share_mode);
+    }
+
+    #[test]
+    fn toggle_presentation_mode() {
+        let (mut engine, _, sender) = make_engine(5);
+        assert!(!engine.state().presentation_mode);
+        sender.send(Command::TogglePresentationMode).unwrap();
+        engine.tick();
+        assert!(engine.state().presentation_mode);
+        sender.send(Command::TogglePresentationMode).unwrap();
+        engine.tick();
+        assert!(!engine.state().presentation_mode);
+    }
+
+    #[test]
+    fn quit_exits_presentation_mode_first() {
+        let (mut engine, _, sender) = make_engine(5);
+        sender.send(Command::TogglePresentationMode).unwrap();
+        engine.tick();
+        assert!(engine.state().presentation_mode);
+
+        // Quit should exit presentation mode, not quit
+        sender.send(Command::Quit).unwrap();
+        let should_quit = engine.tick();
+        assert!(!should_quit);
+        assert!(!engine.state().presentation_mode);
+
+        // Second Quit actually quits
+        sender.send(Command::Quit).unwrap();
+        let should_quit = engine.tick();
+        assert!(should_quit);
     }
 
     // ---- Presentation aids ----

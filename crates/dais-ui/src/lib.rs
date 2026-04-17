@@ -6,4 +6,5 @@ pub mod display_mode;
 pub mod grouping_editor;
 pub mod input;
 pub mod presenter;
+pub mod test_input;
 pub mod widgets;

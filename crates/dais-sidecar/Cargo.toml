@@ -11,6 +11,7 @@ description = "Sidecar format abstraction and .pdfpc implementation for Dais"
 dais-core = { workspace = true }
 
 serde = { workspace = true }
+eon = "0.2"
 thiserror = { workspace = true }
 tracing = { workspace = true }
 

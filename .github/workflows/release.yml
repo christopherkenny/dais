@@ -18,13 +18,16 @@ jobs:
         include:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact: dais-windows-x86_64.exe
+            artifact: dais-windows-x86_64
+            archive: dais-windows-x86_64.zip
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact: dais-linux-x86_64
+            archive: dais-linux-x86_64.tar.gz
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact: dais-macos-aarch64
+            archive: dais-macos-aarch64.tar.gz
 
     steps:
       - uses: actions/checkout@v4
@@ -53,22 +56,22 @@ jobs:
         if: runner.os != 'Windows'
         run: strip target/${{ matrix.target }}/release/dais
 
-      - name: Rename artifact (Unix)
+      - name: Package archive (Unix)
         if: runner.os != 'Windows'
-        run: cp target/${{ matrix.target }}/release/dais ${{ matrix.artifact }}
+        run: tar czf ${{ matrix.archive }} -C target/${{ matrix.target }}/release dais
 
-      - name: Rename artifact (Windows)
+      - name: Package archive (Windows)
         if: runner.os == 'Windows'
-        run: Copy-Item "target/${{ matrix.target }}/release/dais.exe" "${{ matrix.artifact }}"
+        run: Compress-Archive -Path "target/${{ matrix.target }}/release/dais.exe" -DestinationPath "${{ matrix.archive }}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: ${{ matrix.artifact }}
+          path: ${{ matrix.archive }}
 
-  release:
-    name: Create Release
+  checksums:
+    name: Generate checksums
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -77,11 +80,45 @@ jobs:
         with:
           merge-multiple: true
 
+      - name: Generate SHA256 checksums
+        run: sha256sum dais-windows-x86_64.zip dais-linux-x86_64.tar.gz dais-macos-aarch64.tar.gz > checksums-sha256.txt
+
+      - name: Upload checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: checksums
+          path: checksums-sha256.txt
+
+  release:
+    name: Create Release
+    needs: [build, checksums]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          else
+            version="v$(grep -m1 '^version' Cargo.toml | sed 's/.*"\(.*\)".*/\1/')"
+            echo "version=${version}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: ${{ steps.version.outputs.version }}
           files: |
-            dais-windows-x86_64.exe
-            dais-linux-x86_64
-            dais-macos-aarch64
+            dais-windows-x86_64.zip
+            dais-linux-x86_64.tar.gz
+            dais-macos-aarch64.tar.gz
+            checksums-sha256.txt
           generate_release_notes: true

@@ -210,6 +210,11 @@ fn egui_to_key_combo(key: egui::Key, modifiers: egui::Modifiers) -> KeyCombo {
 
 /// Map an egui key to the string name used in our keybinding config.
 fn egui_key_name(key: egui::Key) -> String {
+    egui_key_name_public(key)
+}
+
+/// Map an egui key to the string name used in our keybinding config (public for test-input mode).
+pub fn egui_key_name_public(key: egui::Key) -> String {
     match key {
         egui::Key::ArrowRight => "Right".into(),
         egui::Key::ArrowLeft => "Left".into(),
@@ -289,6 +294,7 @@ fn action_to_command(action: Action) -> Option<Command> {
         Action::IncrementNotesFont => Some(Command::IncrementNotesFontSize),
         Action::DecrementNotesFont => Some(Command::DecrementNotesFontSize),
         Action::ToggleScreenShare => Some(Command::ToggleScreenShareMode),
+        Action::TogglePresentationMode => Some(Command::TogglePresentationMode),
         Action::Quit => Some(Command::Quit),
         Action::SaveSidecar => Some(Command::SaveSidecar),
         Action::GoToSlide | Action::StartPauseTimer => None,

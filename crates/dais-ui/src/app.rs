@@ -19,6 +19,8 @@ use crate::audience::AudienceWindow;
 use crate::display_mode::{self, DisplayMode};
 use crate::input::InputHandler;
 use crate::presenter::PresenterConsole;
+use crate::presenter::hud::HudOverlay;
+use crate::widgets::ToastManager;
 
 /// The main Dais application, implementing `eframe::App`.
 pub struct DaisApp {
@@ -27,9 +29,11 @@ pub struct DaisApp {
     cache: PageCache,
     pipeline: RenderPipeline,
     presenter: PresenterConsole,
+    hud: HudOverlay,
     audience: AudienceWindow,
     sender: CommandSender,
     display_mode: DisplayMode,
+    toast_manager: ToastManager,
 }
 
 impl DaisApp {
@@ -42,14 +46,29 @@ impl DaisApp {
         config: &Config,
         display_mode: DisplayMode,
     ) -> Self {
-        let keybindings = KeybindingMap::from_config(&config.keybindings);
+        let keybindings = KeybindingMap::from_full_config(config);
         let input = InputHandler::new(sender.clone(), keybindings);
         let presenter = PresenterConsole::new(input);
         let audience = AudienceWindow::new();
         let cache = PageCache::new(64);
         let pipeline = RenderPipeline::new(doc, 2);
 
-        Self { engine, shared_state, cache, pipeline, presenter, audience, sender, display_mode }
+        Self {
+            engine,
+            shared_state,
+            cache,
+            pipeline,
+            presenter,
+            hud: HudOverlay::new(),
+            audience,
+            sender,
+            display_mode,
+            toast_manager: ToastManager::new(),
+        }
+    }
+
+    pub fn toast_manager_mut(&mut self) -> &mut ToastManager {
+        &mut self.toast_manager
     }
 }
 
@@ -95,9 +114,16 @@ impl eframe::App for DaisApp {
             ctx.request_repaint_after(std::time::Duration::from_millis(250));
         }
 
-        // In Single mode, only show the presenter — no audience viewport
+        // In Single mode, show HUD or presenter console based on presentation_mode
         if matches!(self.display_mode, DisplayMode::Single) {
-            self.presenter.show(ctx, &state, &mut self.cache, &self.sender);
+            if state.presentation_mode {
+                let render_size = FALLBACK_RENDER_SIZE;
+                let input = self.presenter.input_mut();
+                self.hud.show(ctx, &state, &mut self.cache, &self.sender, input, render_size);
+            } else {
+                self.presenter.show(ctx, &state, &mut self.cache, &self.sender);
+            }
+            self.toast_manager.show(ctx);
             return;
         }
 
@@ -128,5 +154,7 @@ impl eframe::App for DaisApp {
                 audience.show(ctx, shared_ref, cache, audience_size);
             },
         );
+
+        self.toast_manager.show(ctx);
     }
 }

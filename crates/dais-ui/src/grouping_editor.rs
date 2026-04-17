@@ -18,6 +18,7 @@ pub struct GroupingEditor {
     doc: Box<dyn DocumentSource>,
     cache: PageCache,
     pdf_path: PathBuf,
+    sidecar_format: String,
     /// Existing metadata loaded from sidecar (if any).
     metadata: PresentationMetadata,
     /// Group boundaries: a sorted list of page indices where a new group starts.
@@ -51,6 +52,7 @@ impl GroupingEditor {
         doc: Box<dyn DocumentSource>,
         pdf_path: &Path,
         metadata: PresentationMetadata,
+        sidecar_format: &str,
     ) -> Self {
         let page_count = doc.page_count();
         let thumbnails = (0..page_count).map(|_| SlideThumbnail::new()).collect();
@@ -62,6 +64,7 @@ impl GroupingEditor {
             doc,
             cache: PageCache::new(128),
             pdf_path: pdf_path.to_path_buf(),
+            sidecar_format: sidecar_format.to_string(),
             metadata,
             boundaries,
             thumbnails,
@@ -106,7 +109,7 @@ impl GroupingEditor {
         }
     }
 
-    /// Save groups to a `.pdfpc` sidecar file.
+    /// Save groups to the configured sidecar file format.
     fn save_sidecar(&mut self) {
         let groups = self.compute_groups();
         let group_metas: Vec<SlideGroupMeta> = groups
@@ -120,8 +123,14 @@ impl GroupingEditor {
         let mut meta = self.metadata.clone();
         meta.groups = group_metas;
 
-        let sidecar_path = self.pdf_path.with_extension("pdfpc");
-        let format = dais_sidecar::pdfpc::PdfpcFormat;
+        let (sidecar_path, format): (PathBuf, Box<dyn SidecarFormat>) = if self.sidecar_format
+            == "dais"
+        {
+            (self.pdf_path.with_extension("dais"), Box::new(dais_sidecar::dais_format::DaisFormat))
+        } else {
+            (self.pdf_path.with_extension("pdfpc"), Box::new(dais_sidecar::pdfpc::PdfpcFormat))
+        };
+
         match format.write(&sidecar_path, &meta) {
             Ok(()) => {
                 tracing::info!("Saved grouping to {}", sidecar_path.display());

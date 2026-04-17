@@ -27,7 +27,8 @@ All keybindings are remappable via the `[keybindings]` section in `config.toml`.
 | `increment_notes_font` | +, Shift+= | Increase notes font size |
 | `decrement_notes_font` | - | Decrease notes font size |
 | `toggle_screen_share` | Shift+S | Toggle screen-share mode |
-| `quit` | Q, Escape | Quit presentation |
+| `toggle_presentation_mode` | F5 | Toggle fullscreen HUD (single-monitor) |
+| `quit` | Q, Escape | Quit presentation (exits HUD first) |
 | `save_sidecar` | Ctrl+S | Save sidecar file |
 
 ## Custom Keybindings

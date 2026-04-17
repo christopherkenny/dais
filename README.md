@@ -37,7 +37,7 @@ dais --edit <file.pdf>           # Open the slide grouping editor
 - **Single** (`--single`): Presenter-only view with no audience window.
 - **Screen-share** (`--screen-share`): Both windows visible; audience is a normal resizable window for Zoom/Teams sharing.
 
-With one monitor, Dais automatically falls back to screen-share mode.
+With one monitor, Dais automatically falls back to single mode.
 
 ### Grouping Editor
 
@@ -47,7 +47,7 @@ For PDFs without embedded overlay metadata (e.g., PowerPoint exports), use the b
 dais --edit slides.pdf
 ```
 
-Click between thumbnails to set group boundaries. Save writes a `.pdfpc` sidecar file that Dais loads automatically on future runs.
+Click between thumbnails to set group boundaries. Save writes the configured sidecar format and Dais loads `.dais` before `.pdfpc` on future runs.
 
 ## Building from Source
 
@@ -66,7 +66,7 @@ The binary will be at `target/release/dais` (or `dais.exe` on Windows).
 | Source | Overlay grouping | Notes |
 |---|---|---|
 | Typst + Polylux/touying | Automatic | Recommended workflow. |
-| Quarto + projector | Automatic | Outputs Polylux. |
+| Quarto + projector | Depends on workflow | Outputs Polylux; use emitted sidecar metadata when available. |
 | Beamer + `\pdfpc` package | Automatic | One-line preamble addition. |
 | Quarto + Beamer + pdfpc header | Automatic | One-line YAML addition. |
 | Beamer without `\pdfpc` | Manual sidecar | Built-in editor. |
@@ -89,6 +89,10 @@ For display assignment, `audience_monitor` can be a monitor name or a simple dis
 ## Keybindings
 
 See [docs/keybindings.md](docs/keybindings.md) for the full reference. All keybindings are remappable via config.
+
+## Clicker & Remote Support
+
+Dais works with USB presenter remotes out of the box. See [docs/clicker-setup.md](docs/clicker-setup.md) for profiles, custom mappings, and the `--test-input` diagnostic mode.
 
 ## Architecture
 

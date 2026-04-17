@@ -4,6 +4,7 @@
 //! into the presenter console window.
 
 pub mod current_slide;
+pub mod hud;
 pub mod layout;
 pub mod next_preview;
 pub mod notes_panel;
@@ -41,6 +42,11 @@ impl PresenterConsole {
             overview: OverviewGrid::new(),
             input,
         }
+    }
+
+    /// Access the input handler (e.g. to share it with HUD mode).
+    pub fn input_mut(&mut self) -> &mut InputHandler {
+        &mut self.input
     }
 
     /// Render the presenter console in the given egui context.

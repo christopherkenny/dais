@@ -34,6 +34,8 @@ pub struct PresentationState {
     pub blacked_out: bool,
     /// Whether screen-share mode is active.
     pub screen_share_mode: bool,
+    /// Whether presentation mode is active (single-monitor fullscreen HUD).
+    pub presentation_mode: bool,
 
     // -- Presentation aids --
     /// Whether the laser pointer is active.
@@ -92,6 +94,7 @@ impl PresentationState {
             frozen_page: None,
             blacked_out: false,
             screen_share_mode: false,
+            presentation_mode: false,
             laser_active: false,
             pointer_position: None,
             ink_active: false,

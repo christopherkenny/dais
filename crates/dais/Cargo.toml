@@ -25,5 +25,8 @@ tracing-subscriber = { workspace = true }
 directories = { workspace = true }
 toml = { workspace = true }
 
+[build-dependencies]
+winresource = { workspace = true }
+
 [lints]
 workspace = true

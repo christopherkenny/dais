@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::state::TimerMode;
 
 /// Top-level application configuration, loaded from TOML.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
     pub display: DisplayConfig,
@@ -16,6 +16,9 @@ pub struct Config {
     pub ink: InkConfig,
     pub notes: NotesConfig,
     pub keybindings: HashMap<String, Vec<String>>,
+    pub clicker: ClickerConfig,
+    /// Sidecar save format: `"dais"` or `"pdfpc"`.
+    pub sidecar_format: String,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -28,6 +31,8 @@ struct PartialConfig {
     ink: Option<PartialInkConfig>,
     notes: Option<PartialNotesConfig>,
     keybindings: Option<HashMap<String, Vec<String>>>,
+    clicker: Option<PartialClickerConfig>,
+    sidecar_format: Option<String>,
 }
 
 /// Display mode and monitor assignment.
@@ -143,6 +148,23 @@ struct PartialInkConfig {
     width: Option<f32>,
 }
 
+/// Clicker/remote hardware configuration.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ClickerConfig {
+    /// Name of the active clicker profile (e.g., "default", "logitech-spotlight").
+    pub profile: String,
+    /// Custom profile definitions mapping key names to action names.
+    pub profiles: HashMap<String, HashMap<String, String>>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(default)]
+struct PartialClickerConfig {
+    profile: Option<String>,
+    profiles: Option<HashMap<String, HashMap<String, String>>>,
+}
+
 /// Notes panel configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -158,6 +180,22 @@ pub struct NotesConfig {
 struct PartialNotesConfig {
     font_size: Option<f32>,
     font_size_step: Option<f32>,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            display: DisplayConfig::default(),
+            timer: TimerConfig::default(),
+            pointer: PointerConfig::default(),
+            spotlight: SpotlightConfig::default(),
+            ink: InkConfig::default(),
+            notes: NotesConfig::default(),
+            keybindings: HashMap::new(),
+            clicker: ClickerConfig::default(),
+            sidecar_format: "pdfpc".to_string(),
+        }
+    }
 }
 
 impl Default for DisplayConfig {
@@ -196,6 +234,45 @@ impl Default for SpotlightConfig {
 impl Default for InkConfig {
     fn default() -> Self {
         Self { color: "#FF0000".to_string(), width: 3.0 }
+    }
+}
+
+impl Default for ClickerConfig {
+    fn default() -> Self {
+        Self { profile: "default".to_string(), profiles: HashMap::new() }
+    }
+}
+
+/// Return the built-in default clicker profile mapping common USB presenter keys to actions.
+pub fn default_clicker_profile() -> HashMap<String, String> {
+    HashMap::from([
+        ("PageDown".to_string(), "next_slide".to_string()),
+        ("PageUp".to_string(), "previous_slide".to_string()),
+        ("F5".to_string(), "toggle_presentation_mode".to_string()),
+        ("b".to_string(), "toggle_blackout".to_string()),
+        (".".to_string(), "toggle_blackout".to_string()),
+    ])
+}
+
+impl Config {
+    /// Resolve the active clicker profile into a key -> action map.
+    pub fn active_clicker_profile(&self) -> HashMap<String, String> {
+        if self.clicker.profile == "default" {
+            return default_clicker_profile();
+        }
+
+        self.clicker.profiles.get(&self.clicker.profile).cloned().unwrap_or_else(|| {
+            tracing::warn!(
+                "Configured clicker profile '{}' not found; using default profile",
+                self.clicker.profile
+            );
+            default_clicker_profile()
+        })
+    }
+
+    /// Normalize the configured sidecar save format to a supported value.
+    pub fn normalized_sidecar_format(&self) -> &str {
+        if self.sidecar_format.eq_ignore_ascii_case("dais") { "dais" } else { "pdfpc" }
     }
 }
 
@@ -328,6 +405,19 @@ fn apply_partial_config(config: &mut Config, partial: PartialConfig) {
 
     if let Some(keybindings) = partial.keybindings {
         config.keybindings.extend(keybindings);
+    }
+
+    if let Some(clicker) = partial.clicker {
+        if let Some(profile) = clicker.profile {
+            config.clicker.profile = profile;
+        }
+        if let Some(profiles) = clicker.profiles {
+            config.clicker.profiles.extend(profiles);
+        }
+    }
+
+    if let Some(sidecar_format) = partial.sidecar_format {
+        config.sidecar_format = sidecar_format;
     }
 }
 

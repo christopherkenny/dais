@@ -27,24 +27,36 @@ pub fn extract_embedded_metadata(raw_pdfpc_data: Option<&str>) -> Option<Present
 /// Load presentation metadata using the priority chain:
 ///
 /// 1. Embedded PDF metadata (highest priority)
-/// 2. `.pdfpc` sidecar file (if found next to PDF)
-/// 3. No metadata (empty default)
+/// 2. `.dais` sidecar file (preferred native format)
+/// 3. `.pdfpc` sidecar file
+/// 4. No metadata (empty default)
 ///
-/// The `pdf_path` is the path to the PDF file — the sidecar is looked up
-/// by replacing the extension with `.pdfpc`.
+/// The `pdf_path` is the path to the PDF file — sidecars are looked up
+/// by replacing the extension with `.dais` or `.pdfpc`.
 pub fn load_metadata(
     pdf_path: &std::path::Path,
     embedded_pdfpc_data: Option<&str>,
 ) -> (PresentationMetadata, MetadataSource) {
+    use crate::format::SidecarFormat;
+
     // Priority 1: Embedded PDF metadata
     if let Some(meta) = extract_embedded_metadata(embedded_pdfpc_data) {
         return (meta, MetadataSource::Embedded);
     }
 
-    // Priority 2: .pdfpc sidecar file
+    // Priority 2: .dais sidecar file
+    let dais_path = pdf_path.with_extension("dais");
+    if dais_path.exists() {
+        let format = crate::dais_format::DaisFormat;
+        if let Ok(meta) = format.read(&dais_path) {
+            return (meta, MetadataSource::Sidecar(dais_path));
+        }
+        tracing::warn!("Failed to parse sidecar file: {}", dais_path.display());
+    }
+
+    // Priority 3: .pdfpc sidecar file
     let sidecar_path = pdf_path.with_extension("pdfpc");
     if sidecar_path.exists() {
-        use crate::format::SidecarFormat;
         let format = crate::pdfpc::PdfpcFormat;
         if let Ok(meta) = format.read(&sidecar_path) {
             return (meta, MetadataSource::Sidecar(sidecar_path));
@@ -52,7 +64,7 @@ pub fn load_metadata(
         tracing::warn!("Failed to parse sidecar file: {}", sidecar_path.display());
     }
 
-    // Priority 3: No metadata
+    // Priority 4: No metadata
     (PresentationMetadata::default(), MetadataSource::None)
 }
 
@@ -125,6 +137,40 @@ mod tests {
         let (meta, source) = load_metadata(std::path::Path::new("nonexistent.pdf"), Some(data));
         assert_eq!(meta.groups.len(), 1);
         assert!(matches!(source, MetadataSource::Embedded));
+    }
+
+    #[test]
+    fn load_metadata_dais_over_pdfpc() {
+        use crate::dais_format::DaisFormat;
+        use crate::format::SidecarFormat;
+        use crate::pdfpc::PdfpcFormat;
+
+        let dir = std::env::temp_dir().join("dais_test_metadata_priority");
+        let _ = std::fs::create_dir_all(&dir);
+        let pdf_path = dir.join("talk.pdf");
+        std::fs::write(&pdf_path, b"fake pdf").unwrap();
+
+        // Write a .dais sidecar with a distinctive title
+        let dais_meta =
+            PresentationMetadata { title: Some("From Dais".to_string()), ..Default::default() };
+        DaisFormat.write(&dir.join("talk.dais"), &dais_meta).unwrap();
+
+        // Write a .pdfpc sidecar with a different title
+        let pdfpc_meta =
+            PresentationMetadata { title: Some("From Pdfpc".to_string()), ..Default::default() };
+        PdfpcFormat.write(&dir.join("talk.pdfpc"), &pdfpc_meta).unwrap();
+
+        // .dais should win
+        let (meta, source) = load_metadata(&pdf_path, None);
+        assert_eq!(meta.title.as_deref(), Some("From Dais"));
+        assert!(
+            matches!(source, MetadataSource::Sidecar(ref p) if p.extension().unwrap() == "dais")
+        );
+
+        // Cleanup
+        let _ = std::fs::remove_file(dir.join("talk.pdf"));
+        let _ = std::fs::remove_file(dir.join("talk.dais"));
+        let _ = std::fs::remove_file(dir.join("talk.pdfpc"));
     }
 
     #[test]

@@ -31,6 +31,8 @@ pub enum Command {
     ToggleBlackout,
     /// Toggle screen-share mode (audience window as normal window).
     ToggleScreenShareMode,
+    /// Toggle presentation mode (single-monitor: console ↔ fullscreen HUD).
+    TogglePresentationMode,
 
     // -- Presentation aids --
     /// Toggle the laser pointer on/off.

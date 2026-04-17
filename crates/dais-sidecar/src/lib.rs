@@ -5,6 +5,7 @@
 //! format is the v1 implementation; a future `.dais` format slots in as an
 //! additional implementation.
 
+pub mod dais_format;
 pub mod format;
 pub mod metadata;
 pub mod pdfpc;

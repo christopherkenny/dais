@@ -15,7 +15,7 @@ dais slides.pdf
 
 ## Quarto + projector
 
-[Projector](https://github.com/christopherkenny/projector) converts Quarto documents to Polylux syntax. Because projector outputs Polylux, the compiled PDF contains full pdfpc-compatible metadata. Identical experience to Typst + Polylux.
+[Projector](https://github.com/christopherkenny/projector) converts Quarto documents to Polylux syntax. That makes it a natural authoring path for Dais, but Dais should not assume metadata is embedded in the PDF automatically. If your workflow emits a sidecar file, keep it next to the PDF so Dais can load it.
 
 ```bash
 quarto render slides.qmd
@@ -53,7 +53,25 @@ format:
         \usepackage[overridenote]{pdfpc}
 ```
 
-This one addition gives Quarto Beamer users automatic notes and overlay support in Dais.
+Speaker notes work with Quarto's native `::: {.notes}` syntax:
+
+```markdown
+## My Slide
+
+Content here.
+
+::: {.notes}
+Remember to mention the key finding.
+:::
+```
+
+The `overridenote` option intercepts Beamer's `\note` command so that Quarto's notes syntax flows through to pdfpc metadata automatically.
+
+### Troubleshooting Quarto Workflows
+
+- **Notes not appearing?** Verify `\usepackage[overridenote]{pdfpc}` is in the header. Without `overridenote`, Beamer's `\note` is consumed and not written to PDF metadata.
+- **Overlay grouping missing?** Quarto Beamer uses `\pause` which the `\pdfpc` package tracks. If your deck doesn't use pauses, grouping is 1:1 (one page = one slide).
+- **Quarto + Typst path**: If using Quarto with Typst via projector, verify whether your workflow emits a sidecar file or embeds metadata directly. Dais can load sidecars, but this path should not be treated as automatic embedded metadata by default.
 
 ## Beamer without `\pdfpc`
 

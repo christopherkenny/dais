@@ -77,7 +77,7 @@ mode = "elapsed"
 | `single` | Presenter console only, no audience window. Use `--single` CLI flag or set in config. |
 | `screen-share` | Audience window is a normal resizable window (not fullscreen). For Zoom/Teams screen sharing. Use `--screen-share` CLI flag or set in config. Auto-selected with one monitor. |
 
-CLI flags (`--single`, `--screen-share`) override config. If no flag is given and config is `"dual"` (default), Dais auto-detects: 2+ monitors → dual, 1 monitor → screen-share.
+CLI flags (`--single`, `--screen-share`) override config. If no flag is given and config is `"dual"` (default), Dais auto-detects: 2+ monitors → dual, 1 monitor → single.
 
 ## Monitor Assignment
 
@@ -89,3 +89,40 @@ Detected monitors are logged at startup with ids and names, so you can see which
 
 - **Elapsed mode:** Starts at 0:00 and counts up. This is the default. If `duration_minutes` is omitted, no limit is shown.
 - **Countdown mode:** Starts at `duration_minutes` and counts down. If you use countdown mode, you should set `duration_minutes`.
+
+## Sidecar Formats
+
+Dais stores slide grouping, notes, and metadata in sidecar files next to your PDF.
+
+| Format | Extension | Description |
+|---|---|---|
+| `pdfpc` | `.pdfpc` | Compatible with pdfpc — the default for maximum interop. |
+| `dais` | `.dais` | Native EON-based format with versioning for forward compatibility. |
+
+Set the save format in config:
+
+```toml
+sidecar_format = "pdfpc"   # "pdfpc" (default) or "dais"
+```
+
+When loading, Dais checks in order: embedded PDF metadata → `.dais` sidecar → `.pdfpc` sidecar.
+The grouping editor and `save_sidecar` action both use `sidecar_format` when choosing what to write.
+
+## Presentation Mode (F5)
+
+In single-monitor mode, press **F5** to toggle between the full presenter console and a HUD-focused presentation view. The HUD shows:
+
+- The audience slide fullscreen
+- A semi-transparent bottom bar with timer, slide count, and mode indicators
+- Hover near the bottom edge to reveal notes
+
+Press **Escape** to exit HUD mode back to the console. In dual-monitor mode, F5 is available but the audience already has a dedicated screen.
+
+## DPI and Scaling
+
+Dais renders slides at the audience monitor's native resolution for maximum sharpness. The presenter console uses a fixed 1920×1080 canonical render size, scaled by the GPU.
+
+On mixed-DPI setups (e.g., Retina laptop + 1080p projector):
+- The audience window renders at the projector's native resolution
+- The presenter window renders at the standard canonical size
+- egui's built-in scaling handles UI element sizing per-window
