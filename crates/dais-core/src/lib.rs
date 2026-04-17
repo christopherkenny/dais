@@ -6,10 +6,12 @@
 //! - [`CommandBus`] — MPSC command dispatcher
 //! - Configuration and keybinding types
 //! - Slide grouping model
+//! - Monitor management trait
 
 pub mod bus;
 pub mod commands;
 pub mod config;
 pub mod keybindings;
+pub mod monitor;
 pub mod slide_group;
 pub mod state;

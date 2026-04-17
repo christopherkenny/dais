@@ -52,6 +52,7 @@ image = "0.25"
 [workspace.dependencies.windows]
 version = "0.61"
 features = [
+    "Win32_Foundation",
     "Win32_Graphics_Gdi",
     "Win32_UI_HiDpi",
     "Win32_UI_WindowsAndMessaging",
