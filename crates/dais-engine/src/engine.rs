@@ -378,10 +378,10 @@ impl PresentationEngine {
             if let (Some(&start), Some(&end)) = (group.pages.first(), group.pages.last()) {
                 groups.push(SlideGroupMeta { start_page: start, end_page: end });
             }
-            if let Some(ref text) = group.notes {
-                if let Some(&page) = group.pages.first() {
-                    notes.insert(page, text.clone());
-                }
+            if let Some(ref text) = group.notes
+                && let Some(&page) = group.pages.first()
+            {
+                notes.insert(page, text.clone());
             }
         }
 
