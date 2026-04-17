@@ -1,4 +1,4 @@
-# Dais: A Native PDF Presenter Console
+# Dais: A Native PDF Presenter Console <img src='assets/dais.png' align="right" height="150" />
 
 [![CI](https://github.com/christopherkenny/dais/actions/workflows/ci.yml/badge.svg)](https://github.com/christopherkenny/dais/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
