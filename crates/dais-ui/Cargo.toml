@@ -1,0 +1,24 @@
+[package]
+name = "dais-ui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "UI layer for Dais — egui-based presenter and audience windows"
+
+[dependencies]
+dais-core = { workspace = true }
+dais-document = { workspace = true }
+dais-engine = { workspace = true }
+dais-platform = { workspace = true }
+
+egui = { workspace = true }
+eframe = { workspace = true }
+egui_commonmark = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+image = { workspace = true }
+
+[lints]
+workspace = true

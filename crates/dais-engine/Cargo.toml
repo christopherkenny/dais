@@ -1,0 +1,20 @@
+[package]
+name = "dais-engine"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Presentation engine for Dais — state authority and command processing"
+
+[dependencies]
+dais-core = { workspace = true }
+dais-document = { workspace = true }
+dais-sidecar = { workspace = true }
+
+crossbeam-channel = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

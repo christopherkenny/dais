@@ -1,0 +1,27 @@
+[package]
+name = "dais"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "A cross-platform PDF presenter console for academics"
+default-run = "dais"
+
+[dependencies]
+dais-core = { workspace = true }
+dais-document = { workspace = true }
+dais-engine = { workspace = true }
+dais-platform = { workspace = true }
+dais-sidecar = { workspace = true }
+dais-ui = { workspace = true }
+
+clap = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+directories = { workspace = true }
+toml = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,23 @@
+[package]
+name = "dais-document"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Document source abstraction and PDF rendering for Dais"
+
+[features]
+default = ["hayro"]
+hayro = []
+mupdf = []
+
+[dependencies]
+dais-core = { workspace = true }
+
+image = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[lints]
+workspace = true
