@@ -105,10 +105,13 @@ fn main() -> anyhow::Result<()> {
     let doc_arc: std::sync::Arc<dyn dais_document::source::DocumentSource> =
         std::sync::Arc::new(doc);
 
+    let presenter_window_size = egui::vec2(1400.0, 900.0);
     let native_options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_title("Dais — Presenter Console")
-            .with_inner_size(egui::vec2(1400.0, 900.0)),
+        viewport: dais_ui::display_mode::presenter_viewport_builder(
+            &config,
+            &monitor_mgr,
+            presenter_window_size,
+        ),
         ..Default::default()
     };
 
@@ -151,7 +154,7 @@ fn run_grouping_editor(
     let path = Path::new(pdf_path);
 
     let native_options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
+        viewport: dais_ui::display_mode::with_app_icon(egui::ViewportBuilder::default())
             .with_title("Dais — Grouping Editor")
             .with_inner_size(egui::vec2(1200.0, 320.0)),
         ..Default::default()

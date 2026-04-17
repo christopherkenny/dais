@@ -34,10 +34,10 @@ pub struct RenderPipeline {
     pending: HashSet<(usize, RenderSize)>,
 }
 
-/// Default render size used for display contexts.
+/// Fallback render size used when a target display resolution is unavailable.
 /// This is intentionally high enough that the fullscreen audience view does
 /// not need to upscale from a small 720p source on a typical 1080p projector.
-pub const CANONICAL_RENDER_SIZE: RenderSize = RenderSize { width: 1920, height: 1080 };
+pub const FALLBACK_RENDER_SIZE: RenderSize = RenderSize { width: 1920, height: 1080 };
 
 impl RenderPipeline {
     /// Spawn the render pipeline with `num_workers` background threads.

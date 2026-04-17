@@ -13,7 +13,7 @@ pub mod timer;
 use dais_core::bus::CommandSender;
 use dais_core::state::PresentationState;
 use dais_document::cache::PageCache;
-use dais_document::render_pipeline::CANONICAL_RENDER_SIZE;
+use dais_document::render_pipeline::FALLBACK_RENDER_SIZE;
 
 use self::current_slide::CurrentSlidePanel;
 use self::layout::PresenterLayout;
@@ -59,7 +59,7 @@ impl PresenterConsole {
         self.input.handle_input(ctx, state.overview_visible, state.ink_active, state.laser_active);
 
         // Update textures from cache (single canonical size)
-        let size = CANONICAL_RENDER_SIZE;
+        let size = FALLBACK_RENDER_SIZE;
         let current_page = state.current_page;
 
         if let Some(page) = cache.get(current_page, size) {

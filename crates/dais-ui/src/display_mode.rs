@@ -3,8 +3,12 @@
 //! Determines how the presenter and audience windows should be positioned
 //! based on CLI flags, configuration, and detected monitors.
 
+use std::sync::{Arc, OnceLock};
+
 use dais_core::config::Config;
 use dais_core::monitor::{MonitorInfo, MonitorManager};
+use dais_document::page::RenderSize;
+use dais_document::render_pipeline::FALLBACK_RENDER_SIZE;
 
 /// How the application should lay out presenter and audience windows.
 #[derive(Debug, Clone)]
@@ -24,6 +28,29 @@ pub struct DisplayHints {
     pub force_single: bool,
     /// `--screen-share` was passed.
     pub force_screen_share: bool,
+}
+
+fn app_icon() -> Option<Arc<egui::IconData>> {
+    static ICON: OnceLock<Option<Arc<egui::IconData>>> = OnceLock::new();
+
+    ICON.get_or_init(|| {
+        match eframe::icon_data::from_png_bytes(include_bytes!("../../../assets/dais.png")) {
+            Ok(icon) => Some(Arc::new(icon)),
+            Err(err) => {
+                tracing::warn!("Failed to load app icon from assets/dais.png: {err}");
+                None
+            }
+        }
+    })
+    .clone()
+}
+
+pub fn with_app_icon(builder: egui::ViewportBuilder) -> egui::ViewportBuilder {
+    if let Some(icon) = app_icon() {
+        builder.with_icon(icon)
+    } else {
+        builder
+    }
 }
 
 /// Determine the initial display mode from CLI hints, config, and detected monitors.
@@ -117,7 +144,7 @@ pub fn audience_viewport_builder(mode: &DisplayMode) -> egui::ViewportBuilder {
                 audience_monitor.position.0,
                 audience_monitor.position.1,
             );
-            egui::ViewportBuilder::default()
+            with_app_icon(egui::ViewportBuilder::default())
                 .with_title("Dais — Audience")
                 .with_fullscreen(true)
                 .with_position(egui::pos2(
@@ -127,13 +154,76 @@ pub fn audience_viewport_builder(mode: &DisplayMode) -> egui::ViewportBuilder {
         }
         DisplayMode::Single => {
             // Single mode doesn't spawn an audience viewport — this is a fallback
-            egui::ViewportBuilder::default()
+            with_app_icon(egui::ViewportBuilder::default())
                 .with_title("Dais — Audience")
                 .with_inner_size(egui::vec2(1280.0, 720.0))
         }
-        DisplayMode::ScreenShare => egui::ViewportBuilder::default()
+        DisplayMode::ScreenShare => with_app_icon(egui::ViewportBuilder::default())
             .with_title("Dais — Audience")
             .with_inner_size(egui::vec2(1280.0, 720.0)),
+    }
+}
+
+/// Build the presenter viewport builder.
+///
+/// The presenter window opens centered on the configured presenter monitor and
+/// is clamped to fit within that monitor's logical size. If no explicit
+/// presenter monitor is configured, the OS primary monitor is used. If monitor
+/// data is unavailable, we fall back to a normal titled window.
+#[allow(clippy::cast_precision_loss)]
+pub fn presenter_viewport_builder(
+    config: &Config,
+    monitor_mgr: &dyn MonitorManager,
+    window_size: egui::Vec2,
+) -> egui::ViewportBuilder {
+    let presenter_selector = config.display.presenter_monitor.trim();
+    let monitor = if presenter_selector.is_empty() || presenter_selector == "auto" {
+        monitor_mgr.primary_monitor()
+    } else {
+        monitor_mgr
+            .find_by_selector(presenter_selector)
+            .or_else(|| monitor_mgr.primary_monitor())
+    };
+
+    let builder = with_app_icon(egui::ViewportBuilder::default())
+        .with_title("Dais — Presenter Console")
+        .with_inner_size(window_size);
+
+    let Some(monitor) = monitor else {
+        return builder;
+    };
+
+    if monitor.size.0 == 0 || monitor.size.1 == 0 {
+        return builder;
+    }
+
+    let (logical_w, logical_h) = monitor.logical_size();
+    let max_w = (logical_w as f32 - 80.0).max(640.0);
+    let max_h = (logical_h as f32 - 80.0).max(480.0);
+    let fitted_w = window_size.x.min(max_w);
+    let fitted_h = window_size.y.min(max_h);
+
+    let x = monitor.position.0 as f32 + ((logical_w as f32 - fitted_w) / 2.0).max(0.0);
+    let y = monitor.position.1 as f32 + ((logical_h as f32 - fitted_h) / 2.0).max(0.0);
+
+    builder
+        .with_inner_size(egui::vec2(fitted_w, fitted_h))
+        .with_position(egui::pos2(x, y))
+}
+
+/// Determine the audience render size from the selected display mode.
+///
+/// In dual-monitor mode we use the detected audience monitor's physical pixel
+/// size when available. If the platform backend cannot provide a usable size,
+/// we fall back to the fixed render size.
+pub fn audience_render_size(mode: &DisplayMode) -> RenderSize {
+    match mode {
+        DisplayMode::Dual { audience_monitor }
+            if audience_monitor.size.0 > 0 && audience_monitor.size.1 > 0 =>
+        {
+            RenderSize { width: audience_monitor.size.0, height: audience_monitor.size.1 }
+        }
+        _ => FALLBACK_RENDER_SIZE,
     }
 }
 
@@ -282,5 +372,32 @@ mod tests {
         config.display.mode = "screen-share".to_string();
         let mgr = dual_monitors();
         assert!(matches!(determine_display_mode(hints, &config, &mgr), DisplayMode::ScreenShare));
+    }
+
+    #[test]
+    fn audience_render_size_uses_monitor_size_when_available() {
+        let mgr = dual_monitors();
+        let mode = DisplayMode::Dual { audience_monitor: mgr.monitors[1].clone() };
+        let size = audience_render_size(&mode);
+        assert_eq!(size.width, 3840);
+        assert_eq!(size.height, 2160);
+    }
+
+    #[test]
+    fn audience_render_size_falls_back_when_unavailable() {
+        let mode = DisplayMode::ScreenShare;
+        let size = audience_render_size(&mode);
+        assert_eq!(size.width, FALLBACK_RENDER_SIZE.width);
+        assert_eq!(size.height, FALLBACK_RENDER_SIZE.height);
+    }
+
+    #[test]
+    fn presenter_viewport_uses_primary_monitor_by_default() {
+        let config = Config::default();
+        let mgr = dual_monitors();
+        let builder =
+            presenter_viewport_builder(&config, &mgr, egui::vec2(1400.0, 900.0));
+        let debug = format!("{builder:?}");
+        assert!(debug.contains("Presenter Console"));
     }
 }

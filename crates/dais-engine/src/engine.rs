@@ -344,11 +344,18 @@ impl PresentationEngine {
     fn next_slide(&mut self) {
         let current = self.state.current_logical_slide;
         if current + 1 < self.state.total_logical_slides {
+            self.state.blacked_out = false;
             self.go_to_group(current + 1);
+        } else {
+            self.state.blacked_out = true;
         }
     }
 
     fn previous_slide(&mut self) {
+        if self.state.blacked_out {
+            self.state.blacked_out = false;
+            return;
+        }
         let current = self.state.current_logical_slide;
         if current > 0 {
             self.go_to_group(current - 1);
@@ -356,6 +363,10 @@ impl PresentationEngine {
     }
 
     fn next_overlay(&mut self) {
+        if self.state.blacked_out {
+            self.state.blacked_out = false;
+            return;
+        }
         if self.state.slide_groups.is_empty() {
             return;
         }
@@ -372,6 +383,10 @@ impl PresentationEngine {
     }
 
     fn previous_overlay(&mut self) {
+        if self.state.blacked_out {
+            self.state.blacked_out = false;
+            return;
+        }
         if self.state.slide_groups.is_empty() {
             return;
         }
@@ -398,6 +413,7 @@ impl PresentationEngine {
         if group_index >= self.state.total_logical_slides || self.state.slide_groups.is_empty() {
             return;
         }
+        self.state.blacked_out = false;
         self.state.current_logical_slide = group_index;
         self.state.current_overlay_within_group = 0;
         self.state.current_page = self.state.slide_groups[group_index].pages[0];
@@ -620,6 +636,7 @@ mod tests {
         }
         engine.tick();
         assert_eq!(engine.state().current_logical_slide, 2);
+        assert!(engine.state().blacked_out);
     }
 
     #[test]
@@ -627,6 +644,19 @@ mod tests {
         let (mut engine, _, sender) = make_engine(5);
         sender.send(Command::PreviousSlide).unwrap();
         engine.tick();
+        assert_eq!(engine.state().current_logical_slide, 0);
+    }
+
+    #[test]
+    fn previous_slide_clears_end_blackout() {
+        let (mut engine, _, sender) = make_engine(1);
+        sender.send(Command::NextSlide).unwrap();
+        engine.tick();
+        assert!(engine.state().blacked_out);
+
+        sender.send(Command::PreviousSlide).unwrap();
+        engine.tick();
+        assert!(!engine.state().blacked_out);
         assert_eq!(engine.state().current_logical_slide, 0);
     }
 

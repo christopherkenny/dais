@@ -6,7 +6,7 @@ use dais_core::bus::CommandSender;
 use dais_core::commands::Command;
 use dais_core::state::PresentationState;
 use dais_document::cache::PageCache;
-use dais_document::render_pipeline::CANONICAL_RENDER_SIZE;
+use dais_document::render_pipeline::FALLBACK_RENDER_SIZE;
 
 use crate::widgets::SlideThumbnail;
 
@@ -121,7 +121,7 @@ impl OverviewGrid {
         cache: &mut PageCache,
         sender: &CommandSender,
     ) {
-        let render_size = CANONICAL_RENDER_SIZE;
+        let render_size = FALLBACK_RENDER_SIZE;
 
         egui::ScrollArea::vertical().show(ui, |ui| {
             ui.horizontal_wrapped(|ui| {

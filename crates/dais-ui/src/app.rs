@@ -11,7 +11,7 @@ use dais_core::config::Config;
 use dais_core::keybindings::KeybindingMap;
 use dais_core::state::PresentationState;
 use dais_document::cache::PageCache;
-use dais_document::render_pipeline::{RenderPipeline, CANONICAL_RENDER_SIZE};
+use dais_document::render_pipeline::{RenderPipeline, FALLBACK_RENDER_SIZE};
 use dais_document::source::DocumentSource;
 use dais_engine::engine::PresentationEngine;
 
@@ -75,16 +75,17 @@ impl eframe::App for DaisApp {
         );
 
         // Submit render requests for pages we need
-        let size = CANONICAL_RENDER_SIZE;
+        let presenter_size = FALLBACK_RENDER_SIZE;
+        let audience_size = display_mode::audience_render_size(&self.display_mode);
         self.pipeline.prefetch_neighborhood(
             state.current_page,
             state.total_pages,
-            size,
+            presenter_size,
             &mut self.cache,
         );
         // Audience page (may differ if frozen)
         self.pipeline
-            .ensure_rendered(state.audience_page(), size, &mut self.cache);
+            .ensure_rendered(state.audience_page(), audience_size, &mut self.cache);
 
         // Request periodic repaints while timers are active or renders are pending.
         if state.timer.running {
@@ -119,7 +120,7 @@ impl eframe::App for DaisApp {
 
         // Choose audience viewport builder
         let viewport_builder = if is_runtime_screen_share {
-            egui::ViewportBuilder::default()
+            display_mode::with_app_icon(egui::ViewportBuilder::default())
                 .with_title("Dais — Audience")
                 .with_inner_size(egui::vec2(1280.0, 720.0))
         } else {
@@ -135,7 +136,7 @@ impl eframe::App for DaisApp {
             egui::ViewportId::from_hash_of("audience"),
             viewport_builder,
             |ctx, _class| {
-                audience.show(ctx, shared_ref, cache);
+                audience.show(ctx, shared_ref, cache, audience_size);
             },
         );
     }

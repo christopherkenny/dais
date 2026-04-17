@@ -9,7 +9,7 @@ use std::sync::{Arc, RwLock};
 
 use dais_core::state::PresentationState;
 use dais_document::cache::PageCache;
-use dais_document::render_pipeline::CANONICAL_RENDER_SIZE;
+use dais_document::page::RenderSize;
 
 use self::display::AudienceDisplay;
 
@@ -29,6 +29,7 @@ impl AudienceWindow {
         ctx: &egui::Context,
         shared_state: &Arc<RwLock<PresentationState>>,
         cache: &mut PageCache,
+        render_size: RenderSize,
     ) {
         let state = shared_state.read().map_or_else(
             |e| {
@@ -39,7 +40,6 @@ impl AudienceWindow {
         );
 
         let audience_page = state.audience_page();
-        let render_size = CANONICAL_RENDER_SIZE;
 
         if let Some(page) = cache.get(audience_page, render_size) {
             let page = page.clone();
@@ -49,8 +49,9 @@ impl AudienceWindow {
         egui::CentralPanel::default().frame(egui::Frame::new().fill(egui::Color32::BLACK)).show(
             ctx,
             |ui| {
+                let viewport_rect = ui.max_rect();
                 let image_rect = self.display.show(ui);
-                overlays::draw_overlays(ui, image_rect, &state);
+                overlays::draw_overlays(ui, viewport_rect, image_rect, &state);
             },
         );
     }

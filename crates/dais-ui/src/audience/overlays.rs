@@ -5,7 +5,12 @@
 use dais_core::state::PresentationState;
 
 /// Draw all active overlays on the audience window.
-pub fn draw_overlays(ui: &mut egui::Ui, image_rect: egui::Rect, state: &PresentationState) {
+pub fn draw_overlays(
+    ui: &mut egui::Ui,
+    viewport_rect: egui::Rect,
+    image_rect: egui::Rect,
+    state: &PresentationState,
+) {
     // Ink strokes
     if !state.ink_strokes.is_empty() {
         crate::widgets::draw_ink_strokes(ui, image_rect, &state.ink_strokes);
@@ -34,7 +39,7 @@ pub fn draw_overlays(ui: &mut egui::Ui, image_rect: egui::Rect, state: &Presenta
 
     // Blackout
     if state.blacked_out {
-        ui.painter().rect_filled(image_rect, 0.0, egui::Color32::BLACK);
+        ui.painter().rect_filled(viewport_rect, 0.0, egui::Color32::BLACK);
     }
 }
 
