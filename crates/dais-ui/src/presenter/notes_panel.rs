@@ -9,9 +9,7 @@ pub struct NotesPanel {
 
 impl NotesPanel {
     pub fn new() -> Self {
-        Self {
-            cache: egui_commonmark::CommonMarkCache::default(),
-        }
+        Self { cache: egui_commonmark::CommonMarkCache::default() }
     }
 
     /// Render the notes panel in the given area.
@@ -29,8 +27,9 @@ impl NotesPanel {
 
         let mut child_ui = ui.new_child(egui::UiBuilder::new().max_rect(area));
 
-        child_ui.allocate_ui_at_rect(
-            egui::Rect::from_min_size(area.min, egui::vec2(area.width(), 20.0)),
+        child_ui.allocate_new_ui(
+            egui::UiBuilder::new()
+                .max_rect(egui::Rect::from_min_size(area.min, egui::vec2(area.width(), 20.0))),
             |ui| {
                 ui.colored_label(egui::Color32::GRAY, "Notes");
             },
@@ -38,30 +37,20 @@ impl NotesPanel {
 
         let content_area = egui::Rect::from_min_size(
             area.min + egui::vec2(8.0, 24.0),
-            egui::vec2(
-                (area.width() - 16.0).max(1.0),
-                (area.height() - 28.0).max(1.0),
-            ),
+            egui::vec2((area.width() - 16.0).max(1.0), (area.height() - 28.0).max(1.0)),
         );
 
-        child_ui.allocate_ui_at_rect(content_area, |ui| {
+        child_ui.allocate_new_ui(egui::UiBuilder::new().max_rect(content_area), |ui| {
             // Apply font size override
-            ui.style_mut().override_font_id =
-                Some(egui::FontId::proportional(font_size));
+            ui.style_mut().override_font_id = Some(egui::FontId::proportional(font_size));
 
-            egui::ScrollArea::vertical()
-                .max_height(content_area.height())
-                .show(ui, |ui| {
-                    if let Some(text) = notes {
-                        egui_commonmark::CommonMarkViewer::new()
-                            .show(ui, &mut self.cache, text);
-                    } else {
-                        ui.colored_label(
-                            egui::Color32::from_gray(80),
-                            "No notes for this slide",
-                        );
-                    }
-                });
+            egui::ScrollArea::vertical().max_height(content_area.height()).show(ui, |ui| {
+                if let Some(text) = notes {
+                    egui_commonmark::CommonMarkViewer::new().show(ui, &mut self.cache, text);
+                } else {
+                    ui.colored_label(egui::Color32::from_gray(80), "No notes for this slide");
+                }
+            });
         });
     }
 }

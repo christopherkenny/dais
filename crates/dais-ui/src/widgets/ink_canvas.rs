@@ -25,11 +25,8 @@ pub fn draw_ink_strokes(ui: &mut Ui, image_rect: Rect, strokes: &[InkStroke]) {
         let color = rgba_to_color32(stroke.color);
         let egui_stroke = Stroke::new(stroke.width, color);
 
-        let points: Vec<egui::Pos2> = stroke
-            .points
-            .iter()
-            .map(|&(x, y)| denormalize(image_rect, x, y))
-            .collect();
+        let points: Vec<egui::Pos2> =
+            stroke.points.iter().map(|&(x, y)| denormalize(image_rect, x, y)).collect();
 
         for window in points.windows(2) {
             painter.line_segment([window[0], window[1]], egui_stroke);
@@ -39,10 +36,7 @@ pub fn draw_ink_strokes(ui: &mut Ui, image_rect: Rect, strokes: &[InkStroke]) {
 
 /// Convert normalized (0..1) coordinates to screen-space position within the image rect.
 fn denormalize(rect: Rect, nx: f32, ny: f32) -> egui::Pos2 {
-    egui::pos2(
-        rect.min.x + nx * rect.width(),
-        rect.min.y + ny * rect.height(),
-    )
+    egui::pos2(rect.min.x + nx * rect.width(), rect.min.y + ny * rect.height())
 }
 
 /// Convert an RGBA byte array to egui `Color32`.

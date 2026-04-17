@@ -55,29 +55,24 @@ impl PresenterConsole {
         cache: &mut PageCache,
         sender: &CommandSender,
     ) {
-        let state = shared_state.read().map(|s| s.clone()).unwrap_or_else(|e| {
-            tracing::error!("Failed to read presentation state: {e}");
-            PresentationState::new(0, Vec::new())
-        });
+        let state = shared_state.read().map_or_else(
+            |e| {
+                tracing::error!("Failed to read presentation state: {e}");
+                PresentationState::new(0, Vec::new())
+            },
+            |s| s.clone(),
+        );
 
         // Process input
-        self.input.handle_input(
-            ctx,
-            state.overview_visible,
-            state.ink_active,
-            state.laser_active,
-        );
+        self.input.handle_input(ctx, state.overview_visible, state.ink_active, state.laser_active);
 
         // Render current page texture
         let current_page = state.current_page;
         self.render_page_texture(ctx, doc, cache, current_page, &state, true);
 
         // Render next page texture
-        let next_page = if current_page + 1 < state.total_pages {
-            Some(current_page + 1)
-        } else {
-            None
-        };
+        let next_page =
+            if current_page + 1 < state.total_pages { Some(current_page + 1) } else { None };
         if let Some(np) = next_page {
             self.render_page_texture(ctx, doc, cache, np, &state, false);
         }
@@ -89,8 +84,7 @@ impl PresenterConsole {
                 let layout = PresenterLayout::compute(available);
 
                 // Current slide
-                let (response, image_rect) =
-                    self.current_slide.show(ui, layout.current_slide);
+                let (response, image_rect) = self.current_slide.show(ui, layout.current_slide);
 
                 // Handle mouse on current slide
                 self.input.handle_slide_mouse(
@@ -103,26 +97,18 @@ impl PresenterConsole {
 
                 // Draw ink strokes on presenter view
                 if !state.ink_strokes.is_empty() {
-                    crate::widgets::draw_ink_strokes(
-                        ui,
-                        image_rect,
-                        &state.ink_strokes,
-                    );
+                    crate::widgets::draw_ink_strokes(ui, image_rect, &state.ink_strokes);
                 }
 
                 // Draw laser dot on presenter view
-                if state.laser_active {
-                    if let Some((px, py)) = state.pointer_position {
-                        let pos = egui::pos2(
-                            image_rect.min.x + px * image_rect.width(),
-                            image_rect.min.y + py * image_rect.height(),
-                        );
-                        ui.painter().circle_filled(
-                            pos,
-                            6.0,
-                            egui::Color32::RED,
-                        );
-                    }
+                if state.laser_active
+                    && let Some((px, py)) = state.pointer_position
+                {
+                    let pos = egui::pos2(
+                        image_rect.min.x + px * image_rect.width(),
+                        image_rect.min.y + py * image_rect.height(),
+                    );
+                    ui.painter().circle_filled(pos, 6.0, egui::Color32::RED);
                 }
 
                 // Next preview
@@ -186,96 +172,86 @@ impl PresenterConsole {
         }
     }
 
-    fn show_status_bar(
-        &self,
-        ui: &mut egui::Ui,
-        area: egui::Rect,
-        state: &PresentationState,
-    ) {
+    fn show_status_bar(&self, ui: &mut egui::Ui, area: egui::Rect, state: &PresentationState) {
         let mut child_ui = ui.new_child(egui::UiBuilder::new().max_rect(area));
 
         // Background
-        child_ui
-            .painter()
-            .rect_filled(area, 0.0, egui::Color32::from_gray(20));
+        child_ui.painter().rect_filled(area, 0.0, egui::Color32::from_gray(20));
 
-        child_ui.allocate_ui_at_rect(
-            area.shrink(4.0),
-            |ui| {
-                ui.horizontal(|ui| {
-                    // Slide position
-                    let slide_text = format!(
-                        "Slide {}/{}",
-                        state.current_logical_slide + 1,
-                        state.total_logical_slides,
-                    );
+        child_ui.allocate_new_ui(egui::UiBuilder::new().max_rect(area.shrink(4.0)), |ui| {
+            ui.horizontal(|ui| {
+                // Slide position
+                let slide_text = format!(
+                    "Slide {}/{}",
+                    state.current_logical_slide + 1,
+                    state.total_logical_slides,
+                );
 
-                    let group = state.slide_groups.get(state.current_logical_slide);
-                    let overlay_text = if let Some(g) = group {
-                        if g.pages.len() > 1 {
-                            format!(
-                                " (step {}/{})",
-                                state.current_overlay_within_group + 1,
-                                g.pages.len()
-                            )
-                        } else {
-                            String::new()
-                        }
+                let group = state.slide_groups.get(state.current_logical_slide);
+                let overlay_text = if let Some(g) = group {
+                    if g.pages.len() > 1 {
+                        format!(
+                            " (step {}/{})",
+                            state.current_overlay_within_group + 1,
+                            g.pages.len()
+                        )
                     } else {
                         String::new()
-                    };
+                    }
+                } else {
+                    String::new()
+                };
 
-                    ui.label(
-                        egui::RichText::new(format!("{slide_text}{overlay_text}"))
-                            .size(14.0)
-                            .color(egui::Color32::WHITE),
+                ui.label(
+                    egui::RichText::new(format!("{slide_text}{overlay_text}"))
+                        .size(14.0)
+                        .color(egui::Color32::WHITE),
+                );
+
+                ui.separator();
+
+                // Timer
+                timer::show_timer(ui, &state.timer);
+
+                ui.separator();
+
+                // Mode indicators
+                let mut indicators = Vec::new();
+                if state.frozen {
+                    indicators.push(("[F]rozen", egui::Color32::LIGHT_BLUE));
+                }
+                if state.blacked_out {
+                    indicators.push(("[B]lack", egui::Color32::YELLOW));
+                }
+                if state.screen_share_mode {
+                    indicators.push(("[S]creen-share", egui::Color32::LIGHT_GREEN));
+                }
+                if state.laser_active {
+                    indicators.push(("[L]aser", egui::Color32::RED));
+                }
+                if state.ink_active {
+                    indicators.push(("[D]raw", egui::Color32::from_rgb(255, 165, 0)));
+                }
+                if state.spotlight_active {
+                    indicators.push(("Spotlight", egui::Color32::LIGHT_YELLOW));
+                }
+                if state.zoom_active {
+                    indicators.push(("[Z]oom", egui::Color32::LIGHT_GREEN));
+                }
+
+                for (text, color) in indicators {
+                    ui.colored_label(color, egui::RichText::new(text).size(12.0));
+                }
+
+                // Jump mode indicator
+                if self.input.mode() == crate::input::InputMode::JumpToSlide {
+                    let buf = self.input.jump_buffer();
+                    ui.colored_label(
+                        egui::Color32::YELLOW,
+                        egui::RichText::new(format!("Go to: {buf}_")).size(14.0),
                     );
-
-                    ui.separator();
-
-                    // Timer
-                    timer::show_timer(ui, &state.timer);
-
-                    ui.separator();
-
-                    // Mode indicators
-                    let mut indicators = Vec::new();
-                    if state.frozen {
-                        indicators.push(("[F]rozen", egui::Color32::LIGHT_BLUE));
-                    }
-                    if state.blacked_out {
-                        indicators.push(("[B]lack", egui::Color32::YELLOW));
-                    }
-                    if state.screen_share_mode {
-                        indicators.push(("[S]creen-share", egui::Color32::LIGHT_GREEN));
-                    }
-                    if state.laser_active {
-                        indicators.push(("[L]aser", egui::Color32::RED));
-                    }
-                    if state.ink_active {
-                        indicators.push(("[D]raw", egui::Color32::from_rgb(255, 165, 0)));
-                    }
-                    if state.spotlight_active {
-                        indicators.push(("Spotlight", egui::Color32::LIGHT_YELLOW));
-                    }
-                    if state.zoom_active {
-                        indicators.push(("[Z]oom", egui::Color32::LIGHT_GREEN));
-                    }
-
-                    for (text, color) in indicators {
-                        ui.colored_label(color, egui::RichText::new(text).size(12.0));
-                    }
-
-                    // Jump mode indicator
-                    if self.input.mode() == crate::input::InputMode::JumpToSlide {
-                        let buf = self.input.jump_buffer();
-                        ui.colored_label(
-                            egui::Color32::YELLOW,
-                            egui::RichText::new(format!("Go to: {buf}_")).size(14.0),
-                        );
-                    }
-                });
-            },
-        );
+                }
+            });
+        });
     }
 }

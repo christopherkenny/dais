@@ -15,10 +15,7 @@ pub struct CurrentSlidePanel {
 
 impl CurrentSlidePanel {
     pub fn new() -> Self {
-        Self {
-            thumbnail: SlideThumbnail::new(),
-            last_image_rect: egui::Rect::NOTHING,
-        }
+        Self { thumbnail: SlideThumbnail::new(), last_image_rect: egui::Rect::NOTHING }
     }
 
     /// Update the texture data when the page changes.
@@ -28,17 +25,11 @@ impl CurrentSlidePanel {
 
     /// Render the current slide in the given area.
     /// Returns the response and the image rect for mouse handling.
-    pub fn show(
-        &mut self,
-        ui: &mut egui::Ui,
-        area: egui::Rect,
-    ) -> (egui::Response, egui::Rect) {
+    pub fn show(&mut self, ui: &mut egui::Ui, area: egui::Rect) -> (egui::Response, egui::Rect) {
         let mut child_ui = ui.new_child(
             egui::UiBuilder::new()
                 .max_rect(area)
-                .layout(egui::Layout::centered_and_justified(
-                    egui::Direction::TopDown,
-                )),
+                .layout(egui::Layout::centered_and_justified(egui::Direction::TopDown)),
         );
 
         let padding = egui::vec2(8.0, 8.0);

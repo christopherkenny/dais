@@ -12,33 +12,29 @@ pub fn draw_overlays(ui: &mut egui::Ui, image_rect: egui::Rect, state: &Presenta
     }
 
     // Laser pointer
-    if state.laser_active {
-        if let Some((px, py)) = state.pointer_position {
-            draw_laser(ui, image_rect, px, py);
-        }
+    if state.laser_active
+        && let Some((px, py)) = state.pointer_position
+    {
+        draw_laser(ui, image_rect, px, py);
     }
 
     // Spotlight
-    if state.spotlight_active {
-        if let Some((sx, sy)) = state.spotlight_position {
-            draw_spotlight(ui, image_rect, sx, sy);
-        }
+    if state.spotlight_active
+        && let Some((sx, sy)) = state.spotlight_position
+    {
+        draw_spotlight(ui, image_rect, sx, sy);
     }
 
     // Zoom
-    if state.zoom_active {
-        if let Some(ref region) = state.zoom_region {
-            draw_zoom_indicator(ui, image_rect, region.center, region.factor);
-        }
+    if state.zoom_active
+        && let Some(ref region) = state.zoom_region
+    {
+        draw_zoom_indicator(ui, image_rect, region.center, region.factor);
     }
 
     // Blackout
     if state.blacked_out {
-        ui.painter().rect_filled(
-            image_rect,
-            0.0,
-            egui::Color32::BLACK,
-        );
+        ui.painter().rect_filled(image_rect, 0.0, egui::Color32::BLACK);
     }
 }
 
@@ -48,11 +44,7 @@ fn draw_laser(ui: &mut egui::Ui, image_rect: egui::Rect, nx: f32, ny: f32) {
     let painter = ui.painter();
 
     // Outer glow
-    painter.circle_filled(
-        pos,
-        10.0,
-        egui::Color32::from_rgba_unmultiplied(255, 0, 0, 60),
-    );
+    painter.circle_filled(pos, 10.0, egui::Color32::from_rgba_unmultiplied(255, 0, 0, 60));
     // Inner dot
     painter.circle_filled(pos, 5.0, egui::Color32::RED);
 }
@@ -81,10 +73,7 @@ fn draw_spotlight(ui: &mut egui::Ui, image_rect: egui::Rect, nx: f32, ny: f32) {
     // Top band
     if center.y - r > image_rect.min.y {
         painter.rect_filled(
-            egui::Rect::from_min_max(
-                image_rect.min,
-                egui::pos2(image_rect.max.x, center.y - r),
-            ),
+            egui::Rect::from_min_max(image_rect.min, egui::pos2(image_rect.max.x, center.y - r)),
             0.0,
             dim_color,
         );
@@ -92,10 +81,7 @@ fn draw_spotlight(ui: &mut egui::Ui, image_rect: egui::Rect, nx: f32, ny: f32) {
     // Bottom band
     if center.y + r < image_rect.max.y {
         painter.rect_filled(
-            egui::Rect::from_min_max(
-                egui::pos2(image_rect.min.x, center.y + r),
-                image_rect.max,
-            ),
+            egui::Rect::from_min_max(egui::pos2(image_rect.min.x, center.y + r), image_rect.max),
             0.0,
             dim_color,
         );
@@ -134,12 +120,7 @@ fn draw_spotlight(ui: &mut egui::Ui, image_rect: egui::Rect, nx: f32, ny: f32) {
 }
 
 /// Draw a zoom indicator at the given position.
-fn draw_zoom_indicator(
-    ui: &mut egui::Ui,
-    image_rect: egui::Rect,
-    center: (f32, f32),
-    factor: f32,
-) {
+fn draw_zoom_indicator(ui: &mut egui::Ui, image_rect: egui::Rect, center: (f32, f32), factor: f32) {
     let pos = denormalize(image_rect, center.0, center.1);
     let painter = ui.painter();
 
@@ -152,6 +133,7 @@ fn draw_zoom_indicator(
         zoom_rect,
         0.0,
         egui::Stroke::new(2.0, egui::Color32::YELLOW),
+        egui::StrokeKind::Outside,
     );
 
     // Label
@@ -166,8 +148,5 @@ fn draw_zoom_indicator(
 
 /// Convert normalized (0..1) coordinates to screen-space within the image rect.
 fn denormalize(rect: egui::Rect, nx: f32, ny: f32) -> egui::Pos2 {
-    egui::pos2(
-        rect.min.x + nx * rect.width(),
-        rect.min.y + ny * rect.height(),
-    )
+    egui::pos2(rect.min.x + nx * rect.width(), rect.min.y + ny * rect.height())
 }

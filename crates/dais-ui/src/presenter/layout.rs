@@ -38,29 +38,18 @@ impl PresenterLayout {
         let left_w = total_w * LEFT_FRACTION;
         let right_w = total_w - left_w;
 
-        let current_slide = egui::Rect::from_min_size(
-            available.min,
-            egui::vec2(left_w, content_h),
-        );
+        let current_slide = egui::Rect::from_min_size(available.min, egui::vec2(left_w, content_h));
 
         let right_top = available.min + egui::vec2(left_w, 0.0);
         let right_h_half = content_h * 0.5;
 
-        let next_preview = egui::Rect::from_min_size(
-            right_top,
-            egui::vec2(right_w, right_h_half),
-        );
+        let next_preview = egui::Rect::from_min_size(right_top, egui::vec2(right_w, right_h_half));
 
         let notes_panel = egui::Rect::from_min_size(
             right_top + egui::vec2(0.0, right_h_half),
             egui::vec2(right_w, content_h - right_h_half),
         );
 
-        Self {
-            current_slide,
-            next_preview,
-            notes_panel,
-            status_bar,
-        }
+        Self { current_slide, next_preview, notes_panel, status_bar }
     }
 }

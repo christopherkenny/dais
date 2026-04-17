@@ -71,12 +71,11 @@ impl InputHandler {
         }
 
         // Check jump-to-slide timeout
-        if self.mode == InputMode::JumpToSlide {
-            if let Some(start) = self.jump_start {
-                if start.elapsed().as_secs_f64() > JUMP_TIMEOUT_SECS {
-                    self.cancel_jump();
-                }
-            }
+        if self.mode == InputMode::JumpToSlide
+            && let Some(start) = self.jump_start
+            && start.elapsed().as_secs_f64() > JUMP_TIMEOUT_SECS
+        {
+            self.cancel_jump();
         }
 
         self.process_keys(ctx);
@@ -87,13 +86,7 @@ impl InputHandler {
         let events: Vec<egui::Event> = ctx.input(|i| i.events.clone());
 
         for event in &events {
-            if let egui::Event::Key {
-                key,
-                pressed: true,
-                modifiers,
-                ..
-            } = event
-            {
+            if let egui::Event::Key { key, pressed: true, modifiers, .. } = event {
                 self.handle_key(*key, *modifiers);
             }
         }
@@ -109,7 +102,6 @@ impl InputHandler {
             match key {
                 egui::Key::Enter => {
                     if let Ok(page_num) = self.jump_buffer.parse::<usize>() {
-                        // User enters 1-based slide number
                         let index = page_num.saturating_sub(1);
                         let _ = self.sender.send(Command::GoToSlide(index));
                     }
@@ -121,119 +113,33 @@ impl InputHandler {
                     return;
                 }
                 _ => {
-                    // Any non-digit, non-Enter, non-Escape cancels jump mode
                     self.cancel_jump();
-                    // Fall through to normal handling
                 }
             }
         }
 
-        // Look up in keybinding map
         let combo = egui_to_key_combo(key, modifiers);
-        let Some(action) = self.keybindings.lookup(&combo) else {
-            return;
-        };
+        if let Some(action) = self.keybindings.lookup(&combo) {
+            self.dispatch_action(action);
+        }
+    }
 
+    fn dispatch_action(&mut self, action: Action) {
         match action {
             Action::GoToSlide => {
                 self.mode = InputMode::JumpToSlide;
                 self.jump_buffer.clear();
                 self.jump_start = Some(Instant::now());
             }
-            Action::NextSlide => {
-                let _ = self.sender.send(Command::NextSlide);
-            }
-            Action::PreviousSlide => {
-                let _ = self.sender.send(Command::PreviousSlide);
-            }
-            Action::NextOverlay => {
-                let _ = self.sender.send(Command::NextOverlay);
-            }
-            Action::PreviousOverlay => {
-                let _ = self.sender.send(Command::PreviousOverlay);
-            }
-            Action::FirstSlide => {
-                let _ = self.sender.send(Command::FirstSlide);
-            }
-            Action::LastSlide => {
-                let _ = self.sender.send(Command::LastSlide);
-            }
-            Action::ToggleFreeze => {
-                let _ = self.sender.send(Command::ToggleFreeze);
-            }
-            Action::ToggleBlackout => {
-                let _ = self.sender.send(Command::ToggleBlackout);
-            }
-            Action::ToggleLaser => {
-                let _ = self.sender.send(Command::ToggleLaser);
-            }
-            Action::ToggleInk => {
-                let _ = self.sender.send(Command::ToggleInk);
-            }
-            Action::ClearInk => {
-                let _ = self.sender.send(Command::ClearInk);
-            }
-            Action::ToggleSpotlight => {
-                let _ = self.sender.send(Command::ToggleSpotlight);
-            }
-            Action::ToggleZoom => {
-                let _ = self.sender.send(Command::ToggleZoom);
-            }
-            Action::ToggleOverview => {
-                let _ = self.sender.send(Command::ToggleSlideOverview);
-            }
-            Action::ToggleNotes => {
-                let _ = self.sender.send(Command::ToggleNotesPanel);
-            }
             Action::StartPauseTimer => {
-                // Toggle: if the timer is running we pause it, otherwise start.
-                // We don't know state here, so we send both and let the engine decide.
-                // Actually, the engine handles Start only if not running and Pause
-                // unconditionally. We'll send StartTimer — the engine will start or
-                // ignore. We need a toggle semantic. Let's send StartTimer to start
-                // and PauseTimer to pause. Since we don't have state, we'll emit both
-                // and let the engine handle the logic.
-                // Better approach: always send StartTimer; if already running the
-                // engine ignores it. But then we can't pause. The cleanest solution
-                // is to read the timer.running from the shared state before input
-                // handling — but we don't have that reference here.
-                //
-                // For v1: send StartTimer. The user presses again — we send StartTimer
-                // but engine ignores (already running). That's wrong for pause.
-                //
-                // Resolution: send PauseTimer when we *think* timer is running.
-                // We'll accept a small simplification: alternate Start/Pause each press.
-                // Actually, we'll expose a combined toggle: send StartTimer first time,
-                // PauseTimer next time. Track a local bit.
-                //
-                // Simplest correct: use a dedicated ToggleTimer concept. But Command
-                // doesn't have that. Let's just send StartTimer — the caller (app.rs)
-                // can wrap this. For now, we'll peek at the state to decide.
-                //
-                // Given the architecture, the simplest is: send StartTimer. If the
-                // engine is already running, the engine will ignore it. We need to also
-                // handle pause. Let's just send both commands; the engine will act on
-                // the appropriate one.
+                // Send both; the engine will act on the appropriate one.
                 let _ = self.sender.send(Command::StartTimer);
                 let _ = self.sender.send(Command::PauseTimer);
             }
-            Action::ResetTimer => {
-                let _ = self.sender.send(Command::ResetTimer);
-            }
-            Action::IncrementNotesFont => {
-                let _ = self.sender.send(Command::IncrementNotesFontSize);
-            }
-            Action::DecrementNotesFont => {
-                let _ = self.sender.send(Command::DecrementNotesFontSize);
-            }
-            Action::ToggleScreenShare => {
-                let _ = self.sender.send(Command::ToggleScreenShareMode);
-            }
-            Action::Quit => {
-                let _ = self.sender.send(Command::Quit);
-            }
-            Action::SaveSidecar => {
-                let _ = self.sender.send(Command::SaveSidecar);
+            _ => {
+                if let Some(cmd) = action_to_command(action) {
+                    let _ = self.sender.send(cmd);
+                }
             }
         }
     }
@@ -260,12 +166,9 @@ impl InputHandler {
             let norm = normalize_to_rect(pos, image_rect);
             if (0.0..=1.0).contains(&norm.0) && (0.0..=1.0).contains(&norm.1) {
                 if laser_active || spotlight_active {
-                    let _ =
-                        self.sender.send(Command::SetPointerPosition(norm.0, norm.1));
+                    let _ = self.sender.send(Command::SetPointerPosition(norm.0, norm.1));
                     if spotlight_active {
-                        let _ = self
-                            .sender
-                            .send(Command::SetSpotlightPosition(norm.0, norm.1));
+                        let _ = self.sender.send(Command::SetSpotlightPosition(norm.0, norm.1));
                     }
                 }
 
@@ -362,5 +265,34 @@ fn key_to_digit(key: egui::Key) -> Option<char> {
         egui::Key::Num8 => Some('8'),
         egui::Key::Num9 => Some('9'),
         _ => None,
+    }
+}
+
+/// Map an `Action` to a `Command` for simple 1:1 mappings.
+/// Returns `None` for actions that need special handling (`GoToSlide`, `StartPauseTimer`).
+fn action_to_command(action: Action) -> Option<Command> {
+    match action {
+        Action::NextSlide => Some(Command::NextSlide),
+        Action::PreviousSlide => Some(Command::PreviousSlide),
+        Action::NextOverlay => Some(Command::NextOverlay),
+        Action::PreviousOverlay => Some(Command::PreviousOverlay),
+        Action::FirstSlide => Some(Command::FirstSlide),
+        Action::LastSlide => Some(Command::LastSlide),
+        Action::ToggleFreeze => Some(Command::ToggleFreeze),
+        Action::ToggleBlackout => Some(Command::ToggleBlackout),
+        Action::ToggleLaser => Some(Command::ToggleLaser),
+        Action::ToggleInk => Some(Command::ToggleInk),
+        Action::ClearInk => Some(Command::ClearInk),
+        Action::ToggleSpotlight => Some(Command::ToggleSpotlight),
+        Action::ToggleZoom => Some(Command::ToggleZoom),
+        Action::ToggleOverview => Some(Command::ToggleSlideOverview),
+        Action::ToggleNotes => Some(Command::ToggleNotesPanel),
+        Action::ResetTimer => Some(Command::ResetTimer),
+        Action::IncrementNotesFont => Some(Command::IncrementNotesFontSize),
+        Action::DecrementNotesFont => Some(Command::DecrementNotesFontSize),
+        Action::ToggleScreenShare => Some(Command::ToggleScreenShareMode),
+        Action::Quit => Some(Command::Quit),
+        Action::SaveSidecar => Some(Command::SaveSidecar),
+        Action::GoToSlide | Action::StartPauseTimer => None,
     }
 }

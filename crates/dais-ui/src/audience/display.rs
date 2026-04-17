@@ -14,10 +14,7 @@ pub struct AudienceDisplay {
 
 impl AudienceDisplay {
     pub fn new() -> Self {
-        Self {
-            thumbnail: SlideThumbnail::new(),
-            last_image_rect: egui::Rect::NOTHING,
-        }
+        Self { thumbnail: SlideThumbnail::new(), last_image_rect: egui::Rect::NOTHING }
     }
 
     /// Update with the audience page's rendered data.

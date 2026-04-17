@@ -33,7 +33,7 @@ impl DaisApp {
     /// Create a new Dais application.
     ///
     /// # Arguments
-    /// * `engine` - The presentation engine (already created with CommandBus receiver)
+    /// * `engine` - The presentation engine (already created with `CommandBus` receiver)
     /// * `shared_state` - Shared state handle from the engine
     /// * `doc` - The document source (PDF)
     /// * `sender` - Command sender for dispatching commands
@@ -53,16 +53,7 @@ impl DaisApp {
         let audience = AudienceWindow::new();
         let cache = PageCache::new(32);
 
-        Self {
-            engine,
-            shared_state,
-            doc,
-            cache,
-            presenter,
-            audience,
-            sender,
-            screen_share_mode,
-        }
+        Self { engine, shared_state, doc, cache, presenter, audience, sender, screen_share_mode }
     }
 }
 
@@ -79,11 +70,8 @@ impl eframe::App for DaisApp {
         ctx.request_repaint();
 
         // Read current state for screen_share_mode check
-        let is_screen_share = self
-            .shared_state
-            .read()
-            .map(|s| s.screen_share_mode)
-            .unwrap_or(self.screen_share_mode);
+        let is_screen_share =
+            self.shared_state.read().map_or(self.screen_share_mode, |s| s.screen_share_mode);
 
         // Render the presenter console in the main viewport
         self.presenter.show(
@@ -101,9 +89,7 @@ impl eframe::App for DaisApp {
                 .with_title("Dais — Audience")
                 .with_inner_size(egui::vec2(1280.0, 720.0))
         } else {
-            egui::ViewportBuilder::default()
-                .with_title("Dais — Audience")
-                .with_fullscreen(true)
+            egui::ViewportBuilder::default().with_title("Dais — Audience").with_fullscreen(true)
         };
 
         let shared = self.shared_state.clone();
@@ -112,17 +98,12 @@ impl eframe::App for DaisApp {
         // We need to pass mutable cache, but show_viewport_immediate takes an
         // FnOnce. We'll render the audience page into the cache beforehand.
         {
-            let audience_page = self
-                .shared_state
-                .read()
-                .map(|s| s.audience_page())
-                .unwrap_or(0);
-            let render_size =
-                dais_document::page::RenderSize { width: 1920, height: 1080 };
-            if self.cache.get(audience_page, render_size).is_none() {
-                if let Ok(rendered) = doc.render_page(audience_page, render_size) {
-                    self.cache.insert(audience_page, render_size, rendered);
-                }
+            let audience_page = self.shared_state.read().map_or(0, |s| s.audience_page());
+            let render_size = dais_document::page::RenderSize { width: 1920, height: 1080 };
+            if self.cache.get(audience_page, render_size).is_none()
+                && let Ok(rendered) = doc.render_page(audience_page, render_size)
+            {
+                self.cache.insert(audience_page, render_size, rendered);
             }
         }
 

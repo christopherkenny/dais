@@ -12,9 +12,7 @@ pub struct NextPreviewPanel {
 
 impl NextPreviewPanel {
     pub fn new() -> Self {
-        Self {
-            thumbnail: SlideThumbnail::new(),
-        }
+        Self { thumbnail: SlideThumbnail::new() }
     }
 
     /// Update with the next page's rendered data.
@@ -27,14 +25,13 @@ impl NextPreviewPanel {
         let mut child_ui = ui.new_child(
             egui::UiBuilder::new()
                 .max_rect(area)
-                .layout(egui::Layout::centered_and_justified(
-                    egui::Direction::TopDown,
-                )),
+                .layout(egui::Layout::centered_and_justified(egui::Direction::TopDown)),
         );
 
         // Header
-        child_ui.allocate_ui_at_rect(
-            egui::Rect::from_min_size(area.min, egui::vec2(area.width(), 20.0)),
+        child_ui.allocate_new_ui(
+            egui::UiBuilder::new()
+                .max_rect(egui::Rect::from_min_size(area.min, egui::vec2(area.width(), 20.0))),
             |ui| {
                 ui.colored_label(egui::Color32::GRAY, "Next");
             },
@@ -54,9 +51,7 @@ impl NextPreviewPanel {
         let mut inner = child_ui.new_child(
             egui::UiBuilder::new()
                 .max_rect(content_area)
-                .layout(egui::Layout::centered_and_justified(
-                    egui::Direction::TopDown,
-                )),
+                .layout(egui::Layout::centered_and_justified(egui::Direction::TopDown)),
         );
         self.thumbnail.show(&mut inner, available);
     }
@@ -66,9 +61,7 @@ impl NextPreviewPanel {
         let mut child_ui = ui.new_child(
             egui::UiBuilder::new()
                 .max_rect(area)
-                .layout(egui::Layout::centered_and_justified(
-                    egui::Direction::TopDown,
-                )),
+                .layout(egui::Layout::centered_and_justified(egui::Direction::TopDown)),
         );
         child_ui.colored_label(egui::Color32::from_gray(100), "End of presentation");
     }

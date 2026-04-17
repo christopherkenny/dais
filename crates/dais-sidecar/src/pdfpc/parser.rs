@@ -174,14 +174,21 @@ Note here
     fn round_trip_write_and_read() {
         use crate::format::SidecarFormat;
         let format = PdfpcFormat;
-        let mut original = PresentationMetadata::default();
-        original.title = Some("test.pdf".to_string());
-        original.last_minutes = Some(30);
-        original.end_slide = Some(9);
-        original.groups.push(crate::types::SlideGroupMeta { start_page: 0, end_page: 2 });
-        original.groups.push(crate::types::SlideGroupMeta { start_page: 3, end_page: 5 });
-        original.notes.insert(0, "First slide".to_string());
-        original.notes.insert(3, "Fourth slide".to_string());
+        let original = PresentationMetadata {
+            title: Some("test.pdf".to_string()),
+            last_minutes: Some(30),
+            end_slide: Some(9),
+            groups: vec![
+                crate::types::SlideGroupMeta { start_page: 0, end_page: 2 },
+                crate::types::SlideGroupMeta { start_page: 3, end_page: 5 },
+            ],
+            notes: {
+                let mut n = std::collections::HashMap::new();
+                n.insert(0, "First slide".to_string());
+                n.insert(3, "Fourth slide".to_string());
+                n
+            },
+        };
 
         let dir = std::env::temp_dir().join("dais_test_roundtrip");
         let _ = std::fs::create_dir_all(&dir);
