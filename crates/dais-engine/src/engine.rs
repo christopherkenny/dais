@@ -17,6 +17,7 @@ pub struct PresentationEngine {
     state: PresentationState,
     shared_state: Arc<RwLock<PresentationState>>,
     timer_start: Option<Instant>,
+    slide_start: Instant,
     /// Ink color from config (RGBA).
     ink_color: [u8; 4],
     /// Ink width from config.
@@ -37,12 +38,21 @@ impl PresentationEngine {
         let mut state = PresentationState::new(total_pages, slide_groups);
 
         // Apply config to initial state
+        let duration = match (config.timer.mode, config.timer.duration_minutes) {
+            (dais_core::state::TimerMode::Elapsed, None) => None,
+            (_, Some(minutes)) => Some(std::time::Duration::from_secs(u64::from(minutes) * 60)),
+            (dais_core::state::TimerMode::Countdown, None) => {
+                Some(std::time::Duration::from_secs(20 * 60))
+            }
+        };
+        let warning_threshold = match (duration, config.timer.warning_minutes) {
+            (Some(_), Some(minutes)) => Some(std::time::Duration::from_secs(u64::from(minutes) * 60)),
+            _ => None,
+        };
         state.timer = TimerState {
             mode: config.timer.mode,
-            duration: std::time::Duration::from_secs(u64::from(config.timer.duration_minutes) * 60),
-            warning_threshold: std::time::Duration::from_secs(
-                u64::from(config.timer.warning_minutes) * 60,
-            ),
+            duration,
+            warning_threshold,
             ..TimerState::default()
         };
         state.notes_font_size = config.notes.font_size;
@@ -59,6 +69,7 @@ impl PresentationEngine {
                 state,
                 shared_state: Arc::clone(&shared_state),
                 timer_start: None,
+                slide_start: Instant::now(),
                 ink_color,
                 ink_width,
             },
@@ -70,8 +81,8 @@ impl PresentationEngine {
     ///
     /// Returns `true` if the application should quit.
     pub fn tick(&mut self) -> bool {
-        // Update timer
-        self.update_timer();
+        // Update timers
+        self.update_timers();
 
         // Drain and process all pending commands
         let commands = self.receiver.drain();
@@ -85,8 +96,8 @@ impl PresentationEngine {
             self.process_command(cmd);
         }
 
-        // Timer always changes state when running
-        if self.state.timer.running {
+        // Timer state changes continuously while the main or per-slide timer is active.
+        if self.state.timer.running || self.state.slide_elapsed > std::time::Duration::ZERO {
             state_changed = true;
         }
 
@@ -103,7 +114,16 @@ impl PresentationEngine {
         &self.state
     }
 
-    fn update_timer(&mut self) {
+    fn update_timers(&mut self) {
+        let current = self.state.current_logical_slide;
+        let elapsed = self.slide_start.elapsed();
+        if let Some(total) = self.state.slide_elapsed_by_logical.get_mut(current) {
+            *total = elapsed;
+            self.state.slide_elapsed = *total;
+        } else {
+            self.state.slide_elapsed = elapsed;
+        }
+
         if self.state.timer.running
             && let Some(start) = self.timer_start
         {
@@ -381,6 +401,16 @@ impl PresentationEngine {
         self.state.current_logical_slide = group_index;
         self.state.current_overlay_within_group = 0;
         self.state.current_page = self.state.slide_groups[group_index].pages[0];
+        let accumulated = self
+            .state
+            .slide_elapsed_by_logical
+            .get(group_index)
+            .copied()
+            .unwrap_or(std::time::Duration::ZERO);
+        self.slide_start = Instant::now()
+            .checked_sub(accumulated)
+            .unwrap_or_else(Instant::now);
+        self.state.slide_elapsed = accumulated;
         self.update_notes();
         // Clear ink on navigation
         self.state.ink_strokes.clear();
@@ -912,6 +942,32 @@ mod tests {
         sender.send(Command::ToggleTimer).unwrap();
         engine.tick();
         assert!(!engine.state().timer.running, "two toggles should cancel out");
+    }
+
+    #[test]
+    fn slide_timer_accumulates_when_returning_to_slide() {
+        let (mut engine, _, sender) = make_engine(5);
+
+        std::thread::sleep(std::time::Duration::from_millis(15));
+        engine.tick();
+        let slide_0_elapsed = engine.state().slide_elapsed;
+        assert!(slide_0_elapsed > std::time::Duration::ZERO);
+
+        sender.send(Command::NextSlide).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().current_logical_slide, 1);
+        assert!(
+            engine.state().slide_elapsed <= std::time::Duration::from_millis(5),
+            "new slide should start near zero"
+        );
+
+        sender.send(Command::PreviousSlide).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().current_logical_slide, 0);
+        assert!(
+            engine.state().slide_elapsed >= slide_0_elapsed,
+            "returning to a slide should restore accumulated time"
+        );
     }
 
     // ---- UI panels ----

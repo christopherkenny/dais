@@ -68,11 +68,17 @@ fn resolve_dual_mode(
     monitors: &[MonitorInfo],
     monitor_mgr: &dyn MonitorManager,
 ) -> DisplayMode {
-    // If a specific audience monitor name is configured, try to match it.
+    // If a specific audience monitor selector is configured, try to match it.
+    // This accepts a full monitor name/id or a 1-based ordinal like "2".
     let audience_name = &config.display.audience_monitor;
     if audience_name != "auto" && !audience_name.is_empty() {
-        if let Some(mon) = monitor_mgr.find_by_name(audience_name) {
-            tracing::info!("Using configured audience monitor: {}", mon.name);
+        if let Some(mon) = monitor_mgr.find_by_selector(audience_name) {
+            tracing::info!(
+                "Using configured audience monitor '{}' -> {} '{}'",
+                audience_name,
+                mon.id,
+                mon.name
+            );
             return DisplayMode::Dual { audience_monitor: mon };
         }
         // Configured name doesn't match — warn and fall back
@@ -243,6 +249,19 @@ mod tests {
         let mgr = dual_monitors();
         let mode = determine_display_mode(hints, &config, &mgr);
         assert!(matches!(mode, DisplayMode::Dual { .. }));
+    }
+
+    #[test]
+    fn configured_monitor_numeric_selector_matches() {
+        let hints = DisplayHints { force_single: false, force_screen_share: false };
+        let mut config = Config::default();
+        config.display.audience_monitor = "2".to_string();
+        let mgr = dual_monitors();
+        let mode = determine_display_mode(hints, &config, &mgr);
+        assert!(matches!(mode, DisplayMode::Dual { .. }));
+        if let DisplayMode::Dual { audience_monitor } = mode {
+            assert_eq!(audience_monitor.name, "DELL U2718Q");
+        }
     }
 
     #[test]

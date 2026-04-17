@@ -79,7 +79,12 @@ The binary will be at `target/release/dais` (or `dais.exe` on Windows).
 - **macOS:** `~/Library/Application Support/dais/config.toml`
 - **Linux:** `~/.config/dais/config.toml`
 
+Dais also reads a project-local `dais.toml` next to the PDF you open, and `--config <path>`
+can override both.
+
 See [docs/configuration.md](docs/configuration.md) for the full reference.
+
+For display assignment, `audience_monitor` can be a monitor name or a simple display number like `"2"`.
 
 ## Keybindings
 

@@ -56,6 +56,10 @@ pub struct PresentationState {
     // -- Timer --
     /// Timer state.
     pub timer: TimerState,
+    /// Total time spent on the current logical slide during this session.
+    pub slide_elapsed: Duration,
+    /// Accumulated time spent on each logical slide during this session.
+    pub slide_elapsed_by_logical: Vec<Duration>,
 
     // -- UI --
     /// Whether the slide overview grid is visible.
@@ -97,6 +101,8 @@ impl PresentationState {
             zoom_active: false,
             zoom_region: None,
             timer: TimerState::default(),
+            slide_elapsed: Duration::ZERO,
+            slide_elapsed_by_logical: vec![Duration::ZERO; total_logical_slides],
             overview_visible: false,
             notes_visible: true,
             notes_font_size: 16.0,
@@ -138,14 +144,14 @@ pub struct ZoomRegion {
 pub struct TimerState {
     /// Timer mode.
     pub mode: TimerMode,
-    /// Configured total duration.
-    pub duration: Duration,
+    /// Configured total duration, if any.
+    pub duration: Option<Duration>,
     /// Time elapsed since the timer started.
     pub elapsed: Duration,
     /// Whether the timer is currently running.
     pub running: bool,
     /// Threshold for the warning phase.
-    pub warning_threshold: Duration,
+    pub warning_threshold: Option<Duration>,
 }
 
 /// Timer counting mode.
@@ -172,9 +178,13 @@ pub enum TimerPhase {
 impl TimerState {
     /// Compute the current timer phase.
     pub fn phase(&self) -> TimerPhase {
-        if self.elapsed >= self.duration {
+        let Some(duration) = self.duration else {
+            return TimerPhase::Normal;
+        };
+
+        if self.elapsed >= duration {
             TimerPhase::Overrun
-        } else if self.elapsed + self.warning_threshold >= self.duration {
+        } else if self.warning_threshold.is_some_and(|warning| self.elapsed + warning >= duration) {
             TimerPhase::Warning
         } else {
             TimerPhase::Normal
@@ -186,7 +196,9 @@ impl TimerState {
     /// For elapsed mode, returns time elapsed.
     pub fn display_time(&self) -> Duration {
         match self.mode {
-            TimerMode::Countdown => self.duration.saturating_sub(self.elapsed),
+            TimerMode::Countdown => {
+                self.duration.map_or(self.elapsed, |duration| duration.saturating_sub(self.elapsed))
+            }
             TimerMode::Elapsed => self.elapsed,
         }
     }
@@ -195,11 +207,11 @@ impl TimerState {
 impl Default for TimerState {
     fn default() -> Self {
         Self {
-            mode: TimerMode::Countdown,
-            duration: Duration::from_mins(20),
+            mode: TimerMode::Elapsed,
+            duration: None,
             elapsed: Duration::ZERO,
             running: false,
-            warning_threshold: Duration::from_mins(5),
+            warning_threshold: None,
         }
     }
 }

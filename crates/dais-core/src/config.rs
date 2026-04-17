@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
@@ -18,6 +18,18 @@ pub struct Config {
     pub keybindings: HashMap<String, Vec<String>>,
 }
 
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(default)]
+struct PartialConfig {
+    display: Option<PartialDisplayConfig>,
+    timer: Option<PartialTimerConfig>,
+    pointer: Option<PartialPointerConfig>,
+    spotlight: Option<PartialSpotlightConfig>,
+    ink: Option<PartialInkConfig>,
+    notes: Option<PartialNotesConfig>,
+    keybindings: Option<HashMap<String, Vec<String>>>,
+}
+
 /// Display mode and monitor assignment.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -30,18 +42,35 @@ pub struct DisplayConfig {
     pub presenter_monitor: String,
 }
 
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(default)]
+struct PartialDisplayConfig {
+    mode: Option<String>,
+    audience_monitor: Option<String>,
+    presenter_monitor: Option<String>,
+}
+
 /// Timer configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct TimerConfig {
     /// "countdown" or "elapsed".
     pub mode: TimerMode,
-    /// Timer duration in minutes.
-    pub duration_minutes: u32,
+    /// Timer duration in minutes. If omitted in elapsed mode, no limit is shown.
+    pub duration_minutes: Option<u32>,
     /// Minutes remaining when warning color activates.
-    pub warning_minutes: u32,
+    pub warning_minutes: Option<u32>,
     /// Whether to show red when past duration.
     pub overrun_color: bool,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(default)]
+struct PartialTimerConfig {
+    mode: Option<TimerMode>,
+    duration_minutes: Option<Option<u32>>,
+    warning_minutes: Option<Option<u32>>,
+    overrun_color: Option<bool>,
 }
 
 /// Laser/mouse pointer configuration.
@@ -56,6 +85,14 @@ pub struct PointerConfig {
     pub style: String,
 }
 
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(default)]
+struct PartialPointerConfig {
+    color: Option<String>,
+    size: Option<f32>,
+    style: Option<String>,
+}
+
 /// Spotlight configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -64,6 +101,13 @@ pub struct SpotlightConfig {
     pub radius: f32,
     /// Opacity of the dimmed area (0.0–1.0).
     pub dim_opacity: f32,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(default)]
+struct PartialSpotlightConfig {
+    radius: Option<f32>,
+    dim_opacity: Option<f32>,
 }
 
 /// Ink drawing configuration.
@@ -76,6 +120,13 @@ pub struct InkConfig {
     pub width: f32,
 }
 
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(default)]
+struct PartialInkConfig {
+    color: Option<String>,
+    width: Option<f32>,
+}
+
 /// Notes panel configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -84,6 +135,13 @@ pub struct NotesConfig {
     pub font_size: f32,
     /// Step size for font size increment/decrement.
     pub font_size_step: f32,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(default)]
+struct PartialNotesConfig {
+    font_size: Option<f32>,
+    font_size_step: Option<f32>,
 }
 
 impl Default for DisplayConfig {
@@ -99,9 +157,9 @@ impl Default for DisplayConfig {
 impl Default for TimerConfig {
     fn default() -> Self {
         Self {
-            mode: TimerMode::Countdown,
-            duration_minutes: 20,
-            warning_minutes: 5,
+            mode: TimerMode::Elapsed,
+            duration_minutes: None,
+            warning_minutes: None,
             overrun_color: true,
         }
     }
@@ -136,26 +194,177 @@ pub fn config_path() -> Option<PathBuf> {
     directories::ProjectDirs::from("", "", "dais").map(|dirs| dirs.config_dir().join("config.toml"))
 }
 
-/// Load config from the default path, returning defaults if the file doesn't exist.
-pub fn load_config() -> Config {
-    let Some(path) = config_path() else {
+/// Resolve a project-local config path for a PDF.
+pub fn project_config_path(pdf_path: &Path) -> Option<PathBuf> {
+    pdf_path.parent().map(|dir| dir.join("dais.toml"))
+}
+
+/// Load layered config for a document.
+///
+/// Precedence:
+/// 1. Built-in defaults
+/// 2. Machine-wide config (`config.toml` in the standard OS config dir)
+/// 3. Project-local config (`dais.toml` next to the PDF)
+/// 4. Explicit `--config` path, if provided
+pub fn load_config_for(pdf_path: &Path, explicit_config: Option<&Path>) -> Config {
+    let mut config = Config::default();
+
+    if let Some(path) = config_path() {
+        merge_config_file(&mut config, &path);
+    } else {
         tracing::warn!("Could not determine config directory, using defaults");
-        return Config::default();
+    }
+
+    if let Some(path) = project_config_path(pdf_path) {
+        merge_config_file(&mut config, &path);
+    }
+
+    if let Some(path) = explicit_config {
+        merge_config_file(&mut config, path);
+    }
+
+    config
+}
+
+fn merge_config_file(config: &mut Config, path: &Path) {
+    let Ok(contents) = std::fs::read_to_string(path) else {
+        tracing::debug!("No config file at {}", path.display());
+        return;
     };
 
-    let Ok(contents) = std::fs::read_to_string(&path) else {
-        tracing::info!("No config file at {}, using defaults", path.display());
-        return Config::default();
-    };
-
-    match toml::from_str(&contents) {
-        Ok(config) => {
-            tracing::info!("Loaded config from {}", path.display());
-            config
+    match toml::from_str::<PartialConfig>(&contents) {
+        Ok(partial) => {
+            tracing::info!("Loaded config layer from {}", path.display());
+            apply_partial_config(config, partial);
         }
         Err(e) => {
-            tracing::warn!("Failed to parse config at {}: {e}, using defaults", path.display());
-            Config::default()
+            tracing::warn!("Failed to parse config at {}: {e}", path.display());
         }
+    }
+}
+
+fn apply_partial_config(config: &mut Config, partial: PartialConfig) {
+    if let Some(display) = partial.display {
+        if let Some(mode) = display.mode {
+            config.display.mode = mode;
+        }
+        if let Some(audience_monitor) = display.audience_monitor {
+            config.display.audience_monitor = audience_monitor;
+        }
+        if let Some(presenter_monitor) = display.presenter_monitor {
+            config.display.presenter_monitor = presenter_monitor;
+        }
+    }
+
+    if let Some(timer) = partial.timer {
+        if let Some(mode) = timer.mode {
+            config.timer.mode = mode;
+        }
+        if let Some(duration_minutes) = timer.duration_minutes {
+            config.timer.duration_minutes = duration_minutes;
+        }
+        if let Some(warning_minutes) = timer.warning_minutes {
+            config.timer.warning_minutes = warning_minutes;
+        }
+        if let Some(overrun_color) = timer.overrun_color {
+            config.timer.overrun_color = overrun_color;
+        }
+    }
+
+    if let Some(pointer) = partial.pointer {
+        if let Some(color) = pointer.color {
+            config.pointer.color = color;
+        }
+        if let Some(size) = pointer.size {
+            config.pointer.size = size;
+        }
+        if let Some(style) = pointer.style {
+            config.pointer.style = style;
+        }
+    }
+
+    if let Some(spotlight) = partial.spotlight {
+        if let Some(radius) = spotlight.radius {
+            config.spotlight.radius = radius;
+        }
+        if let Some(dim_opacity) = spotlight.dim_opacity {
+            config.spotlight.dim_opacity = dim_opacity;
+        }
+    }
+
+    if let Some(ink) = partial.ink {
+        if let Some(color) = ink.color {
+            config.ink.color = color;
+        }
+        if let Some(width) = ink.width {
+            config.ink.width = width;
+        }
+    }
+
+    if let Some(notes) = partial.notes {
+        if let Some(font_size) = notes.font_size {
+            config.notes.font_size = font_size;
+        }
+        if let Some(font_size_step) = notes.font_size_step {
+            config.notes.font_size_step = font_size_step;
+        }
+    }
+
+    if let Some(keybindings) = partial.keybindings {
+        config.keybindings.extend(keybindings);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn partial_config_overrides_selected_fields() {
+        let mut config = Config::default();
+        let partial = PartialConfig {
+            display: Some(PartialDisplayConfig {
+                mode: Some("screen-share".to_string()),
+                audience_monitor: Some("Projector".to_string()),
+                presenter_monitor: None,
+            }),
+            timer: Some(PartialTimerConfig {
+                mode: Some(TimerMode::Countdown),
+                duration_minutes: Some(Some(45)),
+                warning_minutes: Some(Some(10)),
+                overrun_color: Some(false),
+            }),
+            ..Default::default()
+        };
+
+        apply_partial_config(&mut config, partial);
+
+        assert_eq!(config.display.mode, "screen-share");
+        assert_eq!(config.display.audience_monitor, "Projector");
+        assert_eq!(config.timer.mode, TimerMode::Countdown);
+        assert_eq!(config.timer.duration_minutes, Some(45));
+        assert_eq!(config.timer.warning_minutes, Some(10));
+        assert!(!config.timer.overrun_color);
+    }
+
+    #[test]
+    fn partial_config_can_clear_optional_timer_values() {
+        let mut config = Config::default();
+        config.timer.duration_minutes = Some(20);
+        config.timer.warning_minutes = Some(5);
+
+        let partial = PartialConfig {
+            timer: Some(PartialTimerConfig {
+                duration_minutes: Some(None),
+                warning_minutes: Some(None),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+
+        apply_partial_config(&mut config, partial);
+
+        assert_eq!(config.timer.duration_minutes, None);
+        assert_eq!(config.timer.warning_minutes, None);
     }
 }

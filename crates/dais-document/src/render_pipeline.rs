@@ -34,9 +34,10 @@ pub struct RenderPipeline {
     pending: HashSet<(usize, RenderSize)>,
 }
 
-/// Default render size used for all display contexts.
-/// The GPU handles scaling to any window size with bilinear filtering.
-pub const CANONICAL_RENDER_SIZE: RenderSize = RenderSize { width: 1280, height: 720 };
+/// Default render size used for display contexts.
+/// This is intentionally high enough that the fullscreen audience view does
+/// not need to upscale from a small 720p source on a typical 1080p projector.
+pub const CANONICAL_RENDER_SIZE: RenderSize = RenderSize { width: 1920, height: 1080 };
 
 impl RenderPipeline {
     /// Spawn the render pipeline with `num_workers` background threads.

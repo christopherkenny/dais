@@ -1,25 +1,32 @@
 # Configuration Reference
 
-Dais stores its configuration in a TOML file at the platform-appropriate location:
+Dais supports layered configuration. Settings are applied in this order:
+
+1. Built-in defaults
+2. Machine-wide config in the platform-appropriate location
+3. Project-local `dais.toml` next to the PDF you open
+4. An explicit `--config <path>` file, if provided
+
+The machine-wide config lives at:
 
 - **Windows:** `%APPDATA%\dais\config.toml`
 - **macOS:** `~/Library/Application Support/dais/config.toml`
 - **Linux:** `~/.config/dais/config.toml`
 
-If the config file doesn't exist, Dais uses sensible defaults. All settings are optional.
+If a config layer doesn't exist, Dais skips it. All settings are optional.
 
 ## Full Default Configuration
 
 ```toml
 [display]
 mode = "dual"                  # "dual", "single", or "screen-share"
-audience_monitor = "auto"      # Monitor name or "auto" (non-primary)
-presenter_monitor = "auto"     # Monitor name or "auto" (primary)
+audience_monitor = "auto"      # Monitor name, monitor id, display number like "2", or "auto"
+presenter_monitor = "auto"     # Monitor name, monitor id, display number like "1", or "auto"
 
 [timer]
-mode = "countdown"             # "countdown" or "elapsed"
-duration_minutes = 20
-warning_minutes = 5            # Yellow warning at this many minutes remaining
+mode = "elapsed"               # "countdown" or "elapsed"
+# duration_minutes = 20        # Optional. If omitted in elapsed mode, no limit is shown.
+# warning_minutes = 5          # Optional. Used only when duration_minutes is set.
 overrun_color = true           # Red when past duration
 
 [pointer]
@@ -46,6 +53,22 @@ font_size_step = 2.0           # Increment/decrement step
 # toggle_laser = ["p"]
 ```
 
+## Project-Local Config
+
+To override machine-wide settings for a specific talk or course folder, create a `dais.toml`
+file next to the PDF you open.
+
+Example:
+
+```toml
+[display]
+audience_monitor = "Projector"
+mode = "dual"
+
+[timer]
+mode = "elapsed"
+```
+
 ## Display Modes
 
 | Mode | Description |
@@ -58,11 +81,11 @@ CLI flags (`--single`, `--screen-share`) override config. If no flag is given an
 
 ## Monitor Assignment
 
-Set `audience_monitor` and `presenter_monitor` to monitor names (as reported by your OS) for persistent assignment. Use `"auto"` for automatic assignment (primary = presenter, other = audience).
+Set `audience_monitor` and `presenter_monitor` to a monitor name, monitor id, or a 1-based display number such as `"1"` or `"2"`. Use `"auto"` for automatic assignment.
 
-Monitor names are logged at startup — run Dais once to see available names.
+Detected monitors are logged at startup with ids and names, so you can see which selector to use.
 
 ## Timer
 
-- **Countdown mode:** Starts at `duration_minutes` and counts down. Yellow at `warning_minutes` remaining, red when overrun.
-- **Elapsed mode:** Starts at 0:00 and counts up. Yellow at `duration_minutes - warning_minutes`, red past `duration_minutes`.
+- **Elapsed mode:** Starts at 0:00 and counts up. This is the default. If `duration_minutes` is omitted, no limit is shown.
+- **Countdown mode:** Starts at `duration_minutes` and counts down. If you use countdown mode, you should set `duration_minutes`.

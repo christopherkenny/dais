@@ -86,12 +86,13 @@ impl eframe::App for DaisApp {
         self.pipeline
             .ensure_rendered(state.audience_page(), size, &mut self.cache);
 
-        // Request periodic repaints when timer is running or renders are pending
+        // Request periodic repaints while timers are active or renders are pending.
         if state.timer.running {
             ctx.request_repaint_after(std::time::Duration::from_millis(100));
         } else {
-            // Still repaint soon to pick up background render results
-            ctx.request_repaint_after(std::time::Duration::from_millis(16));
+            // The per-slide timer updates every second, while the render pipeline
+            // still benefits from a modest polling cadence.
+            ctx.request_repaint_after(std::time::Duration::from_millis(250));
         }
 
         // In Single mode, only show the presenter — no audience viewport

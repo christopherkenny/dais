@@ -46,7 +46,8 @@ fn main() -> anyhow::Result<()> {
     tracing::info!("Opening: {pdf_path}");
 
     // Load config
-    let config = dais_core::config::load_config();
+    let explicit_config = cli.config.as_deref().map(Path::new);
+    let config = dais_core::config::load_config_for(Path::new(&pdf_path), explicit_config);
     tracing::debug!("Config loaded: {config:?}");
 
     // Open document

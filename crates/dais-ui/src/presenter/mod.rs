@@ -188,6 +188,10 @@ impl PresenterConsole {
 
                 ui.separator();
 
+                timer::show_slide_timer(ui, state.slide_elapsed);
+
+                ui.separator();
+
                 // Mode indicators
                 let mut indicators = Vec::new();
                 if state.frozen {

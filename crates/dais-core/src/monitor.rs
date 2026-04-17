@@ -49,4 +49,25 @@ pub trait MonitorManager: Send + Sync {
     fn find_by_name(&self, name: &str) -> Option<MonitorInfo> {
         self.available_monitors().into_iter().find(|m| m.name == name)
     }
+
+    /// Find a monitor by a user-facing selector.
+    ///
+    /// Supported forms:
+    /// - Exact monitor name
+    /// - Exact monitor id
+    /// - 1-based ordinal like "1", "2", "3" using the detected monitor list order
+    fn find_by_selector(&self, selector: &str) -> Option<MonitorInfo> {
+        let monitors = self.available_monitors();
+
+        if let Ok(index) = selector.parse::<usize>()
+            && index > 0
+        {
+            return monitors.get(index - 1).cloned();
+        }
+
+        monitors
+            .iter()
+            .find(|m| m.name == selector || m.id == selector)
+            .cloned()
+    }
 }
