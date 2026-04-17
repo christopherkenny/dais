@@ -132,9 +132,7 @@ impl InputHandler {
                 self.jump_start = Some(Instant::now());
             }
             Action::StartPauseTimer => {
-                // Send both; the engine will act on the appropriate one.
-                let _ = self.sender.send(Command::StartTimer);
-                let _ = self.sender.send(Command::PauseTimer);
+                let _ = self.sender.send(Command::ToggleTimer);
             }
             _ => {
                 if let Some(cmd) = action_to_command(action) {

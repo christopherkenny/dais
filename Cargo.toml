@@ -58,6 +58,17 @@ features = [
     "Win32_UI_WindowsAndMessaging",
 ]
 
+# Optimize heavy rendering deps even in debug builds.
+# Without this, hayro renders are ~50x slower in dev profile.
+[profile.dev.package.hayro]
+opt-level = 2
+[profile.dev.package.hayro-interpret]
+opt-level = 2
+[profile.dev.package.hayro-syntax]
+opt-level = 2
+[profile.dev.package.vello_cpu]
+opt-level = 2
+
 [workspace.lints.rust]
 unsafe_code = "warn"
 

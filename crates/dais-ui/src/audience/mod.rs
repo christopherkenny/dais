@@ -9,8 +9,7 @@ use std::sync::{Arc, RwLock};
 
 use dais_core::state::PresentationState;
 use dais_document::cache::PageCache;
-use dais_document::page::RenderSize;
-use dais_document::source::DocumentSource;
+use dais_document::render_pipeline::CANONICAL_RENDER_SIZE;
 
 use self::display::AudienceDisplay;
 
@@ -29,7 +28,6 @@ impl AudienceWindow {
         &mut self,
         ctx: &egui::Context,
         shared_state: &Arc<RwLock<PresentationState>>,
-        doc: &dyn DocumentSource,
         cache: &mut PageCache,
     ) {
         let state = shared_state.read().map_or_else(
@@ -41,15 +39,7 @@ impl AudienceWindow {
         );
 
         let audience_page = state.audience_page();
-
-        // Render page at audience resolution
-        let render_size = RenderSize { width: 1920, height: 1080 };
-
-        if cache.get(audience_page, render_size).is_none()
-            && let Ok(rendered) = doc.render_page(audience_page, render_size)
-        {
-            cache.insert(audience_page, render_size, rendered);
-        }
+        let render_size = CANONICAL_RENDER_SIZE;
 
         if let Some(page) = cache.get(audience_page, render_size) {
             let page = page.clone();

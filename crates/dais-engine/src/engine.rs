@@ -136,7 +136,8 @@ impl PresentationEngine {
             | Command::ToggleZoom
             | Command::SetZoomRegion { .. } => self.handle_aid(cmd),
 
-            Command::StartTimer | Command::PauseTimer | Command::ResetTimer => {
+            Command::StartTimer | Command::PauseTimer | Command::ToggleTimer
+            | Command::ResetTimer => {
                 self.handle_timer(cmd);
             }
 
@@ -269,6 +270,18 @@ impl PresentationEngine {
 
     fn handle_timer(&mut self, cmd: &Command) {
         match *cmd {
+            Command::ToggleTimer => {
+                if self.state.timer.running {
+                    self.state.timer.running = false;
+                } else {
+                    self.state.timer.running = true;
+                    self.timer_start = Some(
+                        Instant::now()
+                            .checked_sub(self.state.timer.elapsed)
+                            .unwrap_or_else(Instant::now),
+                    );
+                }
+            }
             Command::StartTimer if !self.state.timer.running => {
                 self.state.timer.running = true;
                 self.timer_start = Some(
@@ -867,6 +880,38 @@ mod tests {
         engine.tick();
         assert!(!engine.state().timer.running);
         assert_eq!(engine.state().timer.elapsed, std::time::Duration::ZERO);
+    }
+
+    #[test]
+    fn toggle_timer_starts_and_pauses() {
+        let (mut engine, _, sender) = make_engine(5);
+        assert!(!engine.state().timer.running);
+
+        // First toggle: starts the timer
+        sender.send(Command::ToggleTimer).unwrap();
+        engine.tick();
+        assert!(engine.state().timer.running);
+
+        // Second toggle: pauses the timer
+        sender.send(Command::ToggleTimer).unwrap();
+        engine.tick();
+        assert!(!engine.state().timer.running);
+
+        // Third toggle: starts again
+        sender.send(Command::ToggleTimer).unwrap();
+        engine.tick();
+        assert!(engine.state().timer.running);
+    }
+
+    #[test]
+    fn toggle_timer_does_not_cancel_itself_in_single_tick() {
+        let (mut engine, _, sender) = make_engine(5);
+
+        // Send two ToggleTimer commands in the same tick — should net to "no change"
+        sender.send(Command::ToggleTimer).unwrap();
+        sender.send(Command::ToggleTimer).unwrap();
+        engine.tick();
+        assert!(!engine.state().timer.running, "two toggles should cancel out");
     }
 
     // ---- UI panels ----

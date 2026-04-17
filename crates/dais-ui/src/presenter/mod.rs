@@ -10,13 +10,10 @@ pub mod notes_panel;
 pub mod overview;
 pub mod timer;
 
-use std::sync::{Arc, RwLock};
-
 use dais_core::bus::CommandSender;
 use dais_core::state::PresentationState;
 use dais_document::cache::PageCache;
-use dais_document::page::RenderSize;
-use dais_document::source::DocumentSource;
+use dais_document::render_pipeline::CANONICAL_RENDER_SIZE;
 
 use self::current_slide::CurrentSlidePanel;
 use self::layout::PresenterLayout;
@@ -47,34 +44,36 @@ impl PresenterConsole {
     }
 
     /// Render the presenter console in the given egui context.
+    ///
+    /// All page textures come from the cache (populated by the background
+    /// render pipeline).  If a page isn't cached yet we simply skip it —
+    /// the pipeline will deliver it on a subsequent frame.
     pub fn show(
         &mut self,
         ctx: &egui::Context,
-        shared_state: &Arc<RwLock<PresentationState>>,
-        doc: &dyn DocumentSource,
+        state: &PresentationState,
         cache: &mut PageCache,
         sender: &CommandSender,
     ) {
-        let state = shared_state.read().map_or_else(
-            |e| {
-                tracing::error!("Failed to read presentation state: {e}");
-                PresentationState::new(0, Vec::new())
-            },
-            |s| s.clone(),
-        );
-
         // Process input
         self.input.handle_input(ctx, state.overview_visible, state.ink_active, state.laser_active);
 
-        // Render current page texture
+        // Update textures from cache (single canonical size)
+        let size = CANONICAL_RENDER_SIZE;
         let current_page = state.current_page;
-        self.render_page_texture(ctx, doc, cache, current_page, &state, true);
 
-        // Render next page texture
+        if let Some(page) = cache.get(current_page, size) {
+            let page = page.clone();
+            self.current_slide.update(ctx, &page, current_page);
+        }
+
         let next_page =
             if current_page + 1 < state.total_pages { Some(current_page + 1) } else { None };
         if let Some(np) = next_page {
-            self.render_page_texture(ctx, doc, cache, np, &state, false);
+            if let Some(page) = cache.get(np, size) {
+                let page = page.clone();
+                self.next_preview.update(ctx, &page, np);
+            }
         }
 
         egui::CentralPanel::default()
@@ -129,50 +128,22 @@ impl PresenterConsole {
                 );
 
                 // Status bar
-                self.show_status_bar(ui, layout.status_bar, &state);
+                self.show_status_bar(ui, layout.status_bar, &state, sender);
 
                 // Slide overview (modal overlay)
                 if state.overview_visible {
-                    self.overview.show(ctx, ui, &state, doc, cache, sender);
+                    self.overview.show(ctx, ui, state, cache, sender);
                 }
             });
     }
 
-    fn render_page_texture(
-        &mut self,
-        ctx: &egui::Context,
-        doc: &dyn DocumentSource,
-        cache: &mut PageCache,
-        page_index: usize,
-        _state: &PresentationState,
-        is_current: bool,
+    fn show_status_bar(
+        &self,
+        ui: &mut egui::Ui,
+        area: egui::Rect,
+        state: &PresentationState,
+        sender: &CommandSender,
     ) {
-        // Use a reasonable render size for the presenter
-        let render_size = RenderSize { width: 1280, height: 960 };
-
-        if cache.get(page_index, render_size).is_none() {
-            match doc.render_page(page_index, render_size) {
-                Ok(rendered) => {
-                    cache.insert(page_index, render_size, rendered);
-                }
-                Err(e) => {
-                    tracing::warn!("Failed to render page {page_index}: {e}");
-                    return;
-                }
-            }
-        }
-
-        if let Some(page) = cache.get(page_index, render_size) {
-            let page = page.clone();
-            if is_current {
-                self.current_slide.update(ctx, &page, page_index);
-            } else {
-                self.next_preview.update(ctx, &page, page_index);
-            }
-        }
-    }
-
-    fn show_status_bar(&self, ui: &mut egui::Ui, area: egui::Rect, state: &PresentationState) {
         let mut child_ui = ui.new_child(egui::UiBuilder::new().max_rect(area));
 
         // Background
@@ -210,8 +181,10 @@ impl PresenterConsole {
 
                 ui.separator();
 
-                // Timer
-                timer::show_timer(ui, &state.timer);
+                // Timer (clickable)
+                if timer::show_timer(ui, &state.timer) {
+                    let _ = sender.send(dais_core::commands::Command::ToggleTimer);
+                }
 
                 ui.separator();
 

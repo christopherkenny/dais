@@ -1,7 +1,8 @@
 //! Top-level eframe application and window lifecycle.
 //!
 //! Manages the presentation engine, document source, page cache, and both
-//! presenter and audience windows.
+//! presenter and audience windows.  Rendering is offloaded to a background
+//! pipeline so the UI thread never blocks on hayro.
 
 use std::sync::{Arc, RwLock};
 
@@ -10,6 +11,7 @@ use dais_core::config::Config;
 use dais_core::keybindings::KeybindingMap;
 use dais_core::state::PresentationState;
 use dais_document::cache::PageCache;
+use dais_document::render_pipeline::{RenderPipeline, CANONICAL_RENDER_SIZE};
 use dais_document::source::DocumentSource;
 use dais_engine::engine::PresentationEngine;
 
@@ -22,8 +24,8 @@ use crate::presenter::PresenterConsole;
 pub struct DaisApp {
     engine: PresentationEngine,
     shared_state: Arc<RwLock<PresentationState>>,
-    doc: Box<dyn DocumentSource>,
     cache: PageCache,
+    pipeline: RenderPipeline,
     presenter: PresenterConsole,
     audience: AudienceWindow,
     sender: CommandSender,
@@ -32,18 +34,10 @@ pub struct DaisApp {
 
 impl DaisApp {
     /// Create a new Dais application.
-    ///
-    /// # Arguments
-    /// * `engine` - The presentation engine (already created with `CommandBus` receiver)
-    /// * `shared_state` - Shared state handle from the engine
-    /// * `doc` - The document source (PDF)
-    /// * `sender` - Command sender for dispatching commands
-    /// * `config` - Application configuration
-    /// * `display_mode` - How windows should be laid out
     pub fn new(
         engine: PresentationEngine,
         shared_state: Arc<RwLock<PresentationState>>,
-        doc: Box<dyn DocumentSource>,
+        doc: Arc<dyn DocumentSource>,
         sender: CommandSender,
         config: &Config,
         display_mode: DisplayMode,
@@ -52,9 +46,10 @@ impl DaisApp {
         let input = InputHandler::new(sender.clone(), keybindings);
         let presenter = PresenterConsole::new(input);
         let audience = AudienceWindow::new();
-        let cache = PageCache::new(32);
+        let cache = PageCache::new(64);
+        let pipeline = RenderPipeline::new(doc, 2);
 
-        Self { engine, shared_state, doc, cache, presenter, audience, sender, display_mode }
+        Self { engine, shared_state, cache, pipeline, presenter, audience, sender, display_mode }
     }
 }
 
@@ -67,34 +62,61 @@ impl eframe::App for DaisApp {
             return;
         }
 
-        // Request continuous repainting (timer, animations)
-        ctx.request_repaint();
+        // Collect completed background renders into the cache
+        self.pipeline.poll_results(&mut self.cache);
+
+        // Read state snapshot for this frame
+        let state = self.shared_state.read().map_or_else(
+            |e| {
+                tracing::error!("Failed to read state: {e}");
+                PresentationState::new(0, Vec::new())
+            },
+            |s| s.clone(),
+        );
+
+        // Submit render requests for pages we need
+        let size = CANONICAL_RENDER_SIZE;
+        self.pipeline.prefetch_neighborhood(
+            state.current_page,
+            state.total_pages,
+            size,
+            &mut self.cache,
+        );
+        // Audience page (may differ if frozen)
+        self.pipeline
+            .ensure_rendered(state.audience_page(), size, &mut self.cache);
+
+        // Request periodic repaints when timer is running or renders are pending
+        if state.timer.running {
+            ctx.request_repaint_after(std::time::Duration::from_millis(100));
+        } else {
+            // Still repaint soon to pick up background render results
+            ctx.request_repaint_after(std::time::Duration::from_millis(16));
+        }
 
         // In Single mode, only show the presenter — no audience viewport
         if matches!(self.display_mode, DisplayMode::Single) {
             self.presenter.show(
                 ctx,
-                &self.shared_state,
-                self.doc.as_ref(),
+                &state,
                 &mut self.cache,
                 &self.sender,
             );
             return;
         }
 
-        // Read current state for screen_share_mode check (runtime toggle)
-        let is_runtime_screen_share = self.shared_state.read().is_ok_and(|s| s.screen_share_mode);
+        // Read runtime screen-share toggle
+        let is_runtime_screen_share = state.screen_share_mode;
 
         // Render the presenter console in the main viewport
         self.presenter.show(
             ctx,
-            &self.shared_state,
-            self.doc.as_ref(),
+            &state,
             &mut self.cache,
             &self.sender,
         );
 
-        // Choose audience viewport builder: respect runtime toggle, else use display mode
+        // Choose audience viewport builder
         let viewport_builder = if is_runtime_screen_share {
             egui::ViewportBuilder::default()
                 .with_title("Dais — Audience")
@@ -104,29 +126,15 @@ impl eframe::App for DaisApp {
         };
 
         let shared = self.shared_state.clone();
-        let doc: &dyn DocumentSource = self.doc.as_ref();
-
-        // Pre-render the audience page into the cache
-        {
-            let audience_page = self.shared_state.read().map_or(0, |s| s.audience_page());
-            let render_size = dais_document::page::RenderSize { width: 1920, height: 1080 };
-            if self.cache.get(audience_page, render_size).is_none()
-                && let Ok(rendered) = doc.render_page(audience_page, render_size)
-            {
-                self.cache.insert(audience_page, render_size, rendered);
-            }
-        }
-
         let audience = &mut self.audience;
         let cache = &mut self.cache;
         let shared_ref = &shared;
-        let doc_ref: &dyn DocumentSource = self.doc.as_ref();
 
         ctx.show_viewport_immediate(
             egui::ViewportId::from_hash_of("audience"),
             viewport_builder,
             |ctx, _class| {
-                audience.show(ctx, shared_ref, doc_ref, cache);
+                audience.show(ctx, shared_ref, cache);
             },
         );
     }

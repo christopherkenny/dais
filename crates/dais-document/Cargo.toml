@@ -16,6 +16,7 @@ mupdf = []
 dais-core = { workspace = true }
 
 hayro = { workspace = true, optional = true }
+crossbeam-channel = { workspace = true }
 image = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }

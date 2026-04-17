@@ -6,8 +6,7 @@ use dais_core::bus::CommandSender;
 use dais_core::commands::Command;
 use dais_core::state::PresentationState;
 use dais_document::cache::PageCache;
-use dais_document::page::RenderSize;
-use dais_document::source::DocumentSource;
+use dais_document::render_pipeline::CANONICAL_RENDER_SIZE;
 
 use crate::widgets::SlideThumbnail;
 
@@ -34,7 +33,6 @@ impl OverviewGrid {
         ctx: &egui::Context,
         ui: &mut egui::Ui,
         state: &PresentationState,
-        doc: &dyn DocumentSource,
         cache: &mut PageCache,
         sender: &CommandSender,
     ) {
@@ -62,7 +60,7 @@ impl OverviewGrid {
         }
 
         self.handle_navigation(ctx, state, sender);
-        self.render_grid(ctx, ui, state, doc, cache, sender);
+        self.render_grid(ctx, ui, state, cache, sender);
     }
 
     fn handle_navigation(
@@ -120,19 +118,17 @@ impl OverviewGrid {
         ctx: &egui::Context,
         ui: &mut egui::Ui,
         state: &PresentationState,
-        doc: &dyn DocumentSource,
         cache: &mut PageCache,
         sender: &CommandSender,
     ) {
-        #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
-        let render_size = RenderSize { width: THUMB_WIDTH as u32, height: THUMB_HEIGHT as u32 };
+        let render_size = CANONICAL_RENDER_SIZE;
 
         egui::ScrollArea::vertical().show(ui, |ui| {
             ui.horizontal_wrapped(|ui| {
                 ui.spacing_mut().item_spacing = egui::vec2(THUMB_PADDING, THUMB_PADDING);
 
                 for i in 0..state.total_logical_slides {
-                    self.render_thumbnail(ctx, ui, i, state, doc, cache, sender, render_size);
+                    self.render_thumbnail(ctx, ui, i, state, cache, sender, render_size);
                 }
             });
         });
@@ -145,20 +141,14 @@ impl OverviewGrid {
         ui: &mut egui::Ui,
         index: usize,
         state: &PresentationState,
-        doc: &dyn DocumentSource,
         cache: &mut PageCache,
         sender: &CommandSender,
-        render_size: RenderSize,
+        render_size: dais_document::page::RenderSize,
     ) {
         let first_page =
             state.slide_groups.get(index).and_then(|g| g.pages.first().copied()).unwrap_or(index);
 
-        if cache.get(first_page, render_size).is_none()
-            && let Ok(rendered) = doc.render_page(first_page, render_size)
-        {
-            cache.insert(first_page, render_size, rendered);
-        }
-
+        // Just read from cache — the pipeline will populate it
         if let Some(page) = cache.get(first_page, render_size) {
             self.thumbnails[index].update(ctx, page, first_page);
         }

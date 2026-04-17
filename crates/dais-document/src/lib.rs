@@ -6,6 +6,7 @@
 
 pub mod cache;
 pub mod page;
+pub mod render_pipeline;
 pub mod source;
 
 #[cfg(feature = "hayro")]

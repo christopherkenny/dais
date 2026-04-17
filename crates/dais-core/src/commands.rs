@@ -59,6 +59,8 @@ pub enum Command {
     StartTimer,
     /// Pause the timer.
     PauseTimer,
+    /// Toggle the timer between running and paused.
+    ToggleTimer,
     /// Reset the timer to its initial state.
     ResetTimer,
 

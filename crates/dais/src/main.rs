@@ -100,7 +100,9 @@ fn main() -> anyhow::Result<()> {
     tracing::info!("Dais v{} starting", env!("CARGO_PKG_VERSION"));
 
     // Create and run the eframe application
-    let doc_box: Box<dyn dais_document::source::DocumentSource> = Box::new(doc);
+    // Create and run the eframe application
+    let doc_arc: std::sync::Arc<dyn dais_document::source::DocumentSource> =
+        std::sync::Arc::new(doc);
 
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -117,7 +119,7 @@ fn main() -> anyhow::Result<()> {
             Ok(Box::new(dais_ui::app::DaisApp::new(
                 engine,
                 shared_state,
-                doc_box,
+                doc_arc,
                 sender,
                 &config_clone,
                 display_mode,

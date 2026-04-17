@@ -59,18 +59,22 @@ impl DocumentSource for HayroDocument {
         let target_w = u16::try_from(target_size.width).unwrap_or(u16::MAX);
         let target_h = u16::try_from(target_size.height).unwrap_or(u16::MAX);
 
-        // Compute scale factors to fill target size
+        // Preserve aspect ratio by fitting the page within the target box.
+        // Independent x/y scaling distorts slides and makes previews look wrong.
         let x_scale = f32::from(target_w) / page_w;
         let y_scale = f32::from(target_h) / page_h;
+        let scale = x_scale.min(y_scale);
+        let render_w = (page_w * scale).round().clamp(1.0, f32::from(target_w)) as u16;
+        let render_h = (page_h * scale).round().clamp(1.0, f32::from(target_h)) as u16;
 
         let cache = RenderCache::new();
         let interpreter_settings = InterpreterSettings::default();
 
         let render_settings = RenderSettings {
-            x_scale,
-            y_scale,
-            width: Some(target_w),
-            height: Some(target_h),
+            x_scale: scale,
+            y_scale: scale,
+            width: Some(render_w),
+            height: Some(render_h),
             ..Default::default()
         };
 
@@ -147,10 +151,10 @@ mod tests {
         let doc = HayroDocument::open(&test_pdf_path()).expect("should load test PDF");
         let size = RenderSize { width: 800, height: 600 };
         let rendered = doc.render_page(0, size).expect("should render page");
-        assert_eq!(rendered.width, 800);
+        assert_eq!(rendered.width, 464);
         assert_eq!(rendered.height, 600);
         // RGBA: 4 bytes per pixel
-        assert_eq!(rendered.data.len(), 800 * 600 * 4);
+        assert_eq!(rendered.data.len(), 464 * 600 * 4);
     }
 
     #[test]
@@ -160,13 +164,25 @@ mod tests {
         let start = Instant::now();
         let rendered = doc.render_page(0, size).expect("should render page");
         let elapsed = start.elapsed();
-        assert_eq!(rendered.width, 1920);
+        assert_eq!(rendered.width, 835);
         assert_eq!(rendered.height, 1080);
         assert!(
             elapsed.as_millis() < 500,
             "Render took {}ms, expected <500ms",
             elapsed.as_millis()
         );
+    }
+
+    #[test]
+    fn render_page_preserves_aspect_ratio() {
+        let doc = HayroDocument::open(&test_pdf_path()).expect("should load test PDF");
+        let rendered = doc
+            .render_page(0, RenderSize { width: 1280, height: 720 })
+            .expect("should render page");
+
+        let aspect = rendered.width as f32 / rendered.height as f32;
+        let expected = 612.0 / 792.0;
+        assert!((aspect - expected).abs() < 0.01, "got aspect {aspect}, expected {expected}");
     }
 
     #[test]
