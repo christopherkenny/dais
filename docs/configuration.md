@@ -51,8 +51,10 @@ font_size_step = 2.0           # Increment/decrement step
 | Mode | Description |
 |---|---|
 | `dual` | Audience fullscreen on secondary monitor, presenter console on primary. Default when 2+ monitors detected. |
-| `single` | Split view on one monitor: audience left, presenter console right. Auto-selected when only one monitor detected. |
-| `screen-share` | Like dual, but audience window is a normal resizable window (not fullscreen). For Zoom/Teams screen sharing. |
+| `single` | Presenter console only, no audience window. Use `--single` CLI flag or set in config. |
+| `screen-share` | Audience window is a normal resizable window (not fullscreen). For Zoom/Teams screen sharing. Use `--screen-share` CLI flag or set in config. Auto-selected with one monitor. |
+
+CLI flags (`--single`, `--screen-share`) override config. If no flag is given and config is `"dual"` (default), Dais auto-detects: 2+ monitors → dual, 1 monitor → screen-share.
 
 ## Monitor Assignment
 
