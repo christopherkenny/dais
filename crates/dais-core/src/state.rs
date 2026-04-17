@@ -156,10 +156,10 @@ impl Default for TimerState {
     fn default() -> Self {
         Self {
             mode: TimerMode::Countdown,
-            duration: Duration::from_secs(20 * 60),
+            duration: Duration::from_mins(20),
             elapsed: Duration::ZERO,
             running: false,
-            warning_threshold: Duration::from_secs(5 * 60),
+            warning_threshold: Duration::from_mins(5),
         }
     }
 }

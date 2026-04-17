@@ -13,7 +13,7 @@ resolver = "2"
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.92"
 license = "MIT"
 repository = "https://github.com/christopherkenny/dais"
 
@@ -25,6 +25,9 @@ dais-document = { path = "crates/dais-document" }
 dais-engine = { path = "crates/dais-engine" }
 dais-platform = { path = "crates/dais-platform" }
 dais-ui = { path = "crates/dais-ui" }
+
+# PDF rendering
+hayro = { version = "0.6", features = ["embed-fonts"] }
 
 # GUI
 egui = "0.31"

@@ -9,12 +9,13 @@ description = "Document source abstraction and PDF rendering for Dais"
 
 [features]
 default = ["hayro"]
-hayro = []
+hayro = ["dep:hayro"]
 mupdf = []
 
 [dependencies]
 dais-core = { workspace = true }
 
+hayro = { workspace = true, optional = true }
 image = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }

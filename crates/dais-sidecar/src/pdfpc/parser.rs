@@ -47,11 +47,10 @@ fn parse_pdfpc(content: &str) -> PresentationMetadata {
         }
 
         match current_section.as_deref() {
-            Some("file") => {
-                if !trimmed.is_empty() {
-                    metadata.title = Some(trimmed.to_string());
-                }
+            Some("file") if !trimmed.is_empty() => {
+                metadata.title = Some(trimmed.to_string());
             }
+            Some("file") => {}
             Some("notes") => {
                 if let Some(rest) = trimmed.strip_prefix("### ") {
                     // Flush previous note
@@ -76,15 +75,14 @@ fn parse_pdfpc(content: &str) -> PresentationMetadata {
             Some("overlay") => {
                 // Format: "start_page end_page" (1-based)
                 let parts: Vec<&str> = trimmed.split_whitespace().collect();
-                if parts.len() == 2 {
-                    if let (Ok(start), Ok(end)) =
+                if parts.len() == 2
+                    && let (Ok(start), Ok(end)) =
                         (parts[0].parse::<usize>(), parts[1].parse::<usize>())
-                    {
-                        metadata.groups.push(crate::types::SlideGroupMeta {
-                            start_page: start.saturating_sub(1),
-                            end_page: end.saturating_sub(1),
-                        });
-                    }
+                {
+                    metadata.groups.push(crate::types::SlideGroupMeta {
+                        start_page: start.saturating_sub(1),
+                        end_page: end.saturating_sub(1),
+                    });
                 }
             }
             Some("duration") => {
