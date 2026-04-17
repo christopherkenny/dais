@@ -11,7 +11,7 @@ use dais_core::config::Config;
 use dais_core::keybindings::KeybindingMap;
 use dais_core::state::PresentationState;
 use dais_document::cache::PageCache;
-use dais_document::render_pipeline::{RenderPipeline, FALLBACK_RENDER_SIZE};
+use dais_document::render_pipeline::{FALLBACK_RENDER_SIZE, RenderPipeline};
 use dais_document::source::DocumentSource;
 use dais_engine::engine::PresentationEngine;
 
@@ -84,8 +84,7 @@ impl eframe::App for DaisApp {
             &mut self.cache,
         );
         // Audience page (may differ if frozen)
-        self.pipeline
-            .ensure_rendered(state.audience_page(), audience_size, &mut self.cache);
+        self.pipeline.ensure_rendered(state.audience_page(), audience_size, &mut self.cache);
 
         // Request periodic repaints while timers are active or renders are pending.
         if state.timer.running {
@@ -98,12 +97,7 @@ impl eframe::App for DaisApp {
 
         // In Single mode, only show the presenter — no audience viewport
         if matches!(self.display_mode, DisplayMode::Single) {
-            self.presenter.show(
-                ctx,
-                &state,
-                &mut self.cache,
-                &self.sender,
-            );
+            self.presenter.show(ctx, &state, &mut self.cache, &self.sender);
             return;
         }
 
@@ -111,12 +105,7 @@ impl eframe::App for DaisApp {
         let is_runtime_screen_share = state.screen_share_mode;
 
         // Render the presenter console in the main viewport
-        self.presenter.show(
-            ctx,
-            &state,
-            &mut self.cache,
-            &self.sender,
-        );
+        self.presenter.show(ctx, &state, &mut self.cache, &self.sender);
 
         // Choose audience viewport builder
         let viewport_builder = if is_runtime_screen_share {

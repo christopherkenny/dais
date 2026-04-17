@@ -46,11 +46,7 @@ fn app_icon() -> Option<Arc<egui::IconData>> {
 }
 
 pub fn with_app_icon(builder: egui::ViewportBuilder) -> egui::ViewportBuilder {
-    if let Some(icon) = app_icon() {
-        builder.with_icon(icon)
-    } else {
-        builder
-    }
+    if let Some(icon) = app_icon() { builder.with_icon(icon) } else { builder }
 }
 
 /// Determine the initial display mode from CLI hints, config, and detected monitors.
@@ -180,9 +176,7 @@ pub fn presenter_viewport_builder(
     let monitor = if presenter_selector.is_empty() || presenter_selector == "auto" {
         monitor_mgr.primary_monitor()
     } else {
-        monitor_mgr
-            .find_by_selector(presenter_selector)
-            .or_else(|| monitor_mgr.primary_monitor())
+        monitor_mgr.find_by_selector(presenter_selector).or_else(|| monitor_mgr.primary_monitor())
     };
 
     let builder = with_app_icon(egui::ViewportBuilder::default())
@@ -206,9 +200,7 @@ pub fn presenter_viewport_builder(
     let x = monitor.position.0 as f32 + ((logical_w as f32 - fitted_w) / 2.0).max(0.0);
     let y = monitor.position.1 as f32 + ((logical_h as f32 - fitted_h) / 2.0).max(0.0);
 
-    builder
-        .with_inner_size(egui::vec2(fitted_w, fitted_h))
-        .with_position(egui::pos2(x, y))
+    builder.with_inner_size(egui::vec2(fitted_w, fitted_h)).with_position(egui::pos2(x, y))
 }
 
 /// Determine the audience render size from the selected display mode.
@@ -395,8 +387,7 @@ mod tests {
     fn presenter_viewport_uses_primary_monitor_by_default() {
         let config = Config::default();
         let mgr = dual_monitors();
-        let builder =
-            presenter_viewport_builder(&config, &mgr, egui::vec2(1400.0, 900.0));
+        let builder = presenter_viewport_builder(&config, &mgr, egui::vec2(1400.0, 900.0));
         let debug = format!("{builder:?}");
         assert!(debug.contains("Presenter Console"));
     }

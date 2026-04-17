@@ -46,7 +46,9 @@ impl PresentationEngine {
             }
         };
         let warning_threshold = match (duration, config.timer.warning_minutes) {
-            (Some(_), Some(minutes)) => Some(std::time::Duration::from_secs(u64::from(minutes) * 60)),
+            (Some(_), Some(minutes)) => {
+                Some(std::time::Duration::from_secs(u64::from(minutes) * 60))
+            }
             _ => None,
         };
         state.timer = TimerState {
@@ -156,7 +158,9 @@ impl PresentationEngine {
             | Command::ToggleZoom
             | Command::SetZoomRegion { .. } => self.handle_aid(cmd),
 
-            Command::StartTimer | Command::PauseTimer | Command::ToggleTimer
+            Command::StartTimer
+            | Command::PauseTimer
+            | Command::ToggleTimer
             | Command::ResetTimer => {
                 self.handle_timer(cmd);
             }
@@ -423,9 +427,7 @@ impl PresentationEngine {
             .get(group_index)
             .copied()
             .unwrap_or(std::time::Duration::ZERO);
-        self.slide_start = Instant::now()
-            .checked_sub(accumulated)
-            .unwrap_or_else(Instant::now);
+        self.slide_start = Instant::now().checked_sub(accumulated).unwrap_or_else(Instant::now);
         self.state.slide_elapsed = accumulated;
         self.update_notes();
         // Clear ink on navigation

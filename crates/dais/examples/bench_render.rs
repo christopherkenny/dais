@@ -39,9 +39,7 @@ fn main() {
     println!("\n--- Sequential render all {page_count} pages at 1280x720 ---");
     let start = Instant::now();
     for i in 0..page_count {
-        let _ = doc
-            .render_page(i, RenderSize { width: 1280, height: 720 })
-            .expect("render failed");
+        let _ = doc.render_page(i, RenderSize { width: 1280, height: 720 }).expect("render failed");
     }
     let total = start.elapsed();
     let avg = total / page_count as u32;
@@ -50,29 +48,19 @@ fn main() {
     // Simulate what happens on slide navigation
     println!("\n--- Slide navigation (current@1280x720 + next@640x360 + audience@1920x1080) ---");
     let start = Instant::now();
-    let _ = doc
-        .render_page(0, RenderSize { width: 1280, height: 720 })
-        .unwrap();
+    let _ = doc.render_page(0, RenderSize { width: 1280, height: 720 }).unwrap();
     let t1 = start.elapsed();
-    let _ = doc
-        .render_page(1, RenderSize { width: 640, height: 360 })
-        .unwrap();
+    let _ = doc.render_page(1, RenderSize { width: 640, height: 360 }).unwrap();
     let t2 = start.elapsed();
-    let _ = doc
-        .render_page(0, RenderSize { width: 1920, height: 1080 })
-        .unwrap();
+    let _ = doc.render_page(0, RenderSize { width: 1920, height: 1080 }).unwrap();
     let t3 = start.elapsed();
     println!("current: {t1:?}, +next: {t2:?}, +audience: {t3:?}");
 
     // Single-size: render current + next at same size
     println!("\n--- Single-size (current@1280x720 + next@1280x720) ---");
     let start = Instant::now();
-    let _ = doc
-        .render_page(0, RenderSize { width: 1280, height: 720 })
-        .unwrap();
-    let _ = doc
-        .render_page(1, RenderSize { width: 1280, height: 720 })
-        .unwrap();
+    let _ = doc.render_page(0, RenderSize { width: 1280, height: 720 }).unwrap();
+    let _ = doc.render_page(1, RenderSize { width: 1280, height: 720 }).unwrap();
     let single_total = start.elapsed();
     println!("Total: {single_total:?}");
 }

@@ -65,9 +65,6 @@ pub trait MonitorManager: Send + Sync {
             return monitors.get(index - 1).cloned();
         }
 
-        monitors
-            .iter()
-            .find(|m| m.name == selector || m.id == selector)
-            .cloned()
+        monitors.iter().find(|m| m.name == selector || m.id == selector).cloned()
     }
 }

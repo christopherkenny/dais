@@ -56,11 +56,7 @@ impl RenderPipeline {
                 .expect("failed to spawn render thread");
         }
 
-        Self {
-            request_tx,
-            result_rx,
-            pending: HashSet::new(),
-        }
+        Self { request_tx, result_rx, pending: HashSet::new() }
     }
 
     /// Poll for completed renders and insert them into the cache.
@@ -132,11 +128,7 @@ fn render_worker(
     while let Ok(req) = rx.recv() {
         match doc.render_page(req.page_index, req.size) {
             Ok(page) => {
-                let _ = tx.send(RenderResult {
-                    page_index: req.page_index,
-                    size: req.size,
-                    page,
-                });
+                let _ = tx.send(RenderResult { page_index: req.page_index, size: req.size, page });
             }
             Err(e) => {
                 tracing::warn!("Background render failed for page {}: {e}", req.page_index);
