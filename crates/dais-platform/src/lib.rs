@@ -32,13 +32,17 @@ pub fn create_monitor_manager() -> impl MonitorManager {
 // Linux stub — will use X11 or Wayland depending on features
 #[cfg(target_os = "linux")]
 pub fn create_monitor_manager() -> impl MonitorManager {
-    // TODO: detect Wayland vs X11 at runtime
-    #[cfg(feature = "x11")]
-    {
-        linux_x11::X11MonitorManager::new()
-    }
-    #[cfg(all(feature = "wayland", not(feature = "x11")))]
-    {
-        linux_wayland::WaylandMonitorManager::new()
+    // TODO: detect Wayland vs X11 at runtime and use real backends
+    LinuxStubMonitorManager
+}
+
+/// Placeholder Linux monitor manager until X11/Wayland backends land.
+#[cfg(target_os = "linux")]
+struct LinuxStubMonitorManager;
+
+#[cfg(target_os = "linux")]
+impl MonitorManager for LinuxStubMonitorManager {
+    fn available_monitors(&self) -> Vec<MonitorInfo> {
+        Vec::new()
     }
 }
