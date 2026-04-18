@@ -21,6 +21,7 @@ const NOTES_HOVER_ZONE: f32 = 80.0;
 const HUD_BAR_HOVER_ZONE: f32 = 64.0;
 
 /// The presentation HUD — fullscreen slide with a hoverable info bar.
+#[derive(Default)]
 pub struct HudOverlay {
     display: AudienceDisplay,
     notes_visible: bool,
@@ -29,7 +30,7 @@ pub struct HudOverlay {
 
 impl HudOverlay {
     pub fn new() -> Self {
-        Self { display: AudienceDisplay::new(), notes_visible: false, bar_visible: false }
+        Self::default()
     }
 
     pub fn show(
@@ -88,19 +89,18 @@ impl HudOverlay {
                 if self.notes_visible
                     && let Some(notes) = state.current_notes.as_deref()
                 {
-                    self.show_notes_panel(ui, viewport_rect, notes);
+                    Self::show_notes_panel(ui, viewport_rect, notes);
                 }
 
                 // HUD bar
                 if self.bar_visible || self.notes_visible {
-                    self.show_hud_bar(ui, viewport_rect, state, sender);
+                    Self::show_hud_bar(ui, viewport_rect, state, sender);
                 }
             },
         );
     }
 
     fn show_hud_bar(
-        &self,
         ui: &mut egui::Ui,
         viewport: egui::Rect,
         state: &PresentationState,
@@ -120,22 +120,22 @@ impl HudOverlay {
         child_ui.horizontal_centered(|ui| {
             // Slide position
             let slide_text =
-                format!("{} / {}", state.current_logical_slide + 1, state.total_logical_slides,);
+                format!("{} / {}", state.current_logical_slide + 1, state.total_logical_slides);
             ui.label(egui::RichText::new(slide_text).size(16.0).color(egui::Color32::WHITE));
 
             // Overlay step
-            if let Some(g) = state.slide_groups.get(state.current_logical_slide) {
-                if g.pages.len() > 1 {
-                    ui.label(
-                        egui::RichText::new(format!(
-                            "step {}/{}",
-                            state.current_overlay_within_group + 1,
-                            g.pages.len()
-                        ))
-                        .size(13.0)
-                        .color(egui::Color32::GRAY),
-                    );
-                }
+            if let Some(g) = state.slide_groups.get(state.current_logical_slide)
+                && g.pages.len() > 1
+            {
+                ui.label(
+                    egui::RichText::new(format!(
+                        "step {}/{}",
+                        state.current_overlay_within_group + 1,
+                        g.pages.len()
+                    ))
+                    .size(13.0)
+                    .color(egui::Color32::GRAY),
+                );
             }
 
             ui.separator();
@@ -182,7 +182,7 @@ impl HudOverlay {
         });
     }
 
-    fn show_notes_panel(&self, ui: &mut egui::Ui, viewport: egui::Rect, notes: &str) {
+    fn show_notes_panel(ui: &mut egui::Ui, viewport: egui::Rect, notes: &str) {
         let panel_rect = egui::Rect::from_min_max(
             egui::pos2(viewport.min.x, viewport.max.y - HUD_BAR_HEIGHT - NOTES_PANEL_HEIGHT),
             egui::pos2(viewport.max.x, viewport.max.y - HUD_BAR_HEIGHT),

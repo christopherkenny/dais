@@ -115,8 +115,7 @@ fn resolve_dual_mode(
         }
         let available = monitors.iter().map(|m| m.name.as_str()).collect::<Vec<_>>().join(", ");
         let msg = format!(
-            "Configured audience monitor '{}' not found. Available: {}",
-            audience_name, available
+            "Configured audience monitor '{audience_name}' not found. Available: {available}",
         );
         tracing::warn!("{msg}");
         warnings.push(msg);

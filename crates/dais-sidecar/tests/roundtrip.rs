@@ -90,15 +90,19 @@ fn dais_format_preferred_over_pdfpc() {
 
     // Write a .dais with a title
     let dais_format = dais_sidecar::dais_format::DaisFormat;
-    let mut meta = dais_sidecar::types::PresentationMetadata::default();
-    meta.title = Some("From Dais".into());
+    let mut meta = dais_sidecar::types::PresentationMetadata {
+        title: Some("From Dais".into()),
+        ..Default::default()
+    };
     meta.groups.push(dais_sidecar::types::SlideGroupMeta { start_page: 0, end_page: 1 });
     dais_format.write(&pdf_path.with_extension("dais"), &meta).unwrap();
 
     // Write a .pdfpc with a different title
     let pdfpc_format = dais_sidecar::pdfpc::PdfpcFormat;
-    let mut meta_pdfpc = dais_sidecar::types::PresentationMetadata::default();
-    meta_pdfpc.title = Some("From Pdfpc".into());
+    let mut meta_pdfpc = dais_sidecar::types::PresentationMetadata {
+        title: Some("From Pdfpc".into()),
+        ..Default::default()
+    };
     meta_pdfpc.groups.push(dais_sidecar::types::SlideGroupMeta { start_page: 0, end_page: 2 });
     pdfpc_format.write(&pdf_path.with_extension("pdfpc"), &meta_pdfpc).unwrap();
 

@@ -26,7 +26,7 @@ pub trait DocumentSource: Send + Sync {
     fn outline(&self) -> Option<Vec<OutlineEntry>>;
 }
 
-/// Metadata embedded in the PDF by Polylux/touying/pdfpc LaTeX package.
+/// Metadata embedded in the PDF by `Polylux`/touying/pdfpc LaTeX package.
 #[derive(Debug, Clone)]
 pub struct EmbeddedMetadata {
     /// Raw pdfpc metadata string from the PDF info dictionary.

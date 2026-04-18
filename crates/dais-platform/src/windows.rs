@@ -1,4 +1,4 @@
-//! Windows monitor management via Win32 API.
+//! Windows monitor management via `Win32` API.
 #![allow(unsafe_code)]
 
 use dais_core::monitor::{MonitorInfo, MonitorManager};

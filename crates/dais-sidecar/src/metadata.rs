@@ -3,7 +3,7 @@ use crate::types::{PresentationMetadata, SlideGroupMeta};
 /// Attempt to extract pdfpc-compatible metadata from a raw pdfpc-format string
 /// embedded in a PDF's info dictionary (typically the "pdfpc" or "pdfpcFormat" key).
 ///
-/// Polylux, touying, and the `\pdfpc` LaTeX package embed metadata directly
+/// `Polylux`, touying, and the `\pdfpc` LaTeX package embed metadata directly
 /// into the compiled PDF (typically in the Info dictionary or XMP stream).
 ///
 /// Returns `None` if the input is empty or cannot be parsed.

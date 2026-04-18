@@ -1,4 +1,4 @@
-//! macOS monitor management via NSScreen.
+//! macOS monitor management via `NSScreen`.
 //!
 //! The full backend is not implemented yet, but CI for the macOS target still
 //! needs a concrete type so the platform crate compiles on every OS.

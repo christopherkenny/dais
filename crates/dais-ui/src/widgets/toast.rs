@@ -29,7 +29,7 @@ impl ToastLevel {
         }
     }
 
-    fn text_color(self) -> egui::Color32 {
+    fn text_color() -> egui::Color32 {
         egui::Color32::WHITE
     }
 }
@@ -109,7 +109,7 @@ impl ToastManager {
                             ui.add(
                                 egui::Label::new(
                                     egui::RichText::new(&toast.message)
-                                        .color(toast.level.text_color()),
+                                        .color(ToastLevel::text_color()),
                                 )
                                 .wrap(),
                             );
@@ -118,7 +118,7 @@ impl ToastManager {
                                     .add(
                                         egui::Button::new(
                                             egui::RichText::new("×")
-                                                .color(toast.level.text_color())
+                                                .color(ToastLevel::text_color())
                                                 .strong(),
                                         )
                                         .frame(false),

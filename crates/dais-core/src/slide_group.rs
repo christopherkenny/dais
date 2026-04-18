@@ -13,7 +13,7 @@ pub struct SlideGroup {
 /// How the grouping information was obtained.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GroupingSource {
-    /// Polylux/touying/pdfpc LaTeX package metadata embedded in the PDF.
+    /// `Polylux`/touying/pdfpc LaTeX package metadata embedded in the PDF.
     EmbeddedMetadata,
     /// Explicit grouping from a `.pdfpc` sidecar file.
     SidecarFile,
