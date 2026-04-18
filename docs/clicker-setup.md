@@ -1,10 +1,10 @@
 # Clicker & Remote Setup
 
-Dais works with USB presenter remotes (clickers) out of the box. Most clickers send standard keyboard events—PageDown, PageUp, F5, and similar—so they map directly to Dais actions through the keybinding system.
+Dais reads clickers as keyboard input. Most USB presenter remotes send standard keys such as `PageDown`, `PageUp`, and `F5`, so they work through the normal keybinding system.
 
 ## How Clicker Profiles Work
 
-A **clicker profile** is a named mapping from key names to Dais action names. Dais ships with a built-in `default` profile that covers the keys sent by most USB presenters. You can also define custom profiles in your config for specific hardware.
+A **clicker profile** is a named mapping from key names to Dais action names. Dais ships with a built-in `default` profile and also supports custom profiles in config.
 
 The active profile is set with `clicker.profile` in your `config.toml` or `dais.toml`.
 
@@ -24,17 +24,7 @@ These overlap with the default keybindings, so most clickers work without any co
 
 ## Common Presenters
 
-### Logitech Spotlight / R500 / R400
-
-These popular presenters send PageDown (forward), PageUp (back), and optionally F5 (start) or Escape (end). They work with the default profile. The Spotlight's "highlight" feature is an OS-level pointer and does not send key events to Dais.
-
-### Kensington Expert / Wireless Presenter
-
-Kensington remotes typically send PageDown, PageUp, and sometimes B for blank screen. All are covered by the default profile.
-
-### Other USB Presenters
-
-Most generic RF presenters send PageDown/PageUp. If yours sends different keys, use `--test-input` to discover the actual key names (see below), then create a custom profile.
+Most generic USB presenters send `PageDown` and `PageUp`. If yours sends different keys, use `--test-input` to discover the actual key names, then create a custom profile.
 
 ## Creating a Custom Profile
 
@@ -80,7 +70,7 @@ dais --test-input
 
 This opens a small window that displays:
 - The key name Dais sees for each press
-- Any active modifiers (Shift, Ctrl, Alt)
+- Any active modifiers (`Shift`, `Ctrl`, `Alt`)
 - Which action the key currently maps to
 
 Press each button on your clicker and note the key names. Use these names when building a custom profile. Press Escape or click "Exit" to close.
@@ -94,13 +84,13 @@ dais --test-input --config path/to/dais.toml
 ## Troubleshooting
 
 **Clicker buttons do nothing:**
-Run `--test-input` to verify Dais receives the key events. Some clickers need a USB receiver plugged in before launching Dais. On Linux, some RF receivers need the `uinput` module loaded.
+Run `--test-input` to verify that Dais receives the key events. Some clickers need their USB receiver connected before launch.
 
 **Wrong action fires:**
-Check the key name with `--test-input`, then remap it in a custom clicker profile or in the `[keybindings]` section of your config.
+Check the key name with `--test-input`, then remap it in a custom clicker profile or in `[keybindings]`.
 
 **Clicker works in other apps but not Dais:**
-Some clickers send mouse clicks or custom HID events instead of keyboard events. Dais only responds to keyboard events. Check your clicker's documentation for a "compatibility mode" that sends keyboard keys.
+Some clickers send mouse clicks or custom HID events instead of keyboard events. Dais only responds to keyboard events.
 
 **Bluetooth clickers disconnect:**
-This is an OS-level pairing issue, not a Dais issue. Re-pair the device. Some Bluetooth presenters work more reliably with their bundled USB RF receiver than over native Bluetooth.
+This is usually an OS-level pairing issue. Some Bluetooth presenters work more reliably through their bundled USB receiver than through native Bluetooth.

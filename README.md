@@ -11,7 +11,7 @@ Dais is designed for straightforward installation, reliable operation in real pr
 - Multi-monitor presenter view with an audience display and a presenter console with notes, timer, and navigation.
 - Overlay and build-step support for Polylux, touying, Beamer `\pdfpc` metadata, and manual grouping.
 - Presentation tools including a laser pointer, freehand ink, spotlight, and zoom.
-- `.pdfpc` sidecar compatibility for existing notes and grouping metadata.
+- `.pdfpc` compatibility and a native `.dais` sidecar format.
 - Fully remappable keybindings with presenter-console defaults.
 - Single-binary distribution with no runtime dependencies or installers.
 
@@ -34,7 +34,7 @@ dais --edit <file.pdf>           # Open the slide grouping editor
 ### Display Modes
 
 - **Dual** (default with 2+ monitors): Presenter console on primary, audience fullscreen on secondary.
-- **Single** (`--single`): Presenter-only view with no audience window.
+- **Single** (`--single`): Single-window mode. Press `F5` to switch between the presenter console and the presentation HUD.
 - **Screen-share** (`--screen-share`): Both windows visible; audience is a normal resizable window for Zoom/Teams sharing.
 
 With one monitor, Dais automatically falls back to single mode.
@@ -47,7 +47,7 @@ For PDFs without embedded overlay metadata (e.g., PowerPoint exports), use the b
 dais --edit slides.pdf
 ```
 
-Click between thumbnails to set group boundaries. Save writes the configured sidecar format and Dais loads `.dais` before `.pdfpc` on future runs.
+Click between thumbnails to set group boundaries. Save writes the configured sidecar format. When loading, Dais checks `.dais` before `.pdfpc`.
 
 ## Building from Source
 
@@ -65,13 +65,13 @@ The binary will be at `target/release/dais` (or `dais.exe` on Windows).
 
 | Source | Overlay grouping | Notes |
 |---|---|---|
-| Typst + Polylux/touying | Automatic | Recommended workflow. |
-| Quarto + projector | Depends on workflow | Outputs Polylux; use emitted sidecar metadata when available. |
+| Typst + Polylux/touying | Automatic | Embedded metadata. |
+| Quarto + projector | Depends on workflow | Use emitted sidecar metadata when available. |
 | Beamer + `\pdfpc` package | Automatic | One-line preamble addition. |
 | Quarto + Beamer + pdfpc header | Automatic | One-line YAML addition. |
 | Beamer without `\pdfpc` | Manual sidecar | Built-in editor. |
 | PowerPoint PDF export | Manual sidecar | Animations expand to separate pages. |
-| Keynote PDF export | Automatic | No animations in export. |
+| Keynote PDF export | Page-per-slide | No animation expansion in export. |
 
 ## Configuration
 
@@ -88,11 +88,11 @@ For display assignment, `audience_monitor` can be a monitor name or a simple dis
 
 ## Keybindings
 
-See [docs/keybindings.md](docs/keybindings.md) for the full reference. All keybindings are remappable via config.
+See [docs/keybindings.md](docs/keybindings.md) for the full reference.
 
 ## Clicker & Remote Support
 
-Dais works with USB presenter remotes out of the box. See [docs/clicker-setup.md](docs/clicker-setup.md) for profiles, custom mappings, and the `--test-input` diagnostic mode.
+See [docs/clicker-setup.md](docs/clicker-setup.md) for clicker profiles, custom mappings, and the `--test-input` diagnostic mode.
 
 ## Architecture
 
@@ -132,7 +132,7 @@ CI runs on all three platforms (Windows, macOS, Linux) on every push and PR.
 
 ## Design Notes
 
-The original project proposal is at [docs/design-proposal.md](docs/design-proposal.md).
+The original project proposal is archived at [docs/design-proposal.md](docs/design-proposal.md).
 
 ## License
 

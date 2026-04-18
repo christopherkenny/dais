@@ -75,7 +75,7 @@ mode = "elapsed"
 |---|---|
 | `dual` | Audience fullscreen on secondary monitor, presenter console on primary. Default when 2+ monitors detected. |
 | `single` | Presenter console only, no audience window. Use `--single` CLI flag or set in config. |
-| `screen-share` | Audience window is a normal resizable window (not fullscreen). For Zoom/Teams screen sharing. Use `--screen-share` CLI flag or set in config. Auto-selected with one monitor. |
+| `screen-share` | Audience window is a normal resizable window (not fullscreen). For Zoom/Teams screen sharing. Use `--screen-share` CLI flag or set in config. |
 
 CLI flags (`--single`, `--screen-share`) override config. If no flag is given and config is `"dual"` (default), Dais auto-detects: 2+ monitors → dual, 1 monitor → single.
 
@@ -110,11 +110,11 @@ The grouping editor and `save_sidecar` action both use `sidecar_format` when cho
 
 ## Presentation Mode (F5)
 
-In single-monitor mode, press **F5** to toggle between the full presenter console and a HUD-focused presentation view. The HUD shows:
+In single-monitor mode, press **F5** to toggle between the presenter console and the presentation HUD. The HUD shows:
 
-- The audience slide fullscreen
-- A semi-transparent bottom bar with timer, slide count, and mode indicators
-- Hover near the bottom edge to reveal notes
+- The audience slide
+- A bottom bar that appears near the lower edge
+- Notes when you hover near the bottom edge
 
 Press **Escape** to exit HUD mode back to the console. In dual-monitor mode, F5 is available but the audience already has a dedicated screen.
 
