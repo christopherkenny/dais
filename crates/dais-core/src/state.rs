@@ -72,6 +72,8 @@ pub struct PresentationState {
     pub notes_font_size: f32,
     /// Step size for font increment/decrement.
     pub notes_font_size_step: f32,
+    /// Whether a quit confirmation dialog is showing.
+    pub quit_requested: bool,
 
     // -- Content --
     /// Markdown notes for the current logical slide, if any.
@@ -110,6 +112,7 @@ impl PresentationState {
             notes_visible: true,
             notes_font_size: 16.0,
             notes_font_size_step: 2.0,
+            quit_requested: false,
             current_notes,
         }
     }

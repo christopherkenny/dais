@@ -111,6 +111,53 @@ impl SlideThumbnail {
     pub fn has_texture(&self) -> bool {
         self.texture.is_some()
     }
+
+    /// Display the thumbnail zoomed into a specific region.
+    /// `center` is normalized (0..1, 0..1), `factor` is the zoom multiplier.
+    #[allow(clippy::cast_precision_loss)]
+    pub fn show_zoomed(
+        &self,
+        ui: &mut Ui,
+        desired_size: Vec2,
+        center: (f32, f32),
+        factor: f32,
+    ) -> Response {
+        let Some(tex) = &self.texture else {
+            let (rect, response) = ui.allocate_exact_size(desired_size, egui::Sense::hover());
+            ui.painter().rect_filled(rect, 0.0, egui::Color32::from_gray(40));
+            return response;
+        };
+
+        let tex_aspect = self.width as f32 / self.height.max(1) as f32;
+        let box_aspect = desired_size.x / desired_size.y.max(1.0);
+
+        let display_size = if tex_aspect > box_aspect {
+            Vec2::new(desired_size.x, desired_size.x / tex_aspect)
+        } else {
+            Vec2::new(desired_size.y * tex_aspect, desired_size.y)
+        };
+
+        let (rect, response) = ui.allocate_exact_size(desired_size, egui::Sense::hover());
+
+        let offset = (desired_size - display_size) / 2.0;
+        let image_rect = egui::Rect::from_min_size(rect.min + offset, display_size);
+
+        ui.painter().rect_filled(rect, 0.0, egui::Color32::BLACK);
+
+        // Compute UV sub-rect for the zoomed region
+        let half_u = 1.0 / (factor * 2.0);
+        let half_v = 1.0 / (factor * 2.0);
+        let u_center = center.0.clamp(half_u, 1.0 - half_u);
+        let v_center = center.1.clamp(half_v, 1.0 - half_v);
+        let uv = egui::Rect::from_min_max(
+            egui::pos2(u_center - half_u, v_center - half_v),
+            egui::pos2(u_center + half_u, v_center + half_v),
+        );
+
+        ui.painter().image(tex.id(), image_rect, uv, egui::Color32::WHITE);
+
+        response
+    }
 }
 
 impl Default for SlideThumbnail {

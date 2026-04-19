@@ -32,10 +32,12 @@ pub struct GroupingEditor {
 
 /// Thumbnail display height in logical pixels.
 const THUMB_HEIGHT: f32 = 140.0;
+/// Render resolution multiplier for higher quality thumbnails.
+const RENDER_SCALE: f32 = 3.0;
 /// Separator width between groups.
 const GROUP_SEP_WIDTH: f32 = 6.0;
 /// Clickable gap between thumbnails within a group.
-const INNER_GAP: f32 = 8.0;
+const INNER_GAP: f32 = 12.0;
 /// Padding inside each group container.
 const GROUP_PADDING: f32 = 8.0;
 /// Status message display duration.
@@ -150,8 +152,9 @@ impl GroupingEditor {
     /// Ensure a page thumbnail is rendered and uploaded.
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     fn ensure_thumbnail(&mut self, ctx: &egui::Context, page_index: usize) {
-        let render_size =
-            RenderSize { width: (THUMB_HEIGHT * 16.0 / 9.0) as u32, height: THUMB_HEIGHT as u32 };
+        let render_height = (THUMB_HEIGHT * RENDER_SCALE) as u32;
+        let render_width = (THUMB_HEIGHT * RENDER_SCALE * 16.0 / 9.0) as u32;
+        let render_size = RenderSize { width: render_width, height: render_height };
 
         if self.cache.get(page_index, render_size).is_none()
             && let Ok(rendered) = self.doc.render_page(page_index, render_size)

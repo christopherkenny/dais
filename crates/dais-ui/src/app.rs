@@ -105,6 +105,15 @@ impl eframe::App for DaisApp {
         // Audience page (may differ if frozen)
         self.pipeline.ensure_rendered(state.audience_page(), audience_size, &mut self.cache);
 
+        // When overview is visible, request renders for all logical slide thumbnails
+        if state.overview_visible {
+            for group in &state.slide_groups {
+                if let Some(&first_page) = group.pages.first() {
+                    self.pipeline.ensure_rendered(first_page, presenter_size, &mut self.cache);
+                }
+            }
+        }
+
         // Request periodic repaints while timers are active or renders are pending.
         if state.timer.running {
             ctx.request_repaint_after(std::time::Duration::from_millis(100));

@@ -54,6 +54,7 @@ impl PresenterConsole {
     /// All page textures come from the cache (populated by the background
     /// render pipeline).  If a page isn't cached yet we simply skip it —
     /// the pipeline will deliver it on a subsequent frame.
+    #[allow(clippy::too_many_lines)]
     pub fn show(
         &mut self,
         ctx: &egui::Context,
@@ -149,6 +150,49 @@ impl PresenterConsole {
                 // Slide overview (modal overlay)
                 if state.overview_visible {
                     self.overview.show(ctx, ui, state, cache, sender);
+                }
+
+                // Quit confirmation dialog
+                if state.quit_requested {
+                    let screen = ui.max_rect();
+                    // Dim background
+                    ui.painter().rect_filled(
+                        screen,
+                        0.0,
+                        egui::Color32::from_rgba_unmultiplied(0, 0, 0, 180),
+                    );
+
+                    let dialog_size = egui::vec2(320.0, 120.0);
+                    let dialog_rect = egui::Rect::from_center_size(screen.center(), dialog_size);
+                    ui.painter().rect_filled(dialog_rect, 8.0, egui::Color32::from_gray(50));
+                    ui.painter().rect_stroke(
+                        dialog_rect,
+                        8.0,
+                        egui::Stroke::new(1.0, egui::Color32::GRAY),
+                        egui::StrokeKind::Outside,
+                    );
+
+                    ui.painter().text(
+                        dialog_rect.center_top() + egui::vec2(0.0, 25.0),
+                        egui::Align2::CENTER_CENTER,
+                        "Quit presentation?",
+                        egui::FontId::proportional(18.0),
+                        egui::Color32::WHITE,
+                    );
+                    ui.painter().text(
+                        dialog_rect.center_top() + egui::vec2(0.0, 50.0),
+                        egui::Align2::CENTER_CENTER,
+                        "Press q/Escape again to confirm",
+                        egui::FontId::proportional(13.0),
+                        egui::Color32::LIGHT_GRAY,
+                    );
+                    ui.painter().text(
+                        dialog_rect.center_top() + egui::vec2(0.0, 75.0),
+                        egui::Align2::CENTER_CENTER,
+                        "Any other key to cancel",
+                        egui::FontId::proportional(12.0),
+                        egui::Color32::from_gray(160),
+                    );
                 }
             });
     }

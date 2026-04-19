@@ -179,7 +179,7 @@ pub fn audience_viewport_builder(mode: &DisplayMode) -> egui::ViewportBuilder {
 pub fn presenter_viewport_builder(
     config: &Config,
     monitor_mgr: &dyn MonitorManager,
-    window_size: egui::Vec2,
+    _window_size: egui::Vec2,
 ) -> egui::ViewportBuilder {
     let presenter_selector = config.display.presenter_monitor.trim();
     let monitor = if presenter_selector.is_empty() || presenter_selector == "auto" {
@@ -190,8 +190,8 @@ pub fn presenter_viewport_builder(
 
     let builder = with_app_icon(egui::ViewportBuilder::default())
         .with_title("Dais — Presenter Console")
-        .with_inner_size(window_size)
-        .with_resizable(true);
+        .with_resizable(true)
+        .with_maximized(true);
 
     let Some(monitor) = monitor else {
         return builder;
@@ -202,16 +202,13 @@ pub fn presenter_viewport_builder(
     }
 
     let (logical_w, logical_h) = monitor.logical_size();
-    let max_w = (logical_w as f32 - 80.0).max(640.0);
-    // Reserve extra vertical space for window title bar and taskbar
-    let max_h = (logical_h as f32 - 140.0).max(480.0);
-    let fitted_w = window_size.x.min(max_w);
-    let fitted_h = window_size.y.min(max_h);
+    let max_w = (logical_w as f32 - 20.0).max(640.0);
+    let max_h = (logical_h as f32 - 60.0).max(480.0);
 
-    let x = monitor.position.0 as f32 + ((logical_w as f32 - fitted_w) / 2.0).max(0.0);
-    let y = monitor.position.1 as f32 + ((logical_h as f32 - fitted_h) / 2.0).max(0.0);
+    let x = monitor.position.0 as f32 + ((logical_w as f32 - max_w) / 2.0).max(0.0);
+    let y = monitor.position.1 as f32 + ((logical_h as f32 - max_h) / 2.0).max(0.0);
 
-    builder.with_inner_size(egui::vec2(fitted_w, fitted_h)).with_position(egui::pos2(x, y))
+    builder.with_inner_size(egui::vec2(max_w, max_h)).with_position(egui::pos2(x, y))
 }
 
 /// Determine the audience render size from the selected display mode.

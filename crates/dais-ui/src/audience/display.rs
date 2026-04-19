@@ -23,18 +23,19 @@ impl AudienceDisplay {
     }
 
     /// Render the slide in the full available area, returning the image rect.
-    pub fn show(&mut self, ui: &mut egui::Ui) -> egui::Rect {
+    /// If `zoom_region` is provided, render only that sub-region magnified.
+    pub fn show(
+        &mut self,
+        ui: &mut egui::Ui,
+        zoom_region: Option<((f32, f32), f32)>,
+    ) -> egui::Rect {
         let available = ui.available_size();
-        let response = self.thumbnail.show(ui, available);
-        // Reconstruct image rect from the response rect
-        let rect = response.rect;
-
-        // Calculate the actual image rect within the allocated space
-        if self.thumbnail.has_texture() {
-            self.last_image_rect = compute_image_rect(rect, &self.thumbnail);
+        let response = if let Some((center, factor)) = zoom_region {
+            self.thumbnail.show_zoomed(ui, available, center, factor)
         } else {
-            self.last_image_rect = rect;
-        }
+            self.thumbnail.show(ui, available)
+        };
+        self.last_image_rect = response.rect;
 
         self.last_image_rect
     }
@@ -48,14 +49,4 @@ impl Default for AudienceDisplay {
     fn default() -> Self {
         Self::new()
     }
-}
-
-/// Compute the letterboxed image rect within the allocated rect.
-fn compute_image_rect(alloc_rect: egui::Rect, thumb: &SlideThumbnail) -> egui::Rect {
-    // We need to reconstruct the same logic as SlideThumbnail::show
-    // Since show() allocates the full desired_size and centers the image,
-    // we just return the allocated rect. The actual image is centered inside it.
-    // For overlay purposes, this is sufficient.
-    let _ = thumb;
-    alloc_rect
 }

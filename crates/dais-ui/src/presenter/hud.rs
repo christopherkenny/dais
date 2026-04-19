@@ -55,8 +55,13 @@ impl HudOverlay {
             |ui| {
                 let viewport_rect = ui.max_rect();
 
-                // Fullscreen slide
-                let image_rect = self.display.show(ui);
+                // Fullscreen slide (with zoom if active)
+                let zoom_region = if state.zoom_active {
+                    state.zoom_region.as_ref().map(|r| (r.center, r.factor))
+                } else {
+                    None
+                };
+                let image_rect = self.display.show(ui, zoom_region);
 
                 // Mouse interaction on the slide
                 let response = ui.interact(

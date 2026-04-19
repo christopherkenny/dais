@@ -39,12 +39,7 @@ pub fn load_metadata(
 ) -> (PresentationMetadata, MetadataSource) {
     use crate::format::SidecarFormat;
 
-    // Priority 1: Embedded PDF metadata
-    if let Some(meta) = extract_embedded_metadata(embedded_pdfpc_data) {
-        return (meta, MetadataSource::Embedded);
-    }
-
-    // Priority 2: .dais sidecar file
+    // Priority 1: .dais sidecar file (user customizations override everything)
     let dais_path = pdf_path.with_extension("dais");
     if dais_path.exists() {
         let format = crate::dais_format::DaisFormat;
@@ -54,7 +49,7 @@ pub fn load_metadata(
         tracing::warn!("Failed to parse sidecar file: {}", dais_path.display());
     }
 
-    // Priority 3: .pdfpc sidecar file
+    // Priority 2: .pdfpc sidecar file
     let sidecar_path = pdf_path.with_extension("pdfpc");
     if sidecar_path.exists() {
         let format = crate::pdfpc::PdfpcFormat;
@@ -62,6 +57,11 @@ pub fn load_metadata(
             return (meta, MetadataSource::Sidecar(sidecar_path));
         }
         tracing::warn!("Failed to parse sidecar file: {}", sidecar_path.display());
+    }
+
+    // Priority 3: Embedded PDF metadata (Beamer/Quarto defaults)
+    if let Some(meta) = extract_embedded_metadata(embedded_pdfpc_data) {
+        return (meta, MetadataSource::Embedded);
     }
 
     // Priority 4: No metadata
@@ -132,11 +132,42 @@ mod tests {
     }
 
     #[test]
-    fn load_metadata_embedded_takes_priority() {
+    fn load_metadata_embedded_fallback_when_no_sidecar() {
         let data = "[overlay]\n1 3\n";
         let (meta, source) = load_metadata(std::path::Path::new("nonexistent.pdf"), Some(data));
         assert_eq!(meta.groups.len(), 1);
         assert!(matches!(source, MetadataSource::Embedded));
+    }
+
+    #[test]
+    fn load_metadata_sidecar_overrides_embedded() {
+        use crate::format::SidecarFormat;
+        use crate::pdfpc::PdfpcFormat;
+
+        let dir = std::env::temp_dir().join("dais_test_sidecar_over_embedded");
+        let _ = std::fs::create_dir_all(&dir);
+        let pdf_path = dir.join("talk.pdf");
+        std::fs::write(&pdf_path, b"fake pdf").unwrap();
+
+        // Write a .pdfpc sidecar with groups
+        let sidecar_meta = PresentationMetadata {
+            title: Some("Sidecar".to_string()),
+            groups: vec![crate::types::SlideGroupMeta { start_page: 0, end_page: 2 }],
+            ..Default::default()
+        };
+        PdfpcFormat.write(&dir.join("talk.pdfpc"), &sidecar_meta).unwrap();
+
+        // Provide embedded metadata (no groups)
+        let embedded = "[notes]\n### 1\nEmbedded note\n";
+        let (meta, source) = load_metadata(&pdf_path, Some(embedded));
+
+        // Sidecar should win over embedded
+        assert_eq!(meta.title.as_deref(), Some("Sidecar"));
+        assert_eq!(meta.groups.len(), 1);
+        assert!(matches!(source, MetadataSource::Sidecar(_)));
+
+        let _ = std::fs::remove_file(dir.join("talk.pdf"));
+        let _ = std::fs::remove_file(dir.join("talk.pdfpc"));
     }
 
     #[test]

@@ -193,7 +193,7 @@ impl Default for Config {
             notes: NotesConfig::default(),
             keybindings: HashMap::new(),
             clicker: ClickerConfig::default(),
-            sidecar_format: "pdfpc".to_string(),
+            sidecar_format: "dais".to_string(),
         }
     }
 }

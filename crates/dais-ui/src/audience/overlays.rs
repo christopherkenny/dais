@@ -62,12 +62,16 @@ pub fn draw_spotlight_overlay(ui: &mut egui::Ui, image_rect: egui::Rect, nx: f32
     let center = denormalize(image_rect, nx, ny);
     let painter = ui.painter_at(image_rect);
     let dim_color = egui::Color32::from_rgba_unmultiplied(0, 0, 0, 150);
-    let hole_rect = egui::Rect::from_center_size(center, egui::vec2(half_size * 2.0, half_size * 2.0))
-        .intersect(image_rect);
+    let hole_rect =
+        egui::Rect::from_center_size(center, egui::vec2(half_size * 2.0, half_size * 2.0))
+            .intersect(image_rect);
 
     if hole_rect.top() > image_rect.top() {
         painter.rect_filled(
-            egui::Rect::from_min_max(image_rect.left_top(), egui::pos2(image_rect.right(), hole_rect.top())),
+            egui::Rect::from_min_max(
+                image_rect.left_top(),
+                egui::pos2(image_rect.right(), hole_rect.top()),
+            ),
             0.0,
             dim_color,
         );

@@ -46,11 +46,18 @@ impl AudienceWindow {
             self.display.update(ctx, &page, audience_page);
         }
 
+        // Extract zoom region if active
+        let zoom_region = if state.zoom_active {
+            state.zoom_region.as_ref().map(|r| (r.center, r.factor))
+        } else {
+            None
+        };
+
         egui::CentralPanel::default().frame(egui::Frame::new().fill(egui::Color32::BLACK)).show(
             ctx,
             |ui| {
                 let viewport_rect = ui.max_rect();
-                let image_rect = self.display.show(ui);
+                let image_rect = self.display.show(ui, zoom_region);
                 overlays::draw_overlays(ui, viewport_rect, image_rect, &state);
             },
         );

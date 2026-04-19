@@ -109,11 +109,17 @@ impl PresentationEngine {
                 } else if self.state.overview_visible {
                     // Escape closes overview instead of quitting
                     self.state.overview_visible = false;
-                } else {
-                    // Auto-save sidecar before quitting
+                } else if self.state.quit_requested {
+                    // Second quit confirms — actually quit
                     self.save_sidecar();
                     should_quit = true;
+                } else {
+                    // First quit shows confirmation
+                    self.state.quit_requested = true;
                 }
+            } else {
+                // Any non-quit command cancels the quit confirmation
+                self.state.quit_requested = false;
             }
             self.process_command(cmd);
         }
@@ -888,7 +894,13 @@ mod tests {
         assert!(!should_quit);
         assert!(!engine.state().presentation_mode);
 
-        // Second Quit actually quits
+        // Second Quit triggers confirmation prompt
+        sender.send(Command::Quit).unwrap();
+        let should_quit = engine.tick();
+        assert!(!should_quit);
+        assert!(engine.state().quit_requested);
+
+        // Third Quit actually quits
         sender.send(Command::Quit).unwrap();
         let should_quit = engine.tick();
         assert!(should_quit);
@@ -1153,10 +1165,30 @@ mod tests {
     // ---- Quit ----
 
     #[test]
-    fn quit_command_returns_true() {
+    fn quit_command_requires_confirmation() {
         let (mut engine, _, sender) = make_engine(5);
+        // First quit shows confirmation
+        sender.send(Command::Quit).unwrap();
+        assert!(!engine.tick());
+        assert!(engine.state().quit_requested);
+
+        // Second quit confirms
         sender.send(Command::Quit).unwrap();
         assert!(engine.tick());
+    }
+
+    #[test]
+    fn quit_cancelled_by_other_command() {
+        let (mut engine, _, sender) = make_engine(5);
+        // First quit shows confirmation
+        sender.send(Command::Quit).unwrap();
+        engine.tick();
+        assert!(engine.state().quit_requested);
+
+        // Any other command cancels quit
+        sender.send(Command::NextSlide).unwrap();
+        assert!(!engine.tick());
+        assert!(!engine.state().quit_requested);
     }
 
     #[test]
