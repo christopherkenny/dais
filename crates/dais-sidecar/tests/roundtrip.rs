@@ -6,8 +6,7 @@ use dais_sidecar::format::SidecarFormat;
 
 #[test]
 fn pdfpc_fixture_roundtrip() {
-    let fixture =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/beamer-example.pdfpc");
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/example.pdfpc");
     assert!(fixture.exists(), "Fixture file not found: {}", fixture.display());
 
     let format = dais_sidecar::pdfpc::PdfpcFormat;
@@ -43,8 +42,7 @@ fn pdfpc_fixture_roundtrip() {
 
 #[test]
 fn dais_fixture_roundtrip() {
-    let fixture =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/quarto-example.dais");
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/example.dais");
     assert!(fixture.exists(), "Fixture file not found: {}", fixture.display());
 
     let format = dais_sidecar::dais_format::DaisFormat;

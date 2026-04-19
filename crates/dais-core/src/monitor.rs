@@ -14,6 +14,10 @@ pub struct MonitorInfo {
     pub position: (i32, i32),
     /// Physical resolution (width, height in pixels).
     pub size: (u32, u32),
+    /// Usable work area on the virtual desktop, excluding taskbars/docks
+    /// where the platform can provide it. Stored as (x, y, width, height)
+    /// in physical pixels.
+    pub work_area: (i32, i32, u32, u32),
     /// DPI scale factor (1.0 = 96dpi, 2.0 = Retina/HiDPI).
     pub scale_factor: f64,
     /// Whether this is the OS primary monitor.
@@ -24,6 +28,16 @@ impl MonitorInfo {
     /// The effective logical size (physical size / scale factor).
     pub fn logical_size(&self) -> (f64, f64) {
         (f64::from(self.size.0) / self.scale_factor, f64::from(self.size.1) / self.scale_factor)
+    }
+
+    /// The effective logical work area (physical work area / scale factor).
+    pub fn logical_work_area(&self) -> (f64, f64, f64, f64) {
+        (
+            f64::from(self.work_area.0) / self.scale_factor,
+            f64::from(self.work_area.1) / self.scale_factor,
+            f64::from(self.work_area.2) / self.scale_factor,
+            f64::from(self.work_area.3) / self.scale_factor,
+        )
     }
 }
 

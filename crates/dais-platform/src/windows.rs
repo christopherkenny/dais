@@ -74,8 +74,11 @@ unsafe extern "system" fn monitor_enum_callback(
     }
 
     let rc = info.monitorInfo.rcMonitor;
+    let rc_work = info.monitorInfo.rcWork;
     let width = (rc.right - rc.left) as u32;
     let height = (rc.bottom - rc.top) as u32;
+    let work_width = (rc_work.right - rc_work.left) as u32;
+    let work_height = (rc_work.bottom - rc_work.top) as u32;
     let is_primary = (info.monitorInfo.dwFlags & 1) != 0; // MONITORINFOF_PRIMARY
 
     // Get effective DPI
@@ -101,6 +104,7 @@ unsafe extern "system" fn monitor_enum_callback(
         name,
         position: (rc.left, rc.top),
         size: (width, height),
+        work_area: (rc_work.left, rc_work.top, work_width, work_height),
         scale_factor,
         is_primary,
     });
@@ -194,6 +198,7 @@ mod tests {
             name: "Test".into(),
             position: (0, 0),
             size: (3840, 2160),
+            work_area: (0, 0, 3840, 2080),
             scale_factor: 2.0,
             is_primary: true,
         };

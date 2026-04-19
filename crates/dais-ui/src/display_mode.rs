@@ -171,15 +171,16 @@ pub fn audience_viewport_builder(mode: &DisplayMode) -> egui::ViewportBuilder {
 
 /// Build the presenter viewport builder.
 ///
-/// The presenter window opens centered on the configured presenter monitor and
-/// is clamped to fit within that monitor's logical size. If no explicit
-/// presenter monitor is configured, the OS primary monitor is used. If monitor
-/// data is unavailable, we fall back to a normal titled window.
+/// The presenter window opens centered horizontally on the configured presenter
+/// monitor and positioned in the upper portion of that monitor's usable work
+/// area so it avoids overlapping OS taskbars/docks. If no explicit presenter
+/// monitor is configured, the OS primary monitor is used. If monitor data is
+/// unavailable, we fall back to a normal titled window.
 #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
 pub fn presenter_viewport_builder(
     config: &Config,
     monitor_mgr: &dyn MonitorManager,
-    _window_size: egui::Vec2,
+    window_size: egui::Vec2,
 ) -> egui::ViewportBuilder {
     let presenter_selector = config.display.presenter_monitor.trim();
     let monitor = if presenter_selector.is_empty() || presenter_selector == "auto" {
@@ -201,14 +202,32 @@ pub fn presenter_viewport_builder(
         return builder;
     }
 
-    let (logical_w, logical_h) = monitor.logical_size();
-    let max_w = (logical_w as f32 - 20.0).max(640.0);
-    let max_h = (logical_h as f32 - 60.0).max(480.0);
+    let (_logical_work_x, _logical_work_y, logical_work_w, logical_work_h) =
+        monitor.logical_work_area();
+    let (logical_monitor_w, logical_monitor_h) = monitor.logical_size();
+    let usable_w = if monitor.work_area.2 > 0 { logical_work_w } else { logical_monitor_w };
+    let usable_h = if monitor.work_area.3 > 0 { logical_work_h } else { logical_monitor_h };
 
-    let x = monitor.position.0 as f32 + ((logical_w as f32 - max_w) / 2.0).max(0.0);
-    let y = monitor.position.1 as f32 + ((logical_h as f32 - max_h) / 2.0).max(0.0);
+    let max_w = (usable_w as f32 - 20.0).max(640.0);
+    let max_h = (usable_h as f32 - 60.0).max(480.0);
+    let target_w = window_size.x.min(max_w);
+    let target_h = window_size.y.min(max_h);
 
-    builder.with_inner_size(egui::vec2(max_w, max_h)).with_position(egui::pos2(x, y))
+    let work_x = if monitor.work_area.2 > 0 {
+        monitor.work_area.0 as f32 / monitor.scale_factor as f32
+    } else {
+        monitor.position.0 as f32 / monitor.scale_factor as f32
+    };
+    let work_y = if monitor.work_area.3 > 0 {
+        monitor.work_area.1 as f32 / monitor.scale_factor as f32
+    } else {
+        monitor.position.1 as f32 / monitor.scale_factor as f32
+    };
+    let x = work_x + ((usable_w as f32 - target_w) / 2.0).max(0.0);
+    let top_margin: f32 = 24.0;
+    let y = work_y + top_margin.min((usable_h as f32 - target_h).max(0.0));
+
+    builder.with_inner_size(egui::vec2(target_w, target_h)).with_position(egui::pos2(x, y))
 }
 
 /// Determine the audience render size from the selected display mode.
@@ -266,6 +285,7 @@ mod tests {
                 name: "Primary".into(),
                 position: (0, 0),
                 size: (1920, 1080),
+                work_area: (0, 0, 1920, 1040),
                 scale_factor: 1.0,
                 is_primary: true,
             }],
@@ -280,6 +300,7 @@ mod tests {
                     name: "Primary".into(),
                     position: (0, 0),
                     size: (1920, 1080),
+                    work_area: (0, 0, 1920, 1040),
                     scale_factor: 1.0,
                     is_primary: true,
                 },
@@ -288,6 +309,7 @@ mod tests {
                     name: "DELL U2718Q".into(),
                     position: (1920, 0),
                     size: (3840, 2160),
+                    work_area: (1920, 0, 3840, 2120),
                     scale_factor: 2.0,
                     is_primary: false,
                 },
