@@ -78,6 +78,7 @@ impl HudOverlay {
                         spotlight: state.spotlight_active,
                         zoom: state.zoom_active,
                     },
+                    state.zoom_region.as_ref().map(|region| region.factor),
                 );
 
                 // Audience overlays (ink, laser, spotlight, zoom, blackout)

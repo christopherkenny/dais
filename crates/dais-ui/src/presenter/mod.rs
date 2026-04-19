@@ -102,6 +102,7 @@ impl PresenterConsole {
                         spotlight: state.spotlight_active,
                         zoom: state.zoom_active,
                     },
+                    state.zoom_region.as_ref().map(|region| region.factor),
                 );
 
                 // Draw ink strokes on presenter view
@@ -125,6 +126,20 @@ impl PresenterConsole {
                     && let Some((sx, sy)) = state.spotlight_position
                 {
                     crate::audience::overlays::draw_spotlight_overlay(ui, image_rect, sx, sy);
+                }
+
+                // Draw zoom target on presenter view so the operator can steer
+                // the audience zoom region. This is also the natural place to
+                // add future mouse-wheel zoom-factor control.
+                if state.zoom_active
+                    && let Some(ref region) = state.zoom_region
+                {
+                    crate::audience::overlays::draw_zoom_indicator(
+                        ui,
+                        image_rect,
+                        region.center,
+                        region.factor,
+                    );
                 }
 
                 // Next preview

@@ -44,6 +44,10 @@ pub struct InputHandler {
 
 /// Timeout for jump-to-slide digit accumulation.
 const JUMP_TIMEOUT_SECS: f64 = 3.0;
+/// Default zoom factor when zoom is first activated.
+const DEFAULT_ZOOM_FACTOR: f32 = 2.0;
+/// Mouse-wheel zoom sensitivity. Values above 1.0 zoom in.
+const ZOOM_SCROLL_BASE: f32 = 1.01;
 
 impl InputHandler {
     pub fn new(sender: CommandSender, keybindings: KeybindingMap) -> Self {
@@ -166,6 +170,7 @@ impl InputHandler {
         response: &egui::Response,
         image_rect: egui::Rect,
         aids: ActiveAids,
+        current_zoom_factor: Option<f32>,
     ) {
         if let Some(pos) = response.hover_pos() {
             let norm = normalize_to_rect(pos, image_rect);
@@ -178,9 +183,16 @@ impl InputHandler {
                 }
 
                 if aids.zoom {
+                    let scroll_delta = response.ctx.input(|i| i.raw_scroll_delta.y);
+                    let current_factor = current_zoom_factor.unwrap_or(DEFAULT_ZOOM_FACTOR);
+                    let factor = if response.hovered() && scroll_delta.abs() > f32::EPSILON {
+                        current_factor * ZOOM_SCROLL_BASE.powf(scroll_delta)
+                    } else {
+                        current_factor
+                    };
                     let _ = self
                         .sender
-                        .send(Command::SetZoomRegion { center: (norm.0, norm.1), factor: 2.0 });
+                        .send(Command::SetZoomRegion { center: (norm.0, norm.1), factor });
                 }
 
                 if aids.ink && response.dragged() {

@@ -1,4 +1,4 @@
-//! Audience window overlays — laser, ink, spotlight, zoom.
+//! Audience window overlays — laser, ink, spotlight.
 //!
 //! Renders visual aids over the audience slide image.
 
@@ -28,13 +28,6 @@ pub fn draw_overlays(
         && let Some((sx, sy)) = state.spotlight_position
     {
         draw_spotlight(ui, image_rect, sx, sy);
-    }
-
-    // Zoom
-    if state.zoom_active
-        && let Some(ref region) = state.zoom_region
-    {
-        draw_zoom_indicator(ui, image_rect, region.center, region.factor);
     }
 
     // Blackout
@@ -122,7 +115,15 @@ fn draw_spotlight(ui: &mut egui::Ui, image_rect: egui::Rect, nx: f32, ny: f32) {
 }
 
 /// Draw a zoom indicator at the given position.
-fn draw_zoom_indicator(ui: &mut egui::Ui, image_rect: egui::Rect, center: (f32, f32), factor: f32) {
+///
+/// Public so the presenter view can show the target region while the audience
+/// sees only the zoomed result.
+pub fn draw_zoom_indicator(
+    ui: &mut egui::Ui,
+    image_rect: egui::Rect,
+    center: (f32, f32),
+    factor: f32,
+) {
     let pos = denormalize(image_rect, center.0, center.1);
     let painter = ui.painter();
 
