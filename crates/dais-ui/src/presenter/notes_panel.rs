@@ -4,6 +4,14 @@
 
 use dais_core::bus::CommandSender;
 use dais_core::commands::Command;
+
+pub struct NotesPanelView<'a> {
+    pub notes: Option<&'a str>,
+    pub font_size: f32,
+    pub visible: bool,
+    pub editing: bool,
+}
+
 /// Presenter notes panel.
 pub struct NotesPanel {
     cache: egui_commonmark::CommonMarkCache,
@@ -19,13 +27,10 @@ impl NotesPanel {
         &mut self,
         ui: &mut egui::Ui,
         area: egui::Rect,
-        notes: Option<&str>,
-        font_size: f32,
-        visible: bool,
-        editing: bool,
+        view: &NotesPanelView<'_>,
         sender: &CommandSender,
     ) {
-        if !visible {
+        if !view.visible {
             return;
         }
 
@@ -46,10 +51,10 @@ impl NotesPanel {
 
         child_ui.allocate_new_ui(egui::UiBuilder::new().max_rect(content_area), |ui| {
             // Apply font size override
-            ui.style_mut().override_font_id = Some(egui::FontId::proportional(font_size));
+            ui.style_mut().override_font_id = Some(egui::FontId::proportional(view.font_size));
 
-            if editing {
-                let mut buffer = notes.unwrap_or_default().to_string();
+            if view.editing {
+                let mut buffer = view.notes.unwrap_or_default().to_string();
                 let edit = egui::TextEdit::multiline(&mut buffer)
                     .desired_width(f32::INFINITY)
                     .desired_rows(12)
@@ -60,7 +65,7 @@ impl NotesPanel {
                 }
             } else {
                 egui::ScrollArea::vertical().max_height(content_area.height()).show(ui, |ui| {
-                    if let Some(text) = notes {
+                    if let Some(text) = view.notes {
                         egui_commonmark::CommonMarkViewer::new().show(ui, &mut self.cache, text);
                     } else {
                         ui.colored_label(egui::Color32::from_gray(80), "No notes for this slide");

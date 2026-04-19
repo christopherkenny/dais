@@ -381,7 +381,7 @@ impl PresentationEngine {
                 if let Some(group) =
                     self.state.slide_groups.get_mut(self.state.current_logical_slide)
                 {
-                    group.notes = notes.clone();
+                    group.notes.clone_from(&notes);
                 }
                 self.state.current_notes = notes;
             }

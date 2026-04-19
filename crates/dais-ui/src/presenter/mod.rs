@@ -19,10 +19,10 @@ use dais_document::render_pipeline::FALLBACK_RENDER_SIZE;
 use self::current_slide::CurrentSlidePanel;
 use self::layout::PresenterLayout;
 use self::next_preview::NextPreviewPanel;
-use self::notes_panel::NotesPanel;
+use self::notes_panel::{NotesPanel, NotesPanelView};
 use self::overview::OverviewGrid;
 
-use crate::input::InputHandler;
+use crate::input::{InputHandler, UiModes};
 
 const MIN_LEFT_FRACTION: f32 = 0.35;
 const MAX_LEFT_FRACTION: f32 = 0.8;
@@ -76,10 +76,12 @@ impl PresenterConsole {
         // Process input
         self.input.handle_input(
             ctx,
-            state.overview_visible,
-            state.ink_active,
-            state.laser_active,
-            state.notes_editing,
+            UiModes {
+                overview_visible: state.overview_visible,
+                ink_active: state.ink_active,
+                laser_active: state.laser_active,
+                notes_editing: state.notes_editing,
+            },
         );
 
         // Update textures from cache (single canonical size)
@@ -174,10 +176,12 @@ impl PresenterConsole {
                 self.notes.show(
                     ui,
                     layout.notes_panel,
-                    state.current_notes.as_deref(),
-                    state.notes_font_size,
-                    state.notes_visible,
-                    state.notes_editing,
+                    &NotesPanelView {
+                        notes: state.current_notes.as_deref(),
+                        font_size: state.notes_font_size,
+                        visible: state.notes_visible,
+                        editing: state.notes_editing,
+                    },
                     sender,
                 );
 

@@ -35,6 +35,14 @@ pub struct ActiveAids {
     pub zoom: bool,
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+pub struct UiModes {
+    pub overview_visible: bool,
+    pub ink_active: bool,
+    pub laser_active: bool,
+    pub notes_editing: bool,
+}
+
 /// Processes egui events and dispatches [`Command`]s.
 pub struct InputHandler {
     sender: CommandSender,
@@ -64,24 +72,17 @@ impl InputHandler {
 
     /// Call once per frame from the presenter console.
     ///
-    /// `overview_visible` and `ink_active` / `laser_active` drive mode transitions.
-    pub fn handle_input(
-        &mut self,
-        ctx: &egui::Context,
-        overview_visible: bool,
-        ink_active: bool,
-        laser_active: bool,
-        notes_editing: bool,
-    ) {
+    /// UI state drives mode transitions.
+    pub fn handle_input(&mut self, ctx: &egui::Context, modes: UiModes) {
         // Sync mode from external state changes
         if self.mode != InputMode::JumpToSlide {
-            if overview_visible {
+            if modes.overview_visible {
                 self.mode = InputMode::Overview;
-            } else if notes_editing {
+            } else if modes.notes_editing {
                 self.mode = InputMode::NotesEdit;
-            } else if ink_active {
+            } else if modes.ink_active {
                 self.mode = InputMode::Ink;
-            } else if laser_active {
+            } else if modes.laser_active {
                 self.mode = InputMode::Laser;
             } else {
                 self.mode = InputMode::Normal;
@@ -118,7 +119,7 @@ impl InputHandler {
                 if let Some(action) = self.keybindings.lookup(&combo) {
                     match action {
                         Action::SaveSidecar | Action::ToggleNotesEdit => {
-                            self.dispatch_action(action)
+                            self.dispatch_action(action);
                         }
                         _ => {}
                     }
@@ -283,8 +284,7 @@ fn nearest_zoom_step_index(current_factor: f32) -> usize {
                 .partial_cmp(&(current_factor - **right).abs())
                 .unwrap_or(std::cmp::Ordering::Equal)
         })
-        .map(|(index, _)| index)
-        .unwrap_or(0)
+        .map_or(0, |(index, _)| index)
 }
 
 /// Convert a screen-space position to normalized (0..1) coordinates within a rect.

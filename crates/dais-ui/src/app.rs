@@ -175,6 +175,7 @@ impl eframe::App for DaisApp {
     }
 }
 
+#[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss, clippy::cast_sign_loss)]
 fn effective_audience_render_size(state: &PresentationState, base_size: RenderSize) -> RenderSize {
     let Some(region) = state.zoom_region.as_ref().filter(|_| state.zoom_active) else {
         return base_size;

@@ -231,7 +231,7 @@ impl GroupingEditor {
     }
 
     /// Render a single group card, returning any boundary toggle requests.
-    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     fn show_group(
         thumbnails: &[SlideThumbnail],
         ui: &mut egui::Ui,

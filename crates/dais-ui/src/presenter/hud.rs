@@ -12,7 +12,7 @@ use dais_document::page::RenderSize;
 
 use crate::audience::display::AudienceDisplay;
 use crate::audience::overlays;
-use crate::input::InputHandler;
+use crate::input::{InputHandler, UiModes};
 
 const HUD_BAR_HEIGHT: f32 = 48.0;
 const HUD_BAR_BG: egui::Color32 = egui::Color32::from_rgba_premultiplied(20, 20, 20, 180);
@@ -44,10 +44,12 @@ impl HudOverlay {
     ) {
         input.handle_input(
             ctx,
-            state.overview_visible,
-            state.ink_active,
-            state.laser_active,
-            state.notes_editing,
+            UiModes {
+                overview_visible: state.overview_visible,
+                ink_active: state.ink_active,
+                laser_active: state.laser_active,
+                notes_editing: state.notes_editing,
+            },
         );
 
         let audience_page = state.audience_page();
