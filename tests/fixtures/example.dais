@@ -18,6 +18,6 @@ groups: [
 ]
 notes: {
   "0": "Welcome to the presentation. This is a Quarto deck compiled via Beamer."
-  "2": "Key finding: our method outperforms the baseline by 15%."
+  "2": "Key finding: *our* method outperforms the baseline by 15%."
   "4": "Thank you for listening. Questions?"
 }

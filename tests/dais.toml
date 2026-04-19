@@ -1,3 +1,11 @@
 [display]
 mode = "dual"
 audience_monitor = "2"
+
+[timer]
+mode = "countdown"
+duration_minutes = 1
+
+[ink]
+color = "#00FF00"
+width = 5.0
