@@ -45,9 +45,9 @@ pub struct InputHandler {
 /// Timeout for jump-to-slide digit accumulation.
 const JUMP_TIMEOUT_SECS: f64 = 3.0;
 /// Default zoom factor when zoom is first activated.
-const DEFAULT_ZOOM_FACTOR: f32 = 2.0;
-/// Mouse-wheel zoom sensitivity. Values above 1.0 zoom in.
-const ZOOM_SCROLL_BASE: f32 = 1.01;
+const DEFAULT_ZOOM_FACTOR: f32 = 1.5;
+/// Supported zoom steps for mouse-wheel control.
+const ZOOM_STEPS: &[f32] = &[1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0];
 
 impl InputHandler {
     pub fn new(sender: CommandSender, keybindings: KeybindingMap) -> Self {
@@ -186,7 +186,7 @@ impl InputHandler {
                     let scroll_delta = response.ctx.input(|i| i.raw_scroll_delta.y);
                     let current_factor = current_zoom_factor.unwrap_or(DEFAULT_ZOOM_FACTOR);
                     let factor = if response.hovered() && scroll_delta.abs() > f32::EPSILON {
-                        current_factor * ZOOM_SCROLL_BASE.powf(scroll_delta)
+                        step_zoom_factor(current_factor, scroll_delta)
                     } else {
                         current_factor
                     };
@@ -213,6 +213,35 @@ impl InputHandler {
     pub fn jump_buffer(&self) -> &str {
         &self.jump_buffer
     }
+}
+
+fn step_zoom_factor(current_factor: f32, scroll_delta: f32) -> f32 {
+    let current_index = ZOOM_STEPS
+        .iter()
+        .position(|step| (*step - current_factor).abs() < f32::EPSILON)
+        .unwrap_or_else(|| nearest_zoom_step_index(current_factor));
+
+    let next_index = if scroll_delta > 0.0 {
+        current_index.saturating_add(1).min(ZOOM_STEPS.len() - 1)
+    } else {
+        current_index.saturating_sub(1)
+    };
+
+    ZOOM_STEPS[next_index]
+}
+
+fn nearest_zoom_step_index(current_factor: f32) -> usize {
+    ZOOM_STEPS
+        .iter()
+        .enumerate()
+        .min_by(|(_, left), (_, right)| {
+            (current_factor - **left)
+                .abs()
+                .partial_cmp(&(current_factor - **right).abs())
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })
+        .map(|(index, _)| index)
+        .unwrap_or(0)
 }
 
 /// Convert a screen-space position to normalized (0..1) coordinates within a rect.

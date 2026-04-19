@@ -11,6 +11,7 @@ use dais_core::config::Config;
 use dais_core::keybindings::KeybindingMap;
 use dais_core::state::PresentationState;
 use dais_document::cache::PageCache;
+use dais_document::page::RenderSize;
 use dais_document::render_pipeline::{FALLBACK_RENDER_SIZE, RenderPipeline};
 use dais_document::source::DocumentSource;
 use dais_engine::engine::PresentationEngine;
@@ -35,6 +36,8 @@ pub struct DaisApp {
     display_mode: DisplayMode,
     toast_manager: ToastManager,
 }
+
+const MAX_ZOOM_RENDER_DIMENSION: u32 = 4320;
 
 impl DaisApp {
     /// Create a new Dais application.
@@ -95,7 +98,8 @@ impl eframe::App for DaisApp {
 
         // Submit render requests for pages we need
         let presenter_size = FALLBACK_RENDER_SIZE;
-        let audience_size = display_mode::audience_render_size(&self.display_mode);
+        let base_audience_size = display_mode::audience_render_size(&self.display_mode);
+        let audience_size = effective_audience_render_size(&state, base_audience_size);
         self.pipeline.prefetch_neighborhood(
             state.current_page,
             state.total_pages,
@@ -103,6 +107,7 @@ impl eframe::App for DaisApp {
             &mut self.cache,
         );
         // Audience page (may differ if frozen)
+        self.pipeline.ensure_rendered(state.audience_page(), base_audience_size, &mut self.cache);
         self.pipeline.ensure_rendered(state.audience_page(), audience_size, &mut self.cache);
 
         // When overview is visible, request renders for all logical slide thumbnails
@@ -126,7 +131,7 @@ impl eframe::App for DaisApp {
         // In Single mode, show HUD or presenter console based on presentation_mode
         if matches!(self.display_mode, DisplayMode::Single) {
             if state.presentation_mode {
-                let render_size = FALLBACK_RENDER_SIZE;
+                let render_size = effective_audience_render_size(&state, FALLBACK_RENDER_SIZE);
                 let input = self.presenter.input_mut();
                 self.hud.show(ctx, &state, &mut self.cache, &self.sender, input, render_size);
             } else {
@@ -167,5 +172,23 @@ impl eframe::App for DaisApp {
         );
 
         self.toast_manager.show(ctx);
+    }
+}
+
+fn effective_audience_render_size(state: &PresentationState, base_size: RenderSize) -> RenderSize {
+    let Some(region) = state.zoom_region.as_ref().filter(|_| state.zoom_active) else {
+        return base_size;
+    };
+
+    // Render a denser source image while zoom is active so the cropped audience
+    // view has more real pixels to work with. We cap the output size to keep
+    // render cost bounded on extreme zoom factors.
+    let multiplier = region.factor.clamp(1.0, 3.0);
+    let width = ((base_size.width as f32) * multiplier).round() as u32;
+    let height = ((base_size.height as f32) * multiplier).round() as u32;
+
+    RenderSize {
+        width: width.clamp(base_size.width, MAX_ZOOM_RENDER_DIMENSION),
+        height: height.clamp(base_size.height, MAX_ZOOM_RENDER_DIMENSION),
     }
 }
