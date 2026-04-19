@@ -31,22 +31,39 @@ pub struct GroupingEditor {
 }
 
 /// Thumbnail display height in logical pixels.
-const THUMB_HEIGHT: f32 = 140.0;
+const THUMB_HEIGHT: f32 = 120.0;
 /// Render resolution multiplier for higher quality thumbnails.
 const RENDER_SCALE: f32 = 3.0;
-/// Separator width between groups.
-const GROUP_SEP_WIDTH: f32 = 6.0;
-/// Clickable gap between thumbnails within a group.
-const INNER_GAP: f32 = 12.0;
-/// Padding inside each group container.
-const GROUP_PADDING: f32 = 8.0;
+/// Horizontal spacing between page cells within a group.
+const PAGE_CELL_GAP: f32 = 10.0;
 /// Status message display duration.
 const STATUS_DURATION_SECS: f64 = 3.0;
 /// Alternating group background colors.
-const GROUP_BG_A: egui::Color32 = egui::Color32::from_gray(45);
-const GROUP_BG_B: egui::Color32 = egui::Color32::from_gray(55);
-/// Group separator color.
-const SEP_COLOR: egui::Color32 = egui::Color32::from_rgb(100, 160, 255);
+const GROUP_BG_A: egui::Color32 = egui::Color32::from_rgb(44, 51, 63);
+const GROUP_BG_B: egui::Color32 = egui::Color32::from_rgb(52, 60, 74);
+/// Editor background colors.
+const PANEL_BG: egui::Color32 = egui::Color32::from_rgb(20, 24, 31);
+const TOP_BAR_BG: egui::Color32 = egui::Color32::from_rgb(28, 33, 42);
+/// Text colors.
+const TEXT_PRIMARY: egui::Color32 = egui::Color32::from_rgb(241, 245, 249);
+const TEXT_SECONDARY: egui::Color32 = egui::Color32::from_rgb(224, 232, 240);
+/// Accent color for group editing controls.
+const ACTION_COLOR: egui::Color32 = egui::Color32::from_rgb(124, 178, 255);
+/// Flatter button fills.
+const BUTTON_FILL: egui::Color32 = egui::Color32::from_rgb(58, 72, 92);
+const BUTTON_FILL_HOVER: egui::Color32 = egui::Color32::from_rgb(71, 88, 112);
+const BUTTON_FILL_ACTIVE: egui::Color32 = egui::Color32::from_rgb(84, 104, 132);
+
+fn flat_button(text: impl Into<egui::WidgetText>) -> egui::Button<'static> {
+    egui::Button::new(text)
+        .fill(BUTTON_FILL)
+        .stroke(egui::Stroke::new(1.0, ACTION_COLOR.gamma_multiply(0.65)))
+        .corner_radius(4.0)
+}
+
+fn small_flat_button(text: impl Into<egui::WidgetText>) -> egui::Button<'static> {
+    flat_button(text).small()
+}
 
 impl GroupingEditor {
     /// Create a new grouping editor for the given document.
@@ -170,96 +187,133 @@ impl GroupingEditor {
 
     /// Render the top header bar.
     fn show_top_bar(&mut self, ctx: &egui::Context, page_count: usize, group_count: usize) {
-        egui::TopBottomPanel::top("grouping_top").show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                ui.heading("Grouping Editor");
-                ui.separator();
-                ui.label(format!("{page_count} pages → {group_count} slides"));
+        egui::TopBottomPanel::top("grouping_top")
+            .frame(egui::Frame::new().fill(TOP_BAR_BG).inner_margin(8.0))
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.heading(egui::RichText::new("Grouping Editor").color(TEXT_PRIMARY));
+                    ui.separator();
+                    ui.label(
+                        egui::RichText::new(format!("{page_count} pages → {group_count} slides"))
+                            .color(TEXT_SECONDARY),
+                    );
 
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui.button("✕ Close").clicked() {
-                        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                    }
-                    if ui.button("💾 Save").clicked() {
-                        self.save_sidecar();
-                    }
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        if ui
+                            .add(flat_button(egui::RichText::new("Close").color(TEXT_PRIMARY)))
+                            .clicked()
+                        {
+                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                        }
+                        if ui
+                            .add(
+                                flat_button(
+                                    egui::RichText::new("Save").color(TEXT_PRIMARY).strong(),
+                                )
+                                .fill(ACTION_COLOR.gamma_multiply(0.25)),
+                            )
+                            .clicked()
+                        {
+                            self.save_sidecar();
+                        }
 
-                    // Status message
-                    if let Some((ref msg, when)) = self.status_message
-                        && when.elapsed().as_secs_f64() < STATUS_DURATION_SECS
-                    {
-                        ui.label(
-                            egui::RichText::new(msg).color(egui::Color32::LIGHT_GREEN).size(13.0),
-                        );
-                    }
+                        // Status message
+                        if let Some((ref msg, when)) = self.status_message
+                            && when.elapsed().as_secs_f64() < STATUS_DURATION_SECS
+                        {
+                            ui.label(egui::RichText::new(msg).color(TEXT_PRIMARY).size(13.0));
+                        }
+                    });
                 });
             });
-        });
     }
 
-    /// Render a single group of thumbnails, returning any boundary toggle request.
+    /// Render a single group card, returning any boundary toggle requests.
     #[allow(clippy::cast_precision_loss)]
     fn show_group(
         thumbnails: &[SlideThumbnail],
         ui: &mut egui::Ui,
         group: &[usize],
         group_idx: usize,
-    ) -> Option<usize> {
+    ) -> Vec<usize> {
+        let available_width = ui.available_width();
         let thumb_width = THUMB_HEIGHT * 16.0 / 9.0;
         let thumb_size = egui::vec2(thumb_width, THUMB_HEIGHT);
         let bg_color = if group_idx.is_multiple_of(2) { GROUP_BG_A } else { GROUP_BG_B };
-        let mut toggle_page = None;
+        let mut toggles = Vec::new();
 
-        ui.vertical(|ui| {
-            // Group background
-            let n = group.len();
-            let group_width = thumb_width
-                .mul_add(n as f32, INNER_GAP * (n.saturating_sub(1)) as f32)
-                + GROUP_PADDING;
-            let (bg_rect, _) =
-                ui.allocate_exact_size(egui::vec2(group_width, 0.0), egui::Sense::hover());
-            let full_bg = egui::Rect::from_min_size(
-                bg_rect.min,
-                egui::vec2(group_width, THUMB_HEIGHT + 30.0),
-            );
-            ui.painter().rect_filled(full_bg, 4.0, bg_color);
+        egui::Frame::group(ui.style())
+            .fill(bg_color)
+            .stroke(egui::Stroke::new(1.0, ACTION_COLOR.gamma_multiply(0.2)))
+            .corner_radius(8.0)
+            .inner_margin(12.0)
+            .show(ui, |ui| {
+                ui.set_min_width(available_width);
+                ui.set_max_width(available_width);
 
-            // Thumbnails row
-            ui.horizontal(|ui| {
-                ui.add_space(4.0);
-                for (i, &page_idx) in group.iter().enumerate() {
-                    if i > 0 {
-                        let (gap_rect, gap_resp) = ui.allocate_exact_size(
-                            egui::vec2(INNER_GAP, THUMB_HEIGHT),
-                            egui::Sense::click(),
+                ui.horizontal(|ui| {
+                    ui.label(
+                        egui::RichText::new(format!("Slide {}", group_idx + 1))
+                            .strong()
+                            .size(16.0)
+                            .color(TEXT_PRIMARY),
+                    );
+                    ui.separator();
+                    ui.label(
+                        egui::RichText::new(format!(
+                            "{} page{}",
+                            group.len(),
+                            if group.len() == 1 { "" } else { "s" }
+                        ))
+                        .color(TEXT_SECONDARY),
+                    );
+                    if let (Some(first), Some(last)) = (group.first(), group.last()) {
+                        ui.separator();
+                        ui.label(
+                            egui::RichText::new(format!("pages {}-{}", first + 1, last + 1))
+                                .color(TEXT_SECONDARY),
                         );
-                        if gap_resp.clicked() {
-                            toggle_page = Some(page_idx);
-                        }
-                        if gap_resp.hovered() {
-                            ui.painter().rect_filled(gap_rect, 2.0, SEP_COLOR.gamma_multiply(0.4));
-                            ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+                    }
+                });
+
+                ui.add_space(6.0);
+
+                ui.horizontal_wrapped(|ui| {
+                    for (i, &page_idx) in group.iter().enumerate() {
+                        ui.vertical(|ui| {
+                            thumbnails[page_idx].show(ui, thumb_size);
+                            ui.label(
+                                egui::RichText::new(format!("Page {}", page_idx + 1))
+                                    .size(12.0)
+                                    .color(TEXT_PRIMARY),
+                            );
+
+                            if i + 1 < group.len() {
+                                let next_page = group[i + 1];
+                                let response = ui
+                                    .add(small_flat_button(
+                                        egui::RichText::new("Split after").color(TEXT_PRIMARY),
+                                    ))
+                                    .on_hover_text(format!(
+                                        "Start a new slide at page {}",
+                                        next_page + 1
+                                    ));
+                                if response.clicked() {
+                                    toggles.push(next_page);
+                                }
+                            } else {
+                                ui.add_space(ui.spacing().interact_size.y);
+                            }
+                        });
+
+                        if i + 1 < group.len() {
+                            ui.add_space(PAGE_CELL_GAP);
                         }
                     }
-
-                    thumbnails[page_idx].show(ui, thumb_size);
-                }
-                ui.add_space(4.0);
+                });
             });
 
-            // Group label
-            let label_text = format!(
-                "Slide {} ({} page{})",
-                group_idx + 1,
-                group.len(),
-                if group.len() == 1 { "" } else { "s" }
-            );
-            ui.vertical_centered(|ui| {
-                ui.label(egui::RichText::new(label_text).size(12.0).color(egui::Color32::WHITE));
-            });
-        });
-
-        toggle_page
+        toggles
     }
 }
 
@@ -276,61 +330,49 @@ impl eframe::App for GroupingEditor {
 
         self.show_top_bar(ctx, page_count, groups.len());
 
-        // Help bar
-        egui::TopBottomPanel::bottom("grouping_help").show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                ui.label(
-                    egui::RichText::new(
-                        "Click between thumbnails to add/remove group boundaries. \
-                         Groups shown with colored separators.",
-                    )
-                    .size(12.0)
-                    .color(egui::Color32::LIGHT_GRAY),
-                );
-            });
-        });
-
         // Main scrollable area
         let mut boundary_toggles = Vec::new();
 
         egui::CentralPanel::default()
-            .frame(egui::Frame::new().fill(egui::Color32::from_gray(30)))
+            .frame(egui::Frame::new().fill(PANEL_BG))
             .show(ctx, |ui| {
+                let visuals = &mut ui.style_mut().visuals;
+                visuals.widgets.inactive.bg_fill = BUTTON_FILL;
+                visuals.widgets.inactive.weak_bg_fill = BUTTON_FILL;
+                visuals.widgets.hovered.bg_fill = BUTTON_FILL_HOVER;
+                visuals.widgets.hovered.weak_bg_fill = BUTTON_FILL_HOVER;
+                visuals.widgets.active.bg_fill = BUTTON_FILL_ACTIVE;
+                visuals.widgets.active.weak_bg_fill = BUTTON_FILL_ACTIVE;
+                visuals.widgets.noninteractive.bg_fill = PANEL_BG;
+                visuals.widgets.inactive.fg_stroke.color = TEXT_PRIMARY;
+                visuals.widgets.hovered.fg_stroke.color = TEXT_PRIMARY;
+                visuals.widgets.active.fg_stroke.color = TEXT_PRIMARY;
+                visuals.override_text_color = Some(TEXT_PRIMARY);
+
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     for (group_idx, group) in groups.iter().enumerate() {
-                        ui.horizontal(|ui| {
-                            if let Some(page) =
-                                Self::show_group(&self.thumbnails, ui, group, group_idx)
-                            {
-                                boundary_toggles.push(page);
-                            }
+                        boundary_toggles
+                            .extend(Self::show_group(&self.thumbnails, ui, group, group_idx));
 
-                            // Group separator button to the right
-                            if group_idx + 1 < groups.len() {
-                                let next_group_first = groups[group_idx + 1][0];
-                                let (sep_rect, sep_resp) = ui.allocate_exact_size(
-                                    egui::vec2(GROUP_SEP_WIDTH, THUMB_HEIGHT + 30.0),
-                                    egui::Sense::click(),
-                                );
-                                ui.painter().rect_filled(sep_rect, 2.0, SEP_COLOR);
-
-                                if sep_resp.clicked() {
+                        if group_idx + 1 < groups.len() {
+                            let next_group_first = groups[group_idx + 1][0];
+                            ui.add_space(6.0);
+                            ui.horizontal(|ui| {
+                                if ui
+                                    .add(flat_button(
+                                        egui::RichText::new("Merge with above")
+                                        .color(TEXT_PRIMARY),
+                                    ))
+                                    .on_hover_text(format!(
+                                        "Merge this slide group into the one above by removing the boundary before page {}",
+                                        next_group_first + 1
+                                    ))
+                                    .clicked()
+                                {
                                     boundary_toggles.push(next_group_first);
                                 }
-                                if sep_resp.hovered() {
-                                    ui.painter().rect_filled(
-                                        sep_rect.expand(2.0),
-                                        2.0,
-                                        SEP_COLOR.gamma_multiply(0.6),
-                                    );
-                                    ctx.set_cursor_icon(egui::CursorIcon::PointingHand);
-                                }
-                            }
-                        });
-
-                        // Visual divider between group rows
-                        if group_idx + 1 < groups.len() {
-                            ui.add_space(4.0);
+                            });
+                            ui.add_space(8.0);
                         }
                     }
                 });

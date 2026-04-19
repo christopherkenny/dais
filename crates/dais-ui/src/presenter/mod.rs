@@ -182,14 +182,14 @@ impl PresenterConsole {
                     ui.painter().text(
                         dialog_rect.center_top() + egui::vec2(0.0, 50.0),
                         egui::Align2::CENTER_CENTER,
-                        "Press q/Escape again to confirm",
+                        "Press q or Escape to confirm",
                         egui::FontId::proportional(13.0),
                         egui::Color32::LIGHT_GRAY,
                     );
                     ui.painter().text(
                         dialog_rect.center_top() + egui::vec2(0.0, 75.0),
                         egui::Align2::CENTER_CENTER,
-                        "Any other key to cancel",
+                        "Press any other key to cancel",
                         egui::FontId::proportional(12.0),
                         egui::Color32::from_gray(160),
                     );
