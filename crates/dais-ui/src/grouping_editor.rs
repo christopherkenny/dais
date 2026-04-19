@@ -36,6 +36,8 @@ const THUMB_HEIGHT: f32 = 120.0;
 const RENDER_SCALE: f32 = 3.0;
 /// Horizontal spacing between page cells within a group.
 const PAGE_CELL_GAP: f32 = 10.0;
+/// Vertical spacing between wrapped page rows within a group.
+const PAGE_ROW_GAP: f32 = 12.0;
 /// Status message display duration.
 const STATUS_DURATION_SECS: f64 = 3.0;
 /// Alternating group background colors.
@@ -236,82 +238,98 @@ impl GroupingEditor {
         group: &[usize],
         group_idx: usize,
     ) -> Vec<usize> {
-        let available_width = ui.available_width();
+        let card_width = ui.available_width();
         let thumb_width = THUMB_HEIGHT * 16.0 / 9.0;
         let thumb_size = egui::vec2(thumb_width, THUMB_HEIGHT);
+        let page_cell_width = thumb_width;
+        let frame_inner_margin = 24.0;
+        let usable_width = (card_width - frame_inner_margin).max(page_cell_width);
+        let pages_per_row = ((usable_width + PAGE_CELL_GAP) / (page_cell_width + PAGE_CELL_GAP))
+            .floor()
+            .max(1.0) as usize;
         let bg_color = if group_idx.is_multiple_of(2) { GROUP_BG_A } else { GROUP_BG_B };
         let mut toggles = Vec::new();
 
-        egui::Frame::group(ui.style())
-            .fill(bg_color)
-            .stroke(egui::Stroke::new(1.0, ACTION_COLOR.gamma_multiply(0.2)))
-            .corner_radius(8.0)
-            .inner_margin(12.0)
-            .show(ui, |ui| {
-                ui.set_min_width(available_width);
-                ui.set_max_width(available_width);
+        ui.allocate_ui(egui::vec2(card_width, 0.0), |ui| {
+            egui::Frame::group(ui.style())
+                .fill(bg_color)
+                .stroke(egui::Stroke::new(1.0, ACTION_COLOR.gamma_multiply(0.2)))
+                .corner_radius(8.0)
+                .inner_margin(12.0)
+                .show(ui, |ui| {
+                    ui.set_width(ui.available_width());
 
-                ui.horizontal(|ui| {
-                    ui.label(
-                        egui::RichText::new(format!("Slide {}", group_idx + 1))
-                            .strong()
-                            .size(16.0)
-                            .color(TEXT_PRIMARY),
-                    );
-                    ui.separator();
-                    ui.label(
-                        egui::RichText::new(format!(
-                            "{} page{}",
-                            group.len(),
-                            if group.len() == 1 { "" } else { "s" }
-                        ))
-                        .color(TEXT_SECONDARY),
-                    );
-                    if let (Some(first), Some(last)) = (group.first(), group.last()) {
+                    ui.horizontal(|ui| {
+                        ui.label(
+                            egui::RichText::new(format!("Slide {}", group_idx + 1))
+                                .strong()
+                                .size(16.0)
+                                .color(TEXT_PRIMARY),
+                        );
                         ui.separator();
                         ui.label(
-                            egui::RichText::new(format!("pages {}-{}", first + 1, last + 1))
-                                .color(TEXT_SECONDARY),
+                            egui::RichText::new(format!(
+                                "{} page{}",
+                                group.len(),
+                                if group.len() == 1 { "" } else { "s" }
+                            ))
+                            .color(TEXT_SECONDARY),
                         );
-                    }
-                });
-
-                ui.add_space(6.0);
-
-                ui.horizontal_wrapped(|ui| {
-                    for (i, &page_idx) in group.iter().enumerate() {
-                        ui.vertical(|ui| {
-                            thumbnails[page_idx].show(ui, thumb_size);
+                        if let (Some(first), Some(last)) = (group.first(), group.last()) {
+                            ui.separator();
                             ui.label(
-                                egui::RichText::new(format!("Page {}", page_idx + 1))
-                                    .size(12.0)
-                                    .color(TEXT_PRIMARY),
+                                egui::RichText::new(format!("pages {}-{}", first + 1, last + 1))
+                                    .color(TEXT_SECONDARY),
                             );
+                        }
+                    });
 
-                            if i + 1 < group.len() {
-                                let next_page = group[i + 1];
-                                let response = ui
-                                    .add(small_flat_button(
-                                        egui::RichText::new("Split after").color(TEXT_PRIMARY),
-                                    ))
-                                    .on_hover_text(format!(
-                                        "Start a new slide at page {}",
-                                        next_page + 1
-                                    ));
-                                if response.clicked() {
-                                    toggles.push(next_page);
+                    ui.add_space(6.0);
+
+                    let row_count = group.len().div_ceil(pages_per_row);
+                    for (row_idx, row) in group.chunks(pages_per_row).enumerate() {
+                        ui.horizontal(|ui| {
+                            for (col_idx, &page_idx) in row.iter().enumerate() {
+                                let page_position = row_idx * pages_per_row + col_idx;
+                                ui.vertical(|ui| {
+                                    thumbnails[page_idx].show(ui, thumb_size);
+                                    ui.label(
+                                        egui::RichText::new(format!("Page {}", page_idx + 1))
+                                            .size(12.0)
+                                            .color(TEXT_PRIMARY),
+                                    );
+
+                                    if page_position + 1 < group.len() {
+                                        let next_page = group[page_position + 1];
+                                        let response = ui
+                                            .add(small_flat_button(
+                                                egui::RichText::new("Split after")
+                                                    .color(TEXT_PRIMARY),
+                                            ))
+                                            .on_hover_text(format!(
+                                                "Start a new slide at page {}",
+                                                next_page + 1
+                                            ));
+                                        if response.clicked() {
+                                            toggles.push(next_page);
+                                        }
+                                    } else {
+                                        ui.add_space(ui.spacing().interact_size.y);
+                                    }
+                                });
+
+                                if col_idx + 1 < row.len() {
+                                    ui.add_space(PAGE_CELL_GAP);
                                 }
-                            } else {
-                                ui.add_space(ui.spacing().interact_size.y);
                             }
                         });
 
-                        if i + 1 < group.len() {
-                            ui.add_space(PAGE_CELL_GAP);
+                        if row_idx + 1 < row_count {
+                            ui.add_space(PAGE_ROW_GAP);
                         }
                     }
                 });
-            });
+        });
 
         toggles
     }
