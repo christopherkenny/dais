@@ -7,5 +7,5 @@ mode = "countdown"
 duration_minutes = 1
 
 [ink]
-color = "#00FF00"
-width = 5.0
+color = "#F58025"
+width = 1.0

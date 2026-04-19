@@ -442,29 +442,23 @@ impl PresentationEngine {
     // -- Navigation helpers --
 
     fn next_slide(&mut self) {
-        let current = self.state.current_logical_slide;
-        if current + 1 < self.state.total_logical_slides {
-            self.state.blacked_out = false;
-            self.go_to_group(current + 1);
-        } else {
-            self.state.blacked_out = true;
-        }
+        self.advance_step();
     }
 
     fn previous_slide(&mut self) {
-        if self.state.blacked_out {
-            self.state.blacked_out = false;
-            return;
-        }
-        let current = self.state.current_logical_slide;
-        if current > 0 {
-            self.go_to_group(current - 1);
-        }
+        self.rewind_step();
     }
 
     fn next_overlay(&mut self) {
+        self.advance_step();
+    }
+
+    fn previous_overlay(&mut self) {
+        self.rewind_step();
+    }
+
+    fn advance_step(&mut self) {
         if self.state.blacked_out {
-            self.state.blacked_out = false;
             return;
         }
         if self.state.slide_groups.is_empty() {
@@ -473,16 +467,20 @@ impl PresentationEngine {
         let group = &self.state.slide_groups[self.state.current_logical_slide];
         let overlay = self.state.current_overlay_within_group;
         if overlay + 1 < group.pages.len() {
-            // Advance within the same group
             self.state.current_overlay_within_group = overlay + 1;
             self.state.current_page = group.pages[overlay + 1];
         } else {
-            // Overflow to next slide
-            self.next_slide();
+            let current = self.state.current_logical_slide;
+            if current + 1 < self.state.total_logical_slides {
+                self.state.blacked_out = false;
+                self.go_to_group(current + 1);
+            } else {
+                self.state.blacked_out = true;
+            }
         }
     }
 
-    fn previous_overlay(&mut self) {
+    fn rewind_step(&mut self) {
         if self.state.blacked_out {
             self.state.blacked_out = false;
             return;
@@ -496,15 +494,12 @@ impl PresentationEngine {
             self.state.current_overlay_within_group = overlay - 1;
             self.state.current_page = group.pages[overlay - 1];
         } else {
-            // Go to last overlay of previous slide
             let current = self.state.current_logical_slide;
             if current > 0 {
-                let prev_group = &self.state.slide_groups[current - 1];
-                let last_overlay = prev_group.pages.len() - 1;
-                self.state.current_logical_slide = current - 1;
+                let last_overlay = self.state.slide_groups[current - 1].pages.len() - 1;
+                self.go_to_group(current - 1);
                 self.state.current_overlay_within_group = last_overlay;
-                self.state.current_page = prev_group.pages[last_overlay];
-                self.update_notes();
+                self.state.current_page = self.state.slide_groups[current - 1].pages[last_overlay];
             }
         }
     }
@@ -735,6 +730,36 @@ mod tests {
     }
 
     #[test]
+    fn next_slide_advances_within_group_before_next_logical_slide() {
+        let meta = PresentationMetadata {
+            groups: vec![
+                SlideGroupMeta { start_page: 0, end_page: 2 },
+                SlideGroupMeta { start_page: 3, end_page: 4 },
+            ],
+            ..Default::default()
+        };
+        let (mut engine, _, sender) = make_engine_with_metadata(5, &meta);
+
+        sender.send(Command::NextSlide).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().current_logical_slide, 0);
+        assert_eq!(engine.state().current_overlay_within_group, 1);
+        assert_eq!(engine.state().current_page, 1);
+
+        sender.send(Command::NextSlide).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().current_logical_slide, 0);
+        assert_eq!(engine.state().current_overlay_within_group, 2);
+        assert_eq!(engine.state().current_page, 2);
+
+        sender.send(Command::NextSlide).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().current_logical_slide, 1);
+        assert_eq!(engine.state().current_overlay_within_group, 0);
+        assert_eq!(engine.state().current_page, 3);
+    }
+
+    #[test]
     fn next_slide_stops_at_end() {
         let (mut engine, _, sender) = make_engine(3);
         for _ in 0..10 {
@@ -751,6 +776,33 @@ mod tests {
         sender.send(Command::PreviousSlide).unwrap();
         engine.tick();
         assert_eq!(engine.state().current_logical_slide, 0);
+    }
+
+    #[test]
+    fn previous_slide_rewinds_within_group_before_prev_logical_slide() {
+        let meta = PresentationMetadata {
+            groups: vec![
+                SlideGroupMeta { start_page: 0, end_page: 2 },
+                SlideGroupMeta { start_page: 3, end_page: 4 },
+            ],
+            ..Default::default()
+        };
+        let (mut engine, _, sender) = make_engine_with_metadata(5, &meta);
+
+        sender.send(Command::LastSlide).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().current_page, 3);
+
+        sender.send(Command::PreviousSlide).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().current_logical_slide, 0);
+        assert_eq!(engine.state().current_overlay_within_group, 2);
+        assert_eq!(engine.state().current_page, 2);
+
+        sender.send(Command::PreviousSlide).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().current_overlay_within_group, 1);
+        assert_eq!(engine.state().current_page, 1);
     }
 
     #[test]
@@ -838,7 +890,7 @@ mod tests {
             ..Default::default()
         };
         let (mut engine, _, sender) = make_engine_with_metadata(5, &meta);
-        sender.send(Command::NextSlide).unwrap();
+        sender.send(Command::LastSlide).unwrap();
         engine.tick();
         assert_eq!(engine.state().current_logical_slide, 1);
 
