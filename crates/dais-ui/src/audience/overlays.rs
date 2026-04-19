@@ -55,73 +55,66 @@ fn draw_laser(ui: &mut egui::Ui, image_rect: egui::Rect, nx: f32, ny: f32) {
 }
 
 /// Draw a spotlight overlay — dims everything outside a circle.
-fn draw_spotlight(ui: &mut egui::Ui, image_rect: egui::Rect, nx: f32, ny: f32) {
+///
+/// Public so it can be shared between audience and presenter windows.
+pub fn draw_spotlight_overlay(ui: &mut egui::Ui, image_rect: egui::Rect, nx: f32, ny: f32) {
+    let half_size = (image_rect.width().min(image_rect.height()) * 0.075).clamp(30.0, 76.0);
     let center = denormalize(image_rect, nx, ny);
-    let radius = 120.0; // Logical pixels
     let painter = ui.painter_at(image_rect);
-
-    // We approximate the spotlight by drawing 4 dark rectangles around the circle area.
-    // For a proper spotlight, we'd need a custom shader. For v1, draw a semi-transparent
-    // overlay and then clear a circle. Since egui doesn't support clip paths easily,
-    // we'll draw a dark overlay with a "hole" by drawing many small wedges or just
-    // accepting the approximation of a slightly dim overlay everywhere and a bright
-    // circle at the spotlight position.
-
-    // Simple approach: draw the full dark overlay, then paint the circle with the
-    // original content. Since we can't "erase" the overlay, we'll skip the dim
-    // overlay inside the circle area and just note that the dim_opacity from config
-    // would ideally be used. For now, draw a ring to indicate spotlight.
     let dim_color = egui::Color32::from_rgba_unmultiplied(0, 0, 0, 150);
+    let hole_rect = egui::Rect::from_center_size(center, egui::vec2(half_size * 2.0, half_size * 2.0))
+        .intersect(image_rect);
 
-    // Draw 4 rects that cover the area outside the spotlight circle (approximation)
-    let r = radius;
-    // Top band
-    if center.y - r > image_rect.min.y {
+    if hole_rect.top() > image_rect.top() {
         painter.rect_filled(
-            egui::Rect::from_min_max(image_rect.min, egui::pos2(image_rect.max.x, center.y - r)),
+            egui::Rect::from_min_max(image_rect.left_top(), egui::pos2(image_rect.right(), hole_rect.top())),
             0.0,
             dim_color,
         );
     }
-    // Bottom band
-    if center.y + r < image_rect.max.y {
-        painter.rect_filled(
-            egui::Rect::from_min_max(egui::pos2(image_rect.min.x, center.y + r), image_rect.max),
-            0.0,
-            dim_color,
-        );
-    }
-    // Left band (between top and bottom bands)
-    let band_top = (center.y - r).max(image_rect.min.y);
-    let band_bottom = (center.y + r).min(image_rect.max.y);
-    if center.x - r > image_rect.min.x {
+    if hole_rect.bottom() < image_rect.bottom() {
         painter.rect_filled(
             egui::Rect::from_min_max(
-                egui::pos2(image_rect.min.x, band_top),
-                egui::pos2(center.x - r, band_bottom),
+                egui::pos2(image_rect.left(), hole_rect.bottom()),
+                image_rect.right_bottom(),
             ),
             0.0,
             dim_color,
         );
     }
-    // Right band
-    if center.x + r < image_rect.max.x {
+    if hole_rect.left() > image_rect.left() {
         painter.rect_filled(
             egui::Rect::from_min_max(
-                egui::pos2(center.x + r, band_top),
-                egui::pos2(image_rect.max.x, band_bottom),
+                egui::pos2(image_rect.left(), hole_rect.top()),
+                egui::pos2(hole_rect.left(), hole_rect.bottom()),
+            ),
+            0.0,
+            dim_color,
+        );
+    }
+    if hole_rect.right() < image_rect.right() {
+        painter.rect_filled(
+            egui::Rect::from_min_max(
+                egui::pos2(hole_rect.right(), hole_rect.top()),
+                egui::pos2(image_rect.right(), hole_rect.bottom()),
             ),
             0.0,
             dim_color,
         );
     }
 
-    // Bright circle border to indicate spotlight area
-    painter.circle_stroke(
-        center,
-        radius,
+    // Bright border to indicate spotlight edge
+    painter.rect_stroke(
+        hole_rect,
+        0.0,
         egui::Stroke::new(2.0, egui::Color32::from_rgba_unmultiplied(255, 255, 255, 100)),
+        egui::StrokeKind::Outside,
     );
+}
+
+/// Draw a spotlight overlay — dims everything outside a circle.
+fn draw_spotlight(ui: &mut egui::Ui, image_rect: egui::Rect, nx: f32, ny: f32) {
+    draw_spotlight_overlay(ui, image_rect, nx, ny);
 }
 
 /// Draw a zoom indicator at the given position.

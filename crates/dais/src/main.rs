@@ -125,7 +125,7 @@ fn main() -> anyhow::Result<()> {
     let doc_arc: std::sync::Arc<dyn dais_document::source::DocumentSource> =
         std::sync::Arc::new(doc);
 
-    let presenter_window_size = egui::vec2(1400.0, 900.0);
+    let presenter_window_size = egui::vec2(1400.0, 850.0);
     let native_options = eframe::NativeOptions {
         viewport: dais_ui::display_mode::presenter_viewport_builder(
             &config,

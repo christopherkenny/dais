@@ -190,7 +190,8 @@ pub fn presenter_viewport_builder(
 
     let builder = with_app_icon(egui::ViewportBuilder::default())
         .with_title("Dais — Presenter Console")
-        .with_inner_size(window_size);
+        .with_inner_size(window_size)
+        .with_resizable(true);
 
     let Some(monitor) = monitor else {
         return builder;
@@ -202,7 +203,8 @@ pub fn presenter_viewport_builder(
 
     let (logical_w, logical_h) = monitor.logical_size();
     let max_w = (logical_w as f32 - 80.0).max(640.0);
-    let max_h = (logical_h as f32 - 80.0).max(480.0);
+    // Reserve extra vertical space for window title bar and taskbar
+    let max_h = (logical_h as f32 - 140.0).max(480.0);
     let fitted_w = window_size.x.min(max_w);
     let fitted_h = window_size.y.min(max_h);
 

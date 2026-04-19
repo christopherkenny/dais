@@ -24,6 +24,15 @@ pub enum InputMode {
     JumpToSlide,
 }
 
+/// Which presentation aids are currently active, used to drive mouse handling.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ActiveAids {
+    pub ink: bool,
+    pub laser: bool,
+    pub spotlight: bool,
+    pub zoom: bool,
+}
+
 /// Processes egui events and dispatches [`Command`]s.
 pub struct InputHandler {
     sender: CommandSender,
@@ -156,27 +165,31 @@ impl InputHandler {
         &self,
         response: &egui::Response,
         image_rect: egui::Rect,
-        ink_active: bool,
-        laser_active: bool,
-        spotlight_active: bool,
+        aids: ActiveAids,
     ) {
         if let Some(pos) = response.hover_pos() {
             let norm = normalize_to_rect(pos, image_rect);
             if (0.0..=1.0).contains(&norm.0) && (0.0..=1.0).contains(&norm.1) {
-                if laser_active || spotlight_active {
+                if aids.laser || aids.spotlight {
                     let _ = self.sender.send(Command::SetPointerPosition(norm.0, norm.1));
-                    if spotlight_active {
+                    if aids.spotlight {
                         let _ = self.sender.send(Command::SetSpotlightPosition(norm.0, norm.1));
                     }
                 }
 
-                if ink_active && response.dragged() {
+                if aids.zoom {
+                    let _ = self
+                        .sender
+                        .send(Command::SetZoomRegion { center: (norm.0, norm.1), factor: 2.0 });
+                }
+
+                if aids.ink && response.dragged() {
                     let _ = self.sender.send(Command::AddInkPoint(norm.0, norm.1));
                 }
             }
         }
 
-        if ink_active && response.drag_stopped() {
+        if aids.ink && response.drag_stopped() {
             let _ = self.sender.send(Command::FinishInkStroke);
         }
     }

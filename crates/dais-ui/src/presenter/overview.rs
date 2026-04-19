@@ -37,10 +37,10 @@ impl OverviewGrid {
         sender: &CommandSender,
     ) {
         if !state.overview_visible {
+            // Reset selection when overview is closed so it's fresh on next open
+            self.selected = state.current_logical_slide;
             return;
         }
-
-        self.selected = state.current_logical_slide;
 
         while self.thumbnails.len() < state.total_logical_slides {
             self.thumbnails.push(SlideThumbnail::new());

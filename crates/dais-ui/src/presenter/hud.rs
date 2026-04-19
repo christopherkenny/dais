@@ -67,9 +67,12 @@ impl HudOverlay {
                 input.handle_slide_mouse(
                     &response,
                     image_rect,
-                    state.ink_active,
-                    state.laser_active,
-                    state.spotlight_active,
+                    crate::input::ActiveAids {
+                        ink: state.ink_active,
+                        laser: state.laser_active,
+                        spotlight: state.spotlight_active,
+                        zoom: state.zoom_active,
+                    },
                 );
 
                 // Audience overlays (ink, laser, spotlight, zoom, blackout)

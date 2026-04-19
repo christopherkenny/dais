@@ -50,6 +50,13 @@ impl eframe::App for TestInputApp {
                     None => "(none)".to_string(),
                 };
 
+                tracing::info!(
+                    key = %key_name,
+                    modifiers = %mod_str,
+                    action = %action,
+                    "Key event captured"
+                );
+
                 self.events.push_front(KeyEvent { key_name, modifiers: mod_str, action });
                 if self.events.len() > MAX_EVENTS {
                     self.events.pop_back();

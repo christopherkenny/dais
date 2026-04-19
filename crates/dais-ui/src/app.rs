@@ -138,6 +138,8 @@ impl eframe::App for DaisApp {
             display_mode::with_app_icon(egui::ViewportBuilder::default())
                 .with_title("Dais — Audience")
                 .with_inner_size(egui::vec2(1280.0, 720.0))
+                .with_fullscreen(false)
+                .with_resizable(true)
         } else {
             display_mode::audience_viewport_builder(&self.display_mode)
         };

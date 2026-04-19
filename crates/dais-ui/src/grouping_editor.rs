@@ -293,16 +293,16 @@ impl eframe::App for GroupingEditor {
         egui::CentralPanel::default()
             .frame(egui::Frame::new().fill(egui::Color32::from_gray(30)))
             .show(ctx, |ui| {
-                egui::ScrollArea::horizontal().show(ui, |ui| {
-                    ui.horizontal(|ui| {
-                        for (group_idx, group) in groups.iter().enumerate() {
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    for (group_idx, group) in groups.iter().enumerate() {
+                        ui.horizontal(|ui| {
                             if let Some(page) =
                                 Self::show_group(&self.thumbnails, ui, group, group_idx)
                             {
                                 boundary_toggles.push(page);
                             }
 
-                            // Group separator
+                            // Group separator button to the right
                             if group_idx + 1 < groups.len() {
                                 let next_group_first = groups[group_idx + 1][0];
                                 let (sep_rect, sep_resp) = ui.allocate_exact_size(
@@ -323,8 +323,13 @@ impl eframe::App for GroupingEditor {
                                     ctx.set_cursor_icon(egui::CursorIcon::PointingHand);
                                 }
                             }
+                        });
+
+                        // Visual divider between group rows
+                        if group_idx + 1 < groups.len() {
+                            ui.add_space(4.0);
                         }
-                    });
+                    }
                 });
             });
 

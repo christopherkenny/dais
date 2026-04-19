@@ -106,7 +106,12 @@ impl PresentationEngine {
                 if self.state.presentation_mode {
                     // Escape exits presentation mode instead of quitting
                     self.state.presentation_mode = false;
+                } else if self.state.overview_visible {
+                    // Escape closes overview instead of quitting
+                    self.state.overview_visible = false;
                 } else {
+                    // Auto-save sidecar before quitting
+                    self.save_sidecar();
                     should_quit = true;
                 }
             }
@@ -477,17 +482,19 @@ impl PresentationEngine {
     }
 
     fn go_to_group(&mut self, group_index: usize) {
-        if group_index >= self.state.total_logical_slides || self.state.slide_groups.is_empty() {
+        if self.state.slide_groups.is_empty() || self.state.total_logical_slides == 0 {
             return;
         }
+        // Clamp to last valid slide if out of range
+        let clamped = group_index.min(self.state.total_logical_slides - 1);
         self.state.blacked_out = false;
-        self.state.current_logical_slide = group_index;
+        self.state.current_logical_slide = clamped;
         self.state.current_overlay_within_group = 0;
-        self.state.current_page = self.state.slide_groups[group_index].pages[0];
+        self.state.current_page = self.state.slide_groups[clamped].pages[0];
         let accumulated = self
             .state
             .slide_elapsed_by_logical
-            .get(group_index)
+            .get(clamped)
             .copied()
             .unwrap_or(std::time::Duration::ZERO);
         self.slide_start = Instant::now().checked_sub(accumulated).unwrap_or_else(Instant::now);
@@ -756,7 +763,8 @@ mod tests {
         let (mut engine, _, sender) = make_engine(5);
         sender.send(Command::GoToSlide(100)).unwrap();
         engine.tick();
-        assert_eq!(engine.state().current_logical_slide, 0);
+        // Out-of-range index is clamped to the last valid slide
+        assert_eq!(engine.state().current_logical_slide, 4);
     }
 
     // ---- Overlay navigation ----

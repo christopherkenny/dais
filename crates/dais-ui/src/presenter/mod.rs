@@ -95,9 +95,12 @@ impl PresenterConsole {
                 self.input.handle_slide_mouse(
                     &response,
                     image_rect,
-                    state.ink_active,
-                    state.laser_active,
-                    state.spotlight_active,
+                    crate::input::ActiveAids {
+                        ink: state.ink_active,
+                        laser: state.laser_active,
+                        spotlight: state.spotlight_active,
+                        zoom: state.zoom_active,
+                    },
                 );
 
                 // Draw ink strokes on presenter view
@@ -114,6 +117,13 @@ impl PresenterConsole {
                         image_rect.min.y + py * image_rect.height(),
                     );
                     ui.painter().circle_filled(pos, 6.0, egui::Color32::RED);
+                }
+
+                // Draw spotlight on presenter view
+                if state.spotlight_active
+                    && let Some((sx, sy)) = state.spotlight_position
+                {
+                    crate::audience::overlays::draw_spotlight_overlay(ui, image_rect, sx, sy);
                 }
 
                 // Next preview
