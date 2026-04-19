@@ -77,22 +77,12 @@ pub fn draw_laser_overlay(
             let gap = (size * 0.35).max(3.0);
             let stroke = egui::Stroke::new((size * 0.16).max(1.5), color);
             painter.circle_stroke(pos, (size * 0.45).max(3.0), stroke);
-            painter.line_segment(
-                [pos + egui::vec2(-arm, 0.0), pos + egui::vec2(-gap, 0.0)],
-                stroke,
-            );
-            painter.line_segment(
-                [pos + egui::vec2(gap, 0.0), pos + egui::vec2(arm, 0.0)],
-                stroke,
-            );
-            painter.line_segment(
-                [pos + egui::vec2(0.0, -arm), pos + egui::vec2(0.0, -gap)],
-                stroke,
-            );
-            painter.line_segment(
-                [pos + egui::vec2(0.0, gap), pos + egui::vec2(0.0, arm)],
-                stroke,
-            );
+            painter
+                .line_segment([pos + egui::vec2(-arm, 0.0), pos + egui::vec2(-gap, 0.0)], stroke);
+            painter.line_segment([pos + egui::vec2(gap, 0.0), pos + egui::vec2(arm, 0.0)], stroke);
+            painter
+                .line_segment([pos + egui::vec2(0.0, -arm), pos + egui::vec2(0.0, -gap)], stroke);
+            painter.line_segment([pos + egui::vec2(0.0, gap), pos + egui::vec2(0.0, arm)], stroke);
             painter.circle_filled(pos, (size * 0.18).max(1.5), color);
         }
         PointerStyle::Arrow => {
@@ -111,10 +101,7 @@ pub fn draw_laser_overlay(
             let tail_join = pos + dir * tail_start;
             let tail_end = pos + dir * (head_len + tail_len);
             let stroke = egui::Stroke::new((size * 0.145).max(1.7), color);
-            painter.line_segment(
-                [tail_join, tail_end],
-                stroke,
-            );
+            painter.line_segment([tail_join, tail_end], stroke);
             painter.add(egui::Shape::convex_polygon(
                 vec![pos, left, right],
                 color,
@@ -139,12 +126,8 @@ pub fn draw_spotlight_overlay(
     let half_size = radius.clamp(16.0, image_rect.width().min(image_rect.height()) * 0.45);
     let center = denormalize(image_rect, nx, ny);
     let painter = ui.painter_at(image_rect);
-    let dim_color = egui::Color32::from_rgba_unmultiplied(
-        0,
-        0,
-        0,
-        (dim_opacity.clamp(0.0, 1.0) * 255.0).round() as u8,
-    );
+    let dim_color =
+        egui::Color32::from_rgba_unmultiplied(0, 0, 0, dim_opacity_to_alpha(dim_opacity));
     let hole_rect =
         egui::Rect::from_center_size(center, egui::vec2(half_size * 2.0, half_size * 2.0))
             .intersect(image_rect);
@@ -201,6 +184,11 @@ pub fn draw_spotlight_overlay(
 
 fn color32_from_rgba(color: [u8; 4]) -> egui::Color32 {
     egui::Color32::from_rgba_unmultiplied(color[0], color[1], color[2], color[3])
+}
+
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+fn dim_opacity_to_alpha(dim_opacity: f32) -> u8 {
+    (dim_opacity.clamp(0.0, 1.0) * 255.0).round() as u8
 }
 
 /// Draw a zoom indicator at the given position.

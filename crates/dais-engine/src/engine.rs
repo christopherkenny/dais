@@ -634,13 +634,13 @@ mod tests {
         total_pages: usize,
         metadata: &PresentationMetadata,
     ) -> (PresentationEngine, Arc<RwLock<PresentationState>>, dais_core::bus::CommandSender) {
-        make_engine_with_config(total_pages, metadata, Config::default())
+        make_engine_with_config(total_pages, metadata, &Config::default())
     }
 
     fn make_engine_with_config(
         total_pages: usize,
         metadata: &PresentationMetadata,
-        config: Config,
+        config: &Config,
     ) -> (PresentationEngine, Arc<RwLock<PresentationState>>, dais_core::bus::CommandSender) {
         let bus = CommandBus::new();
         let sender = bus.sender();
@@ -648,7 +648,7 @@ mod tests {
         let (engine, shared) = PresentationEngine::new(
             total_pages,
             metadata,
-            &config,
+            config,
             receiver,
             std::path::PathBuf::from("test.pdf"),
         );
@@ -693,8 +693,7 @@ mod tests {
         config.spotlight.radius = 220.0;
         config.spotlight.dim_opacity = 0.35;
 
-        let (engine, _, _) =
-            make_engine_with_config(3, &PresentationMetadata::default(), config);
+        let (engine, _, _) = make_engine_with_config(3, &PresentationMetadata::default(), &config);
 
         assert_eq!(engine.state().pointer_color, [0x33, 0xCC, 0x66, 0xAA]);
         assert!((engine.state().pointer_size - 24.0).abs() < f32::EPSILON);
