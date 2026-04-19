@@ -20,6 +20,8 @@ pub enum InputMode {
     Ink,
     /// Laser pointer active; mouse drives position.
     Laser,
+    /// Inline markdown notes editing.
+    NotesEdit,
     /// Digit accumulation for jump-to-slide (G → digits → Enter).
     JumpToSlide,
 }
@@ -69,11 +71,14 @@ impl InputHandler {
         overview_visible: bool,
         ink_active: bool,
         laser_active: bool,
+        notes_editing: bool,
     ) {
         // Sync mode from external state changes
         if self.mode != InputMode::JumpToSlide {
             if overview_visible {
                 self.mode = InputMode::Overview;
+            } else if notes_editing {
+                self.mode = InputMode::NotesEdit;
             } else if ink_active {
                 self.mode = InputMode::Ink;
             } else if laser_active {
@@ -91,7 +96,35 @@ impl InputHandler {
             self.cancel_jump();
         }
 
+        if self.mode == InputMode::NotesEdit {
+            self.process_notes_editor_keys(ctx);
+            return;
+        }
+
         self.process_keys(ctx);
+    }
+
+    fn process_notes_editor_keys(&mut self, ctx: &egui::Context) {
+        let events: Vec<egui::Event> = ctx.input(|i| i.events.clone());
+
+        for event in &events {
+            if let egui::Event::Key { key, pressed: true, modifiers, .. } = event {
+                if *key == egui::Key::Escape {
+                    let _ = self.sender.send(Command::ToggleNotesEdit);
+                    continue;
+                }
+
+                let combo = egui_to_key_combo(*key, *modifiers);
+                if let Some(action) = self.keybindings.lookup(&combo) {
+                    match action {
+                        Action::SaveSidecar | Action::ToggleNotesEdit => {
+                            self.dispatch_action(action)
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
     }
 
     fn process_keys(&mut self, ctx: &egui::Context) {
@@ -344,6 +377,7 @@ fn action_to_command(action: Action) -> Option<Command> {
         Action::ToggleZoom => Some(Command::ToggleZoom),
         Action::ToggleOverview => Some(Command::ToggleSlideOverview),
         Action::ToggleNotes => Some(Command::ToggleNotesPanel),
+        Action::ToggleNotesEdit => Some(Command::ToggleNotesEdit),
         Action::ResetTimer => Some(Command::ResetTimer),
         Action::IncrementNotesFont => Some(Command::IncrementNotesFontSize),
         Action::DecrementNotesFont => Some(Command::DecrementNotesFontSize),

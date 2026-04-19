@@ -42,7 +42,13 @@ impl HudOverlay {
         input: &mut InputHandler,
         render_size: RenderSize,
     ) {
-        input.handle_input(ctx, state.overview_visible, state.ink_active, state.laser_active);
+        input.handle_input(
+            ctx,
+            state.overview_visible,
+            state.ink_active,
+            state.laser_active,
+            state.notes_editing,
+        );
 
         let audience_page = state.audience_page();
         if let Some(page) = cache.get(audience_page, render_size) {

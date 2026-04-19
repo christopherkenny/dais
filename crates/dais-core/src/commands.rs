@@ -71,6 +71,10 @@ pub enum Command {
     ToggleSlideOverview,
     /// Toggle the notes panel visibility.
     ToggleNotesPanel,
+    /// Toggle inline markdown editing for the current slide's notes.
+    ToggleNotesEdit,
+    /// Replace the current slide's notes markdown.
+    SetCurrentSlideNotes(String),
     /// Increase notes font size by one step.
     IncrementNotesFontSize,
     /// Decrease notes font size by one step.

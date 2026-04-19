@@ -74,7 +74,13 @@ impl PresenterConsole {
         sender: &CommandSender,
     ) {
         // Process input
-        self.input.handle_input(ctx, state.overview_visible, state.ink_active, state.laser_active);
+        self.input.handle_input(
+            ctx,
+            state.overview_visible,
+            state.ink_active,
+            state.laser_active,
+            state.notes_editing,
+        );
 
         // Update textures from cache (single canonical size)
         let size = FALLBACK_RENDER_SIZE;
@@ -171,6 +177,8 @@ impl PresenterConsole {
                     state.current_notes.as_deref(),
                     state.notes_font_size,
                     state.notes_visible,
+                    state.notes_editing,
+                    sender,
                 );
 
                 // Status bar

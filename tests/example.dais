@@ -1,0 +1,110 @@
+version: 1
+groups: [
+	{
+		start_page: 0
+		end_page: 0
+	}
+	{
+		start_page: 1
+		end_page: 1
+	}
+	{
+		start_page: 2
+		end_page: 2
+	}
+	{
+		start_page: 3
+		end_page: 3
+	}
+	{
+		start_page: 4
+		end_page: 4
+	}
+	{
+		start_page: 5
+		end_page: 5
+	}
+	{
+		start_page: 6
+		end_page: 8
+	}
+	{
+		start_page: 9
+		end_page: 9
+	}
+	{
+		start_page: 10
+		end_page: 11
+	}
+	{
+		start_page: 12
+		end_page: 12
+	}
+	{
+		start_page: 13
+		end_page: 14
+	}
+	{
+		start_page: 15
+		end_page: 15
+	}
+	{
+		start_page: 16
+		end_page: 16
+	}
+	{
+		start_page: 17
+		end_page: 17
+	}
+	{
+		start_page: 18
+		end_page: 18
+	}
+	{
+		start_page: 19
+		end_page: 19
+	}
+	{
+		start_page: 20
+		end_page: 20
+	}
+	{
+		start_page: 21
+		end_page: 21
+	}
+	{
+		start_page: 22
+		end_page: 22
+	}
+	{
+		start_page: 23
+		end_page: 23
+	}
+	{
+		start_page: 24
+		end_page: 24
+	}
+	{
+		start_page: 25
+		end_page: 25
+	}
+	{
+		start_page: 26
+		end_page: 26
+	}
+	{
+		start_page: 27
+		end_page: 27
+	}
+	{
+		start_page: 28
+		end_page: 28
+	}
+	{
+		start_page: 29
+		end_page: 29
+	}
+]
+notes: {
+	"0": "Some notes. We can write *new* comments as we need."
+}

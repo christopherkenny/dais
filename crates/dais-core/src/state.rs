@@ -68,6 +68,8 @@ pub struct PresentationState {
     pub overview_visible: bool,
     /// Whether the notes panel is visible.
     pub notes_visible: bool,
+    /// Whether the notes panel is in markdown edit mode.
+    pub notes_editing: bool,
     /// Current notes font size in points.
     pub notes_font_size: f32,
     /// Step size for font increment/decrement.
@@ -110,6 +112,7 @@ impl PresentationState {
             slide_elapsed_by_logical: vec![Duration::ZERO; total_logical_slides],
             overview_visible: false,
             notes_visible: true,
+            notes_editing: false,
             notes_font_size: 16.0,
             notes_font_size_step: 2.0,
             quit_requested: false,

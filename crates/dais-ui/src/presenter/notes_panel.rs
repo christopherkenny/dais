@@ -2,6 +2,8 @@
 //!
 //! Renders the current slide's speaker notes using `egui_commonmark`.
 
+use dais_core::bus::CommandSender;
+use dais_core::commands::Command;
 /// Presenter notes panel.
 pub struct NotesPanel {
     cache: egui_commonmark::CommonMarkCache,
@@ -20,6 +22,8 @@ impl NotesPanel {
         notes: Option<&str>,
         font_size: f32,
         visible: bool,
+        editing: bool,
+        sender: &CommandSender,
     ) {
         if !visible {
             return;
@@ -44,13 +48,25 @@ impl NotesPanel {
             // Apply font size override
             ui.style_mut().override_font_id = Some(egui::FontId::proportional(font_size));
 
-            egui::ScrollArea::vertical().max_height(content_area.height()).show(ui, |ui| {
-                if let Some(text) = notes {
-                    egui_commonmark::CommonMarkViewer::new().show(ui, &mut self.cache, text);
-                } else {
-                    ui.colored_label(egui::Color32::from_gray(80), "No notes for this slide");
+            if editing {
+                let mut buffer = notes.unwrap_or_default().to_string();
+                let edit = egui::TextEdit::multiline(&mut buffer)
+                    .desired_width(f32::INFINITY)
+                    .desired_rows(12)
+                    .hint_text("Write speaker notes in Markdown");
+                let response = ui.add_sized(content_area.size(), edit);
+                if response.changed() {
+                    let _ = sender.send(Command::SetCurrentSlideNotes(buffer));
                 }
-            });
+            } else {
+                egui::ScrollArea::vertical().max_height(content_area.height()).show(ui, |ui| {
+                    if let Some(text) = notes {
+                        egui_commonmark::CommonMarkViewer::new().show(ui, &mut self.cache, text);
+                    } else {
+                        ui.colored_label(egui::Color32::from_gray(80), "No notes for this slide");
+                    }
+                });
+            }
         });
     }
 }

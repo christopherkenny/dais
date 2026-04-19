@@ -196,6 +196,8 @@ impl PresentationEngine {
 
             Command::ToggleSlideOverview
             | Command::ToggleNotesPanel
+            | Command::ToggleNotesEdit
+            | Command::SetCurrentSlideNotes(_)
             | Command::IncrementNotesFontSize
             | Command::DecrementNotesFontSize => self.handle_ui_panel(cmd),
 
@@ -362,7 +364,27 @@ impl PresentationEngine {
             Command::ToggleSlideOverview => {
                 self.state.overview_visible = !self.state.overview_visible;
             }
-            Command::ToggleNotesPanel => self.state.notes_visible = !self.state.notes_visible,
+            Command::ToggleNotesPanel => {
+                self.state.notes_visible = !self.state.notes_visible;
+                if !self.state.notes_visible {
+                    self.state.notes_editing = false;
+                }
+            }
+            Command::ToggleNotesEdit => {
+                self.state.notes_editing = !self.state.notes_editing;
+                if self.state.notes_editing {
+                    self.state.notes_visible = true;
+                }
+            }
+            Command::SetCurrentSlideNotes(ref text) => {
+                let notes = if text.trim().is_empty() { None } else { Some(text.clone()) };
+                if let Some(group) =
+                    self.state.slide_groups.get_mut(self.state.current_logical_slide)
+                {
+                    group.notes = notes.clone();
+                }
+                self.state.current_notes = notes;
+            }
             Command::IncrementNotesFontSize => {
                 self.state.notes_font_size =
                     (self.state.notes_font_size + self.state.notes_font_size_step).min(72.0);
@@ -1229,5 +1251,23 @@ mod tests {
         sender.send(Command::NextSlide).unwrap();
         engine.tick();
         assert_eq!(engine.state().current_notes, None);
+    }
+
+    #[test]
+    fn notes_can_be_edited_inline() {
+        let (mut engine, _, sender) = make_engine(3);
+
+        sender.send(Command::ToggleNotesEdit).unwrap();
+        sender.send(Command::SetCurrentSlideNotes("Hello **markdown**".to_string())).unwrap();
+        engine.tick();
+
+        assert!(engine.state().notes_editing);
+        assert_eq!(engine.state().current_notes.as_deref(), Some("Hello **markdown**"));
+        assert_eq!(engine.state().slide_groups[0].notes.as_deref(), Some("Hello **markdown**"));
+
+        sender.send(Command::SetCurrentSlideNotes(String::new())).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().current_notes, None);
+        assert_eq!(engine.state().slide_groups[0].notes, None);
     }
 }
