@@ -1,5 +1,3 @@
----
-
 # Dais — A Native PDF Presenter Console
 
 ## What It Is
