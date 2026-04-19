@@ -24,6 +24,13 @@ use self::overview::OverviewGrid;
 
 use crate::input::InputHandler;
 
+const MIN_LEFT_FRACTION: f32 = 0.35;
+const MAX_LEFT_FRACTION: f32 = 0.8;
+const MIN_TOP_FRACTION: f32 = 0.2;
+const MAX_TOP_FRACTION: f32 = 0.8;
+const SPLITTER_COLOR: egui::Color32 = egui::Color32::from_gray(70);
+const SPLITTER_HOVER: egui::Color32 = egui::Color32::from_rgb(124, 178, 255);
+
 /// The presenter console window — composes all sub-panels.
 pub struct PresenterConsole {
     current_slide: CurrentSlidePanel,
@@ -31,6 +38,8 @@ pub struct PresenterConsole {
     notes: NotesPanel,
     overview: OverviewGrid,
     input: InputHandler,
+    left_fraction: f32,
+    top_fraction: f32,
 }
 
 impl PresenterConsole {
@@ -41,6 +50,8 @@ impl PresenterConsole {
             notes: NotesPanel::new(),
             overview: OverviewGrid::new(),
             input,
+            left_fraction: 0.60,
+            top_fraction: 0.50,
         }
     }
 
@@ -87,7 +98,10 @@ impl PresenterConsole {
             .frame(egui::Frame::new().fill(egui::Color32::from_gray(30)))
             .show(ctx, |ui| {
                 let available = ui.available_rect_before_wrap();
-                let layout = PresenterLayout::compute(available);
+                let layout =
+                    PresenterLayout::compute(available, self.left_fraction, self.top_fraction);
+
+                self.handle_splitters(ui, available, &layout);
 
                 // Current slide
                 let (response, image_rect) = self.current_slide.show(ui, layout.current_slide);
@@ -210,6 +224,60 @@ impl PresenterConsole {
                     );
                 }
             });
+    }
+
+    fn handle_splitters(
+        &mut self,
+        ui: &mut egui::Ui,
+        available: egui::Rect,
+        layout: &PresenterLayout,
+    ) {
+        let vertical_id = ui.make_persistent_id("presenter_vertical_splitter");
+        let vertical_response =
+            ui.interact(layout.vertical_splitter, vertical_id, egui::Sense::click_and_drag());
+        if vertical_response.dragged()
+            && let Some(pointer) = vertical_response.interact_pointer_pos()
+        {
+            self.left_fraction = ((pointer.x - available.left()) / available.width())
+                .clamp(MIN_LEFT_FRACTION, MAX_LEFT_FRACTION);
+            ui.ctx().request_repaint();
+        }
+        if vertical_response.hovered() || vertical_response.dragged() {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+        }
+        ui.painter().rect_filled(
+            layout.vertical_splitter,
+            2.0,
+            if vertical_response.hovered() || vertical_response.dragged() {
+                SPLITTER_HOVER
+            } else {
+                SPLITTER_COLOR
+            },
+        );
+
+        let horizontal_id = ui.make_persistent_id("presenter_horizontal_splitter");
+        let horizontal_response =
+            ui.interact(layout.horizontal_splitter, horizontal_id, egui::Sense::click_and_drag());
+        if horizontal_response.dragged()
+            && let Some(pointer) = horizontal_response.interact_pointer_pos()
+        {
+            self.top_fraction = ((pointer.y - available.top())
+                / (available.height() - 40.0).max(1.0))
+            .clamp(MIN_TOP_FRACTION, MAX_TOP_FRACTION);
+            ui.ctx().request_repaint();
+        }
+        if horizontal_response.hovered() || horizontal_response.dragged() {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeVertical);
+        }
+        ui.painter().rect_filled(
+            layout.horizontal_splitter,
+            2.0,
+            if horizontal_response.hovered() || horizontal_response.dragged() {
+                SPLITTER_HOVER
+            } else {
+                SPLITTER_COLOR
+            },
+        );
     }
 
     fn show_status_bar(

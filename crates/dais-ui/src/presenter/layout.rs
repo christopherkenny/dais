@@ -16,16 +16,20 @@ pub struct PresenterLayout {
     pub notes_panel: egui::Rect,
     /// Status bar at the bottom.
     pub status_bar: egui::Rect,
+    /// Vertical splitter between the current slide and right column.
+    pub vertical_splitter: egui::Rect,
+    /// Horizontal splitter between next preview and notes.
+    pub horizontal_splitter: egui::Rect,
 }
 
 /// Height of the status bar in logical pixels.
 const STATUS_BAR_HEIGHT: f32 = 40.0;
-/// Fraction of window width allocated to the left (current slide) panel.
-const LEFT_FRACTION: f32 = 0.60;
+/// Thickness of draggable splitters.
+const SPLITTER_SIZE: f32 = 8.0;
 
 impl PresenterLayout {
     /// Compute layout rects from the available content area.
-    pub fn compute(available: egui::Rect) -> Self {
+    pub fn compute(available: egui::Rect, left_fraction: f32, top_fraction: f32) -> Self {
         let total_w = available.width();
         let total_h = available.height();
 
@@ -35,21 +39,38 @@ impl PresenterLayout {
         );
 
         let content_h = (total_h - STATUS_BAR_HEIGHT).max(0.0);
-        let left_w = total_w * LEFT_FRACTION;
-        let right_w = total_w - left_w;
+        let splitter_half = SPLITTER_SIZE * 0.5;
+        let left_w = (total_w * left_fraction - splitter_half).max(0.0);
+        let right_w = (total_w - left_w - SPLITTER_SIZE).max(0.0);
 
         let current_slide = egui::Rect::from_min_size(available.min, egui::vec2(left_w, content_h));
-
-        let right_top = available.min + egui::vec2(left_w, 0.0);
-        let right_h_half = content_h * 0.5;
-
-        let next_preview = egui::Rect::from_min_size(right_top, egui::vec2(right_w, right_h_half));
-
-        let notes_panel = egui::Rect::from_min_size(
-            right_top + egui::vec2(0.0, right_h_half),
-            egui::vec2(right_w, content_h - right_h_half),
+        let vertical_splitter = egui::Rect::from_min_max(
+            egui::pos2(current_slide.max.x, available.min.y),
+            egui::pos2(current_slide.max.x + SPLITTER_SIZE, available.min.y + content_h),
         );
 
-        Self { current_slide, next_preview, notes_panel, status_bar }
+        let right_top = egui::pos2(vertical_splitter.max.x, available.min.y);
+        let top_h = (content_h * top_fraction - splitter_half).max(0.0);
+        let bottom_h = (content_h - top_h - SPLITTER_SIZE).max(0.0);
+
+        let next_preview = egui::Rect::from_min_size(right_top, egui::vec2(right_w, top_h));
+        let horizontal_splitter = egui::Rect::from_min_max(
+            egui::pos2(right_top.x, next_preview.max.y),
+            egui::pos2(right_top.x + right_w, next_preview.max.y + SPLITTER_SIZE),
+        );
+
+        let notes_panel = egui::Rect::from_min_size(
+            egui::pos2(right_top.x, horizontal_splitter.max.y),
+            egui::vec2(right_w, bottom_h),
+        );
+
+        Self {
+            current_slide,
+            next_preview,
+            notes_panel,
+            status_bar,
+            vertical_splitter,
+            horizontal_splitter,
+        }
     }
 }
