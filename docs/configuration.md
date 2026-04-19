@@ -29,7 +29,7 @@ mode = "elapsed"               # "countdown" or "elapsed"
 # warning_minutes = 5          # Optional. Used only when duration_minutes is set.
 overrun_color = true           # Red when past duration
 
-[pointer]
+[laser]
 color = "#FF0000"
 size = 12.0                    # Pixels at 1x scale
 style = "dot"                  # "dot", "crosshair", or "arrow"
@@ -51,6 +51,7 @@ font_size_step = 2.0           # Increment/decrement step
 # Example overrides:
 # next_slide = ["j", "Return"]
 # toggle_laser = ["p"]
+# cycle_laser_style = ["Ctrl+l"]
 ```
 
 ## Project-Local Config

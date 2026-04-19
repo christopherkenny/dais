@@ -16,6 +16,7 @@ All keybindings are remappable via the `[keybindings]` section in `config.toml`.
 | `toggle_freeze` | F | Freeze/unfreeze audience display |
 | `toggle_blackout` | B, . (period) | Black out audience display |
 | `toggle_laser` | L | Toggle laser pointer |
+| `cycle_laser_style` | Ctrl+L | Cycle laser style: dot, crosshair, arrow |
 | `toggle_ink` | D | Toggle freehand drawing |
 | `clear_ink` | C | Clear all ink on current slide |
 | `toggle_spotlight` | S | Toggle spotlight mode |
@@ -43,6 +44,9 @@ previous_slide = ["k"]
 
 # Single key binding
 toggle_laser = ["p"]
+
+# Cycle the active laser style
+cycle_laser_style = ["Ctrl+l"]
 
 # Modifier combos
 save_sidecar = ["Ctrl+Shift+s"]

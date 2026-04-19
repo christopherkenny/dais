@@ -404,7 +404,7 @@ mode = "countdown"
 duration_minutes = 5
 warning_minutes = 1
 
-[pointer]
+[laser]
 color = "#00FF00"
 size = 16.0
 

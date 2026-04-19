@@ -11,7 +11,7 @@ use crate::state::TimerMode;
 pub struct Config {
     pub display: DisplayConfig,
     pub timer: TimerConfig,
-    pub pointer: PointerConfig,
+    pub laser: LaserConfig,
     pub spotlight: SpotlightConfig,
     pub ink: InkConfig,
     pub notes: NotesConfig,
@@ -26,7 +26,7 @@ pub struct Config {
 struct PartialConfig {
     display: Option<PartialDisplayConfig>,
     timer: Option<PartialTimerConfig>,
-    pointer: Option<PartialPointerConfig>,
+    laser: Option<PartialLaserConfig>,
     spotlight: Option<PartialSpotlightConfig>,
     ink: Option<PartialInkConfig>,
     notes: Option<PartialNotesConfig>,
@@ -94,10 +94,10 @@ impl OptionalU32Value {
     }
 }
 
-/// Laser/mouse pointer configuration.
+/// Laser pointer configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
-pub struct PointerConfig {
+pub struct LaserConfig {
     /// Hex color string (e.g., "#FF0000").
     pub color: String,
     /// Size in logical pixels at 1x scale.
@@ -108,7 +108,7 @@ pub struct PointerConfig {
 
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(default)]
-struct PartialPointerConfig {
+struct PartialLaserConfig {
     color: Option<String>,
     size: Option<f32>,
     style: Option<String>,
@@ -187,7 +187,7 @@ impl Default for Config {
         Self {
             display: DisplayConfig::default(),
             timer: TimerConfig::default(),
-            pointer: PointerConfig::default(),
+            laser: LaserConfig::default(),
             spotlight: SpotlightConfig::default(),
             ink: InkConfig::default(),
             notes: NotesConfig::default(),
@@ -219,7 +219,7 @@ impl Default for TimerConfig {
     }
 }
 
-impl Default for PointerConfig {
+impl Default for LaserConfig {
     fn default() -> Self {
         Self { color: "#FF0000".to_string(), size: 12.0, style: "dot".to_string() }
     }
@@ -227,7 +227,7 @@ impl Default for PointerConfig {
 
 impl Default for SpotlightConfig {
     fn default() -> Self {
-        Self { radius: 150.0, dim_opacity: 0.6 }
+        Self { radius: 80.0, dim_opacity: 0.6 }
     }
 }
 
@@ -364,15 +364,15 @@ fn apply_partial_config(config: &mut Config, partial: PartialConfig) {
         }
     }
 
-    if let Some(pointer) = partial.pointer {
-        if let Some(color) = pointer.color {
-            config.pointer.color = color;
+    if let Some(laser) = partial.laser {
+        if let Some(color) = laser.color {
+            config.laser.color = color;
         }
-        if let Some(size) = pointer.size {
-            config.pointer.size = size;
+        if let Some(size) = laser.size {
+            config.laser.size = size;
         }
-        if let Some(style) = pointer.style {
-            config.pointer.style = style;
+        if let Some(style) = laser.style {
+            config.laser.style = style;
         }
     }
 

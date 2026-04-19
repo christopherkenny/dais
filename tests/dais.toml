@@ -9,3 +9,12 @@ duration_minutes = 1
 [ink]
 color = "#F58025"
 width = 1.0
+
+[laser]
+color = "#33CC66"
+size = 20.0
+style = "arrow"
+
+[spotlight]
+radius = 60.0
+dim_opacity = 0.45

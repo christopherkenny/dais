@@ -42,6 +42,12 @@ pub struct PresentationState {
     pub laser_active: bool,
     /// Current pointer position (normalized 0..1), None if pointer is off-slide.
     pub pointer_position: Option<(f32, f32)>,
+    /// Pointer color as RGBA.
+    pub pointer_color: [u8; 4],
+    /// Pointer size in logical pixels.
+    pub pointer_size: f32,
+    /// Pointer visual style.
+    pub pointer_style: PointerStyle,
     /// Whether ink drawing mode is active.
     pub ink_active: bool,
     /// Ink strokes on the current page.
@@ -50,6 +56,10 @@ pub struct PresentationState {
     pub spotlight_active: bool,
     /// Spotlight center position (normalized 0..1).
     pub spotlight_position: Option<(f32, f32)>,
+    /// Spotlight radius in logical pixels.
+    pub spotlight_radius: f32,
+    /// Spotlight dim opacity from 0.0 to 1.0.
+    pub spotlight_dim_opacity: f32,
     /// Whether zoom is active on the audience display.
     pub zoom_active: bool,
     /// Current zoom region, if zoom is active.
@@ -99,12 +109,17 @@ impl PresentationState {
             blacked_out: false,
             screen_share_mode: false,
             presentation_mode: false,
-            laser_active: false,
+            laser_active: true,
             pointer_position: None,
+            pointer_color: [255, 0, 0, 255],
+            pointer_size: 12.0,
+            pointer_style: PointerStyle::Dot,
             ink_active: false,
             ink_strokes: Vec::new(),
             spotlight_active: false,
             spotlight_position: None,
+            spotlight_radius: 80.0,
+            spotlight_dim_opacity: 0.6,
             zoom_active: false,
             zoom_region: None,
             timer: TimerState::default(),
@@ -124,6 +139,18 @@ impl PresentationState {
     pub fn audience_page(&self) -> usize {
         self.frozen_page.unwrap_or(self.current_page)
     }
+}
+
+/// Visual style for the audience laser pointer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum PointerStyle {
+    /// Circular laser dot with glow.
+    #[default]
+    Dot,
+    /// Crosshair with a small center dot.
+    Crosshair,
+    /// Arrow-style marker.
+    Arrow,
 }
 
 /// A single ink stroke drawn on a slide.

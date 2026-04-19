@@ -5,7 +5,7 @@ use dais_core::bus::CommandReceiver;
 use dais_core::commands::Command;
 use dais_core::config::Config;
 use dais_core::slide_group::SlideGroup;
-use dais_core::state::{InkStroke, PresentationState, TimerState, ZoomRegion};
+use dais_core::state::{InkStroke, PointerStyle, PresentationState, TimerState, ZoomRegion};
 use dais_sidecar::types::PresentationMetadata;
 
 /// The presentation engine — processes commands and owns the authoritative state.
@@ -66,6 +66,11 @@ impl PresentationEngine {
         };
         state.notes_font_size = config.notes.font_size;
         state.notes_font_size_step = config.notes.font_size_step;
+        state.pointer_color = parse_hex_color(&config.laser.color).unwrap_or([255, 0, 0, 255]);
+        state.pointer_size = config.laser.size.clamp(2.0, 96.0);
+        state.pointer_style = parse_pointer_style(&config.laser.style);
+        state.spotlight_radius = config.spotlight.radius.clamp(16.0, 2048.0);
+        state.spotlight_dim_opacity = config.spotlight.dim_opacity.clamp(0.0, 1.0);
 
         let shared_state = Arc::new(RwLock::new(state.clone()));
 
@@ -177,6 +182,7 @@ impl PresentationEngine {
             }
 
             Command::ToggleLaser
+            | Command::CycleLaserStyle
             | Command::SetPointerPosition(..)
             | Command::ToggleInk
             | Command::AddInkPoint(..)
@@ -260,6 +266,13 @@ impl PresentationEngine {
                 if self.state.laser_active {
                     self.state.ink_active = false;
                 }
+            }
+            Command::CycleLaserStyle => {
+                self.state.pointer_style = match self.state.pointer_style {
+                    PointerStyle::Dot => PointerStyle::Crosshair,
+                    PointerStyle::Crosshair => PointerStyle::Arrow,
+                    PointerStyle::Arrow => PointerStyle::Dot,
+                };
             }
             Command::SetPointerPosition(x, y) => {
                 let clamped = (x.clamp(0.0, 1.0), y.clamp(0.0, 1.0));
@@ -596,6 +609,14 @@ fn parse_hex_color(color_str: &str) -> Option<[u8; 4]> {
     }
 }
 
+fn parse_pointer_style(style: &str) -> PointerStyle {
+    match style.trim().to_ascii_lowercase().as_str() {
+        "crosshair" => PointerStyle::Crosshair,
+        "arrow" => PointerStyle::Arrow,
+        _ => PointerStyle::Dot,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -613,10 +634,17 @@ mod tests {
         total_pages: usize,
         metadata: &PresentationMetadata,
     ) -> (PresentationEngine, Arc<RwLock<PresentationState>>, dais_core::bus::CommandSender) {
+        make_engine_with_config(total_pages, metadata, Config::default())
+    }
+
+    fn make_engine_with_config(
+        total_pages: usize,
+        metadata: &PresentationMetadata,
+        config: Config,
+    ) -> (PresentationEngine, Arc<RwLock<PresentationState>>, dais_core::bus::CommandSender) {
         let bus = CommandBus::new();
         let sender = bus.sender();
         let receiver = bus.into_receiver();
-        let config = Config::default();
         let (engine, shared) = PresentationEngine::new(
             total_pages,
             metadata,
@@ -646,6 +674,33 @@ mod tests {
         assert_eq!(parse_hex_color(""), None);
         assert_eq!(parse_hex_color("#FFF"), None);
         assert_eq!(parse_hex_color("ZZZZZZ"), None);
+    }
+
+    #[test]
+    fn parse_pointer_style_variants() {
+        assert_eq!(parse_pointer_style("dot"), PointerStyle::Dot);
+        assert_eq!(parse_pointer_style("crosshair"), PointerStyle::Crosshair);
+        assert_eq!(parse_pointer_style("arrow"), PointerStyle::Arrow);
+        assert_eq!(parse_pointer_style("unknown"), PointerStyle::Dot);
+    }
+
+    #[test]
+    fn presentation_aid_config_populates_state() {
+        let mut config = Config::default();
+        config.laser.color = "#33CC66AA".to_string();
+        config.laser.size = 24.0;
+        config.laser.style = "crosshair".to_string();
+        config.spotlight.radius = 220.0;
+        config.spotlight.dim_opacity = 0.35;
+
+        let (engine, _, _) =
+            make_engine_with_config(3, &PresentationMetadata::default(), config);
+
+        assert_eq!(engine.state().pointer_color, [0x33, 0xCC, 0x66, 0xAA]);
+        assert!((engine.state().pointer_size - 24.0).abs() < f32::EPSILON);
+        assert_eq!(engine.state().pointer_style, PointerStyle::Crosshair);
+        assert!((engine.state().spotlight_radius - 220.0).abs() < f32::EPSILON);
+        assert!((engine.state().spotlight_dim_opacity - 0.35).abs() < f32::EPSILON);
     }
 
     // ---- build_slide_groups ----
@@ -985,9 +1040,11 @@ mod tests {
     #[test]
     fn laser_and_ink_mutually_exclusive() {
         let (mut engine, _, sender) = make_engine(5);
+        assert!(engine.state().laser_active);
+
         sender.send(Command::ToggleLaser).unwrap();
         engine.tick();
-        assert!(engine.state().laser_active);
+        assert!(!engine.state().laser_active);
 
         sender.send(Command::ToggleInk).unwrap();
         engine.tick();
@@ -1001,13 +1058,26 @@ mod tests {
     }
 
     #[test]
+    fn cycle_laser_style_rotates_styles() {
+        let (mut engine, _, sender) = make_engine(5);
+        assert_eq!(engine.state().pointer_style, PointerStyle::Dot);
+
+        sender.send(Command::CycleLaserStyle).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().pointer_style, PointerStyle::Crosshair);
+
+        sender.send(Command::CycleLaserStyle).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().pointer_style, PointerStyle::Arrow);
+
+        sender.send(Command::CycleLaserStyle).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().pointer_style, PointerStyle::Dot);
+    }
+
+    #[test]
     fn pointer_position_when_laser_active() {
         let (mut engine, _, sender) = make_engine(5);
-        sender.send(Command::SetPointerPosition(0.5, 0.5)).unwrap();
-        engine.tick();
-        assert_eq!(engine.state().pointer_position, None);
-
-        sender.send(Command::ToggleLaser).unwrap();
         sender.send(Command::SetPointerPosition(0.5, 0.5)).unwrap();
         engine.tick();
         assert_eq!(engine.state().pointer_position, Some((0.5, 0.5)));
@@ -1111,7 +1181,6 @@ mod tests {
     #[test]
     fn position_clamping() {
         let (mut engine, _, sender) = make_engine(5);
-        sender.send(Command::ToggleLaser).unwrap();
         sender.send(Command::SetPointerPosition(-1.0, 2.0)).unwrap();
         engine.tick();
         assert_eq!(engine.state().pointer_position, Some((0.0, 1.0)));

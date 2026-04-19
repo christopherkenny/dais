@@ -2,7 +2,7 @@
 //!
 //! Renders visual aids over the audience slide image.
 
-use dais_core::state::PresentationState;
+use dais_core::state::{PointerStyle, PresentationState};
 
 /// Draw all active overlays on the audience window.
 pub fn draw_overlays(
@@ -20,14 +20,29 @@ pub fn draw_overlays(
     if state.laser_active
         && let Some((px, py)) = state.pointer_position
     {
-        draw_laser(ui, image_rect, px, py);
+        draw_laser_overlay(
+            ui,
+            image_rect,
+            px,
+            py,
+            state.pointer_color,
+            state.pointer_size,
+            state.pointer_style,
+        );
     }
 
     // Spotlight
     if state.spotlight_active
         && let Some((sx, sy)) = state.spotlight_position
     {
-        draw_spotlight(ui, image_rect, sx, sy);
+        draw_spotlight_overlay(
+            ui,
+            image_rect,
+            sx,
+            sy,
+            state.spotlight_radius,
+            state.spotlight_dim_opacity,
+        );
     }
 
     // Blackout
@@ -36,25 +51,100 @@ pub fn draw_overlays(
     }
 }
 
-/// Draw a red laser dot at normalized position.
-fn draw_laser(ui: &mut egui::Ui, image_rect: egui::Rect, nx: f32, ny: f32) {
+/// Draw the configured pointer overlay at normalized position.
+pub fn draw_laser_overlay(
+    ui: &mut egui::Ui,
+    image_rect: egui::Rect,
+    nx: f32,
+    ny: f32,
+    color: [u8; 4],
+    size: f32,
+    style: PointerStyle,
+) {
     let pos = denormalize(image_rect, nx, ny);
     let painter = ui.painter();
+    let color = color32_from_rgba(color);
+    let size = size.clamp(2.0, 96.0);
+    let glow = egui::Color32::from_rgba_unmultiplied(color.r(), color.g(), color.b(), 72);
 
-    // Outer glow
-    painter.circle_filled(pos, 10.0, egui::Color32::from_rgba_unmultiplied(255, 0, 0, 60));
-    // Inner dot
-    painter.circle_filled(pos, 5.0, egui::Color32::RED);
+    match style {
+        PointerStyle::Dot => {
+            painter.circle_filled(pos, (size * 0.95).max(4.0), glow);
+            painter.circle_filled(pos, (size * 0.45).max(2.0), color);
+        }
+        PointerStyle::Crosshair => {
+            let arm = (size * 1.2).max(8.0);
+            let gap = (size * 0.35).max(3.0);
+            let stroke = egui::Stroke::new((size * 0.16).max(1.5), color);
+            painter.circle_stroke(pos, (size * 0.45).max(3.0), stroke);
+            painter.line_segment(
+                [pos + egui::vec2(-arm, 0.0), pos + egui::vec2(-gap, 0.0)],
+                stroke,
+            );
+            painter.line_segment(
+                [pos + egui::vec2(gap, 0.0), pos + egui::vec2(arm, 0.0)],
+                stroke,
+            );
+            painter.line_segment(
+                [pos + egui::vec2(0.0, -arm), pos + egui::vec2(0.0, -gap)],
+                stroke,
+            );
+            painter.line_segment(
+                [pos + egui::vec2(0.0, gap), pos + egui::vec2(0.0, arm)],
+                stroke,
+            );
+            painter.circle_filled(pos, (size * 0.18).max(1.5), color);
+        }
+        PointerStyle::Arrow => {
+            // A conventional pointer arrow: tip at the cursor, trailing down-right
+            // with a slight downward rotation from the 45-degree diagonal.
+            let head_len = (size * 0.70).max(6.0);
+            let head_half_width = (size * 0.24).max(2.2);
+            let tail_len = (size * 0.31).max(3.0);
+            let tail_start = head_len * 0.50;
+            let angle = 60.0_f32.to_radians();
+            let dir = egui::vec2(angle.cos(), angle.sin());
+            let perp = egui::vec2(-dir.y, dir.x);
+            let base_center = pos + dir * head_len;
+            let left = base_center + perp * head_half_width;
+            let right = base_center - perp * head_half_width;
+            let tail_join = pos + dir * tail_start;
+            let tail_end = pos + dir * (head_len + tail_len);
+            let stroke = egui::Stroke::new((size * 0.145).max(1.7), color);
+            painter.line_segment(
+                [tail_join, tail_end],
+                stroke,
+            );
+            painter.add(egui::Shape::convex_polygon(
+                vec![pos, left, right],
+                color,
+                egui::Stroke::NONE,
+            ));
+            painter.circle_filled(pos, (size * 0.16).max(1.5), glow);
+        }
+    }
 }
 
 /// Draw a spotlight overlay — dims everything outside a circle.
 ///
 /// Public so it can be shared between audience and presenter windows.
-pub fn draw_spotlight_overlay(ui: &mut egui::Ui, image_rect: egui::Rect, nx: f32, ny: f32) {
-    let half_size = (image_rect.width().min(image_rect.height()) * 0.075).clamp(30.0, 76.0);
+pub fn draw_spotlight_overlay(
+    ui: &mut egui::Ui,
+    image_rect: egui::Rect,
+    nx: f32,
+    ny: f32,
+    radius: f32,
+    dim_opacity: f32,
+) {
+    let half_size = radius.clamp(16.0, image_rect.width().min(image_rect.height()) * 0.45);
     let center = denormalize(image_rect, nx, ny);
     let painter = ui.painter_at(image_rect);
-    let dim_color = egui::Color32::from_rgba_unmultiplied(0, 0, 0, 150);
+    let dim_color = egui::Color32::from_rgba_unmultiplied(
+        0,
+        0,
+        0,
+        (dim_opacity.clamp(0.0, 1.0) * 255.0).round() as u8,
+    );
     let hole_rect =
         egui::Rect::from_center_size(center, egui::vec2(half_size * 2.0, half_size * 2.0))
             .intersect(image_rect);
@@ -109,9 +199,8 @@ pub fn draw_spotlight_overlay(ui: &mut egui::Ui, image_rect: egui::Rect, nx: f32
     );
 }
 
-/// Draw a spotlight overlay — dims everything outside a circle.
-fn draw_spotlight(ui: &mut egui::Ui, image_rect: egui::Rect, nx: f32, ny: f32) {
-    draw_spotlight_overlay(ui, image_rect, nx, ny);
+fn color32_from_rgba(color: [u8; 4]) -> egui::Color32 {
+    egui::Color32::from_rgba_unmultiplied(color[0], color[1], color[2], color[3])
 }
 
 /// Draw a zoom indicator at the given position.

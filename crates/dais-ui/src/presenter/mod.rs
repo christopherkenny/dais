@@ -136,18 +136,29 @@ impl PresenterConsole {
                 if state.laser_active
                     && let Some((px, py)) = state.pointer_position
                 {
-                    let pos = egui::pos2(
-                        image_rect.min.x + px * image_rect.width(),
-                        image_rect.min.y + py * image_rect.height(),
+                    crate::audience::overlays::draw_laser_overlay(
+                        ui,
+                        image_rect,
+                        px,
+                        py,
+                        state.pointer_color,
+                        state.pointer_size,
+                        state.pointer_style,
                     );
-                    ui.painter().circle_filled(pos, 6.0, egui::Color32::RED);
                 }
 
                 // Draw spotlight on presenter view
                 if state.spotlight_active
                     && let Some((sx, sy)) = state.spotlight_position
                 {
-                    crate::audience::overlays::draw_spotlight_overlay(ui, image_rect, sx, sy);
+                    crate::audience::overlays::draw_spotlight_overlay(
+                        ui,
+                        image_rect,
+                        sx,
+                        sy,
+                        state.spotlight_radius,
+                        state.spotlight_dim_opacity,
+                    );
                 }
 
                 // Draw zoom target on presenter view so the operator can steer

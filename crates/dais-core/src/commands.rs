@@ -37,6 +37,8 @@ pub enum Command {
     // -- Presentation aids --
     /// Toggle the laser pointer on/off.
     ToggleLaser,
+    /// Cycle the laser pointer visual style.
+    CycleLaserStyle,
     /// Update the pointer position (normalized 0..1 coordinates relative to slide).
     SetPointerPosition(f32, f32),
     /// Toggle freehand ink drawing mode.

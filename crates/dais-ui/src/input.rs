@@ -381,6 +381,7 @@ fn action_to_command(action: Action) -> Option<Command> {
         Action::ToggleFreeze => Some(Command::ToggleFreeze),
         Action::ToggleBlackout => Some(Command::ToggleBlackout),
         Action::ToggleLaser => Some(Command::ToggleLaser),
+        Action::CycleLaserStyle => Some(Command::CycleLaserStyle),
         Action::ToggleInk => Some(Command::ToggleInk),
         Action::ClearInk => Some(Command::ClearInk),
         Action::ToggleSpotlight => Some(Command::ToggleSpotlight),
