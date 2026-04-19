@@ -227,10 +227,20 @@ impl InputHandler {
                         .sender
                         .send(Command::SetZoomRegion { center: (norm.0, norm.1), factor });
                 }
+            }
+        }
 
-                if aids.ink && response.dragged() {
-                    let _ = self.sender.send(Command::AddInkPoint(norm.0, norm.1));
-                }
+        let pointer_down = response.ctx.input(|i| i.pointer.primary_down());
+        if aids.ink
+            && pointer_down
+            && response.contains_pointer()
+            && let Some(pos) = response
+                .interact_pointer_pos()
+                .or_else(|| response.ctx.input(|i| i.pointer.latest_pos()))
+        {
+            let norm = normalize_to_rect(pos, image_rect);
+            if (0.0..=1.0).contains(&norm.0) && (0.0..=1.0).contains(&norm.1) {
+                let _ = self.sender.send(Command::AddInkPoint(norm.0, norm.1));
             }
         }
 
