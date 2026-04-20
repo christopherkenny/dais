@@ -148,7 +148,13 @@ impl PresenterConsole {
                 );
 
                 // Draw ink strokes on presenter view
-                if !state.ink_strokes.is_empty() {
+                if state.whiteboard_active {
+                    // White canvas over the current slide
+                    ui.painter().rect_filled(image_rect, 0.0, egui::Color32::WHITE);
+                    if !state.whiteboard_strokes.is_empty() {
+                        crate::widgets::draw_ink_strokes(ui, image_rect, &state.whiteboard_strokes);
+                    }
+                } else if !state.ink_strokes.is_empty() {
                     crate::widgets::draw_ink_strokes(ui, image_rect, &state.ink_strokes);
                 }
 

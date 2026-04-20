@@ -188,6 +188,7 @@ Note here
                 n.insert(3, "Fourth slide".to_string());
                 n
             },
+            slide_timings: std::collections::HashMap::new(),
         };
 
         let dir = std::env::temp_dir().join("dais_test_roundtrip");

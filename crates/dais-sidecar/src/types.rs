@@ -17,6 +17,8 @@ pub struct PresentationMetadata {
     pub end_slide: Option<usize>,
     /// Timer duration hint from sidecar, in minutes.
     pub last_minutes: Option<u32>,
+    /// Per-slide timing data (logical slide index → seconds spent).
+    pub slide_timings: HashMap<usize, f64>,
 }
 
 /// A contiguous range of PDF pages forming one logical slide.

@@ -179,6 +179,7 @@ impl PresentationEngine {
 
             Command::ToggleFreeze
             | Command::ToggleBlackout
+            | Command::ToggleWhiteboard
             | Command::ToggleScreenShareMode
             | Command::TogglePresentationMode => {
                 self.handle_display_mode(cmd);
@@ -247,7 +248,22 @@ impl PresentationEngine {
                     self.state.frozen_page = Some(self.state.current_page);
                 }
             }
-            Command::ToggleBlackout => self.state.blacked_out = !self.state.blacked_out,
+            Command::ToggleBlackout => {
+                self.state.blacked_out = !self.state.blacked_out;
+                if self.state.blacked_out {
+                    self.state.whiteboard_active = false;
+                }
+            }
+            Command::ToggleWhiteboard => {
+                self.state.whiteboard_active = !self.state.whiteboard_active;
+                if self.state.whiteboard_active {
+                    self.state.blacked_out = false;
+                    // Auto-activate ink so the user can draw immediately
+                    self.state.ink_active = true;
+                    self.state.laser_active = false;
+                    self.state.pointer_position = None;
+                }
+            }
             Command::ToggleScreenShareMode => {
                 self.state.screen_share_mode = !self.state.screen_share_mode;
             }
@@ -295,13 +311,18 @@ impl PresentationEngine {
             }
             Command::AddInkPoint(x, y) if self.state.ink_active => {
                 let point = (x.clamp(0.0, 1.0), y.clamp(0.0, 1.0));
-                if let Some(stroke) = self.state.ink_strokes.last_mut()
+                let strokes = if self.state.whiteboard_active {
+                    &mut self.state.whiteboard_strokes
+                } else {
+                    &mut self.state.ink_strokes
+                };
+                if let Some(stroke) = strokes.last_mut()
                     && !stroke.finished
                 {
                     stroke.points.push(point);
                     return;
                 }
-                self.state.ink_strokes.push(InkStroke {
+                strokes.push(InkStroke {
                     points: vec![point],
                     color: self.ink_color,
                     width: self.ink_width,
@@ -310,11 +331,22 @@ impl PresentationEngine {
             }
             Command::AddInkPoint(..) => {}
             Command::FinishInkStroke => {
-                if let Some(stroke) = self.state.ink_strokes.last_mut() {
+                let strokes = if self.state.whiteboard_active {
+                    &mut self.state.whiteboard_strokes
+                } else {
+                    &mut self.state.ink_strokes
+                };
+                if let Some(stroke) = strokes.last_mut() {
                     stroke.finished = true;
                 }
             }
-            Command::ClearInk => self.state.ink_strokes.clear(),
+            Command::ClearInk => {
+                if self.state.whiteboard_active {
+                    self.state.whiteboard_strokes.clear();
+                } else {
+                    self.state.ink_strokes.clear();
+                }
+            }
             Command::ToggleSpotlight => {
                 self.state.spotlight_active = !self.state.spotlight_active;
                 if !self.state.spotlight_active {
@@ -437,6 +469,16 @@ impl PresentationEngine {
         let mut metadata = self.metadata.clone();
         metadata.groups = groups;
         metadata.notes = notes;
+
+        // Persist per-slide timing data (logical slide index → seconds).
+        let mut slide_timings = std::collections::HashMap::new();
+        for (i, dur) in self.state.slide_elapsed_by_logical.iter().enumerate() {
+            let secs = dur.as_secs_f64();
+            if secs > 0.0 {
+                slide_timings.insert(i, secs);
+            }
+        }
+        metadata.slide_timings = slide_timings;
 
         let (format, sidecar_path): (Box<dyn SidecarFormat>, _) = match self.sidecar_format.as_str()
         {
@@ -1392,5 +1434,80 @@ mod tests {
         engine.tick();
         assert_eq!(engine.state().current_notes, None);
         assert_eq!(engine.state().slide_groups[0].notes, None);
+    }
+
+    // ---- Whiteboard ----
+
+    #[test]
+    fn toggle_whiteboard() {
+        let (mut engine, _, sender) = make_engine(5);
+        assert!(!engine.state().whiteboard_active);
+
+        sender.send(Command::ToggleWhiteboard).unwrap();
+        engine.tick();
+        assert!(engine.state().whiteboard_active);
+        assert!(engine.state().ink_active); // auto-activates ink
+        assert!(!engine.state().laser_active);
+
+        sender.send(Command::ToggleWhiteboard).unwrap();
+        engine.tick();
+        assert!(!engine.state().whiteboard_active);
+    }
+
+    #[test]
+    fn whiteboard_and_blackout_mutually_exclusive() {
+        let (mut engine, _, sender) = make_engine(5);
+
+        sender.send(Command::ToggleWhiteboard).unwrap();
+        engine.tick();
+        assert!(engine.state().whiteboard_active);
+
+        sender.send(Command::ToggleBlackout).unwrap();
+        engine.tick();
+        assert!(engine.state().blacked_out);
+        assert!(!engine.state().whiteboard_active);
+
+        sender.send(Command::ToggleWhiteboard).unwrap();
+        engine.tick();
+        assert!(engine.state().whiteboard_active);
+        assert!(!engine.state().blacked_out);
+    }
+
+    #[test]
+    fn whiteboard_ink_strokes_separate_from_slide() {
+        let (mut engine, _, sender) = make_engine(5);
+
+        // Draw on slide
+        sender.send(Command::ToggleInk).unwrap();
+        sender.send(Command::AddInkPoint(0.1, 0.1)).unwrap();
+        sender.send(Command::FinishInkStroke).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().ink_strokes.len(), 1);
+        assert!(engine.state().whiteboard_strokes.is_empty());
+
+        // Enter whiteboard and draw
+        sender.send(Command::ToggleWhiteboard).unwrap();
+        sender.send(Command::AddInkPoint(0.5, 0.5)).unwrap();
+        sender.send(Command::FinishInkStroke).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().whiteboard_strokes.len(), 1);
+        // Slide strokes unchanged
+        assert_eq!(engine.state().ink_strokes.len(), 1);
+    }
+
+    #[test]
+    fn clear_ink_targets_whiteboard_when_active() {
+        let (mut engine, _, sender) = make_engine(5);
+
+        // Draw on whiteboard
+        sender.send(Command::ToggleWhiteboard).unwrap();
+        sender.send(Command::AddInkPoint(0.5, 0.5)).unwrap();
+        sender.send(Command::FinishInkStroke).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().whiteboard_strokes.len(), 1);
+
+        sender.send(Command::ClearInk).unwrap();
+        engine.tick();
+        assert!(engine.state().whiteboard_strokes.is_empty());
     }
 }

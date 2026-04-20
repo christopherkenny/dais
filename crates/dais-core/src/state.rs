@@ -32,6 +32,10 @@ pub struct PresentationState {
     pub frozen_page: Option<usize>,
     /// Whether the audience display is blacked out.
     pub blacked_out: bool,
+    /// Whether the whiteboard is active (blank white canvas on audience).
+    pub whiteboard_active: bool,
+    /// Ink strokes drawn on the whiteboard (persist across navigation).
+    pub whiteboard_strokes: Vec<InkStroke>,
     /// Whether screen-share mode is active.
     pub screen_share_mode: bool,
     /// Whether presentation mode is active (single-monitor fullscreen HUD).
@@ -107,6 +111,8 @@ impl PresentationState {
             frozen: false,
             frozen_page: None,
             blacked_out: false,
+            whiteboard_active: false,
+            whiteboard_strokes: Vec::new(),
             screen_share_mode: false,
             presentation_mode: false,
             laser_active: true,

@@ -22,6 +22,8 @@ struct DaisFile {
     groups: Vec<DaisGroup>,
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     notes: HashMap<String, String>,
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    slide_timings: HashMap<String, f64>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -43,6 +45,7 @@ impl DaisFile {
                 .map(|g| DaisGroup { start_page: g.start_page, end_page: g.end_page })
                 .collect(),
             notes: meta.notes.iter().map(|(k, v)| (k.to_string(), v.clone())).collect(),
+            slide_timings: meta.slide_timings.iter().map(|(k, v)| (k.to_string(), *v)).collect(),
         }
     }
 
@@ -58,6 +61,11 @@ impl DaisFile {
                 .collect(),
             notes: self
                 .notes
+                .into_iter()
+                .filter_map(|(k, v)| k.parse::<usize>().ok().map(|idx| (idx, v)))
+                .collect(),
+            slide_timings: self
+                .slide_timings
                 .into_iter()
                 .filter_map(|(k, v)| k.parse::<usize>().ok().map(|idx| (idx, v)))
                 .collect(),
@@ -112,6 +120,7 @@ mod tests {
         assert!(loaded.notes.is_empty());
         assert!(loaded.end_slide.is_none());
         assert!(loaded.last_minutes.is_none());
+        assert!(loaded.slide_timings.is_empty());
 
         let _ = std::fs::remove_file(&path);
     }
@@ -136,6 +145,12 @@ mod tests {
                 n.insert(5, "Key point here".to_string());
                 n
             },
+            slide_timings: {
+                let mut t = HashMap::new();
+                t.insert(0, 12.5);
+                t.insert(1, 45.0);
+                t
+            },
         };
 
         format.write(&path, &original).unwrap();
@@ -152,6 +167,9 @@ mod tests {
         assert_eq!(loaded.notes.len(), 2);
         assert_eq!(loaded.notes[&0], "Welcome everyone");
         assert_eq!(loaded.notes[&5], "Key point here");
+        assert_eq!(loaded.slide_timings.len(), 2);
+        assert!((loaded.slide_timings[&0] - 12.5).abs() < f64::EPSILON);
+        assert!((loaded.slide_timings[&1] - 45.0).abs() < f64::EPSILON);
 
         let _ = std::fs::remove_file(&path);
     }

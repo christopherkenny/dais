@@ -29,6 +29,8 @@ pub enum Command {
     ToggleFreeze,
     /// Black out/restore the audience display.
     ToggleBlackout,
+    /// Toggle the whiteboard (blank white drawing canvas on audience).
+    ToggleWhiteboard,
     /// Toggle screen-share mode (audience window as normal window).
     ToggleScreenShareMode,
     /// Toggle presentation mode (single-monitor: console ↔ fullscreen HUD).

@@ -49,6 +49,14 @@ pub fn draw_overlays(
     if state.blacked_out {
         ui.painter().rect_filled(viewport_rect, 0.0, egui::Color32::BLACK);
     }
+
+    // Whiteboard — white canvas with dedicated strokes
+    if state.whiteboard_active {
+        ui.painter().rect_filled(viewport_rect, 0.0, egui::Color32::WHITE);
+        if !state.whiteboard_strokes.is_empty() {
+            crate::widgets::draw_ink_strokes(ui, image_rect, &state.whiteboard_strokes);
+        }
+    }
 }
 
 /// Draw the configured pointer overlay at normalized position.

@@ -17,6 +17,7 @@ pub enum Action {
     GoToSlide,
     ToggleFreeze,
     ToggleBlackout,
+    ToggleWhiteboard,
     ToggleLaser,
     CycleLaserStyle,
     ToggleInk,
@@ -49,6 +50,7 @@ impl Action {
             Self::GoToSlide => "go_to_slide",
             Self::ToggleFreeze => "toggle_freeze",
             Self::ToggleBlackout => "toggle_blackout",
+            Self::ToggleWhiteboard => "toggle_whiteboard",
             Self::ToggleLaser => "toggle_laser",
             Self::CycleLaserStyle => "cycle_laser_style",
             Self::ToggleInk => "toggle_ink",
@@ -81,6 +83,7 @@ impl Action {
             Self::GoToSlide => "Go to slide…",
             Self::ToggleFreeze => "Freeze audience",
             Self::ToggleBlackout => "Black out audience",
+            Self::ToggleWhiteboard => "Whiteboard",
             Self::ToggleLaser => "Laser pointer",
             Self::CycleLaserStyle => "Cycle laser style",
             Self::ToggleInk => "Drawing mode",
@@ -114,6 +117,7 @@ impl Action {
 
             Self::ToggleFreeze
             | Self::ToggleBlackout
+            | Self::ToggleWhiteboard
             | Self::ToggleScreenShare
             | Self::TogglePresentationMode => "Display",
 
@@ -148,6 +152,7 @@ impl Action {
             Self::GoToSlide,
             Self::ToggleFreeze,
             Self::ToggleBlackout,
+            Self::ToggleWhiteboard,
             Self::ToggleLaser,
             Self::CycleLaserStyle,
             Self::ToggleInk,
@@ -329,6 +334,7 @@ fn default_keybindings() -> Vec<(Action, Vec<String>)> {
         (Action::GoToSlide, vec!["g".into()]),
         (Action::ToggleFreeze, vec!["f".into()]),
         (Action::ToggleBlackout, vec!["b".into(), ".".into()]),
+        (Action::ToggleWhiteboard, vec!["w".into()]),
         (Action::ToggleLaser, vec!["l".into()]),
         (Action::CycleLaserStyle, vec!["Ctrl+l".into()]),
         (Action::ToggleInk, vec!["d".into()]),

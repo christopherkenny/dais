@@ -15,6 +15,7 @@ All keybindings are remappable via the `[keybindings]` section in `config.toml`.
 | `go_to_slide` | G then number then Enter | Jump to slide by number |
 | `toggle_freeze` | F | Freeze/unfreeze audience display |
 | `toggle_blackout` | B, . (period) | Black out audience display |
+| `toggle_whiteboard` | W | Toggle whiteboard (white drawing canvas) |
 | `toggle_laser` | L | Toggle laser pointer |
 | `cycle_laser_style` | Ctrl+L | Cycle laser style: dot, crosshair, arrow |
 | `toggle_ink` | D | Toggle freehand drawing |
