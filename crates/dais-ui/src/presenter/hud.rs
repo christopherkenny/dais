@@ -16,7 +16,7 @@ use crate::input::{InputHandler, UiModes};
 
 const HUD_BAR_HEIGHT: f32 = 48.0;
 const HUD_BAR_BG: egui::Color32 = egui::Color32::from_rgba_premultiplied(20, 20, 20, 180);
-const NOTES_PANEL_HEIGHT: f32 = 200.0;
+const NOTES_PANEL_HEIGHT: f32 = 128.0;
 const NOTES_HOVER_ZONE: f32 = 80.0;
 const HUD_BAR_HOVER_ZONE: f32 = 64.0;
 

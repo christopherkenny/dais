@@ -21,6 +21,7 @@ use self::layout::PresenterLayout;
 use self::next_preview::NextPreviewPanel;
 use self::notes_panel::{NotesPanel, NotesPanelView};
 use self::overview::OverviewGrid;
+use crate::audience::display::AudienceDisplay;
 
 use crate::input::{InputHandler, UiModes};
 
@@ -33,6 +34,7 @@ const SPLITTER_HOVER: egui::Color32 = egui::Color32::from_rgb(124, 178, 255);
 
 /// The presenter console window — composes all sub-panels.
 pub struct PresenterConsole {
+    audience_display: AudienceDisplay,
     current_slide: CurrentSlidePanel,
     next_preview: NextPreviewPanel,
     notes: NotesPanel,
@@ -40,11 +42,14 @@ pub struct PresenterConsole {
     input: InputHandler,
     left_fraction: f32,
     top_fraction: f32,
+    single_left_fraction: f32,
+    single_top_fraction: f32,
 }
 
 impl PresenterConsole {
     pub fn new(input: InputHandler) -> Self {
         Self {
+            audience_display: AudienceDisplay::new(),
             current_slide: CurrentSlidePanel::new(),
             next_preview: NextPreviewPanel::new(),
             notes: NotesPanel::new(),
@@ -52,6 +57,8 @@ impl PresenterConsole {
             input,
             left_fraction: 0.60,
             top_fraction: 0.50,
+            single_left_fraction: 0.72,
+            single_top_fraction: 0.40,
         }
     }
 
@@ -204,49 +211,242 @@ impl PresenterConsole {
                     self.overview.show(ctx, ui, state, cache, sender);
                 }
 
-                // Quit confirmation dialog
-                if state.quit_requested {
-                    let screen = ui.max_rect();
-                    // Dim background
-                    ui.painter().rect_filled(
-                        screen,
-                        0.0,
-                        egui::Color32::from_rgba_unmultiplied(0, 0, 0, 180),
-                    );
-
-                    let dialog_size = egui::vec2(320.0, 120.0);
-                    let dialog_rect = egui::Rect::from_center_size(screen.center(), dialog_size);
-                    ui.painter().rect_filled(dialog_rect, 8.0, egui::Color32::from_gray(50));
-                    ui.painter().rect_stroke(
-                        dialog_rect,
-                        8.0,
-                        egui::Stroke::new(1.0, egui::Color32::GRAY),
-                        egui::StrokeKind::Outside,
-                    );
-
-                    ui.painter().text(
-                        dialog_rect.center_top() + egui::vec2(0.0, 25.0),
-                        egui::Align2::CENTER_CENTER,
-                        "Quit presentation?",
-                        egui::FontId::proportional(18.0),
-                        egui::Color32::WHITE,
-                    );
-                    ui.painter().text(
-                        dialog_rect.center_top() + egui::vec2(0.0, 50.0),
-                        egui::Align2::CENTER_CENTER,
-                        "Press q or Escape to confirm",
-                        egui::FontId::proportional(13.0),
-                        egui::Color32::LIGHT_GRAY,
-                    );
-                    ui.painter().text(
-                        dialog_rect.center_top() + egui::vec2(0.0, 75.0),
-                        egui::Align2::CENTER_CENTER,
-                        "Press any other key to cancel",
-                        egui::FontId::proportional(12.0),
-                        egui::Color32::from_gray(160),
-                    );
-                }
+                Self::show_quit_dialog(ui, state);
             });
+    }
+
+    /// Render a single-monitor split view with the audience slide on the left
+    /// and the full presenter console on the right.
+    #[allow(clippy::too_many_lines)]
+    pub fn show_single_monitor_split(
+        &mut self,
+        ctx: &egui::Context,
+        state: &PresentationState,
+        cache: &mut PageCache,
+        sender: &CommandSender,
+        audience_render_size: dais_document::page::RenderSize,
+    ) {
+        self.input.handle_input(
+            ctx,
+            UiModes {
+                overview_visible: state.overview_visible,
+                ink_active: state.ink_active,
+                laser_active: state.laser_active,
+                notes_editing: state.notes_editing,
+            },
+        );
+
+        let presenter_size = FALLBACK_RENDER_SIZE;
+        let current_page = state.current_page;
+
+        if let Some(page) = cache.get(current_page, presenter_size) {
+            let page = page.clone();
+            self.current_slide.update(ctx, &page, current_page);
+        }
+
+        let next_page =
+            if current_page + 1 < state.total_pages { Some(current_page + 1) } else { None };
+        if let Some(next_index) = next_page
+            && let Some(page) = cache.get(next_index, presenter_size)
+        {
+            let page = page.clone();
+            self.next_preview.update(ctx, &page, next_index);
+        }
+
+        let audience_page = state.audience_page();
+        if let Some(page) = cache.get(audience_page, audience_render_size) {
+            let page = page.clone();
+            self.audience_display.update(ctx, &page, audience_page);
+        }
+
+        egui::CentralPanel::default()
+            .frame(egui::Frame::new().fill(egui::Color32::from_gray(30)))
+            .show(ctx, |ui| {
+                const VSPLIT: f32 = 8.0;
+                const STATUS_H: f32 = 40.0;
+                const HSPLIT: f32 = 8.0;
+                let available = ui.available_rect_before_wrap();
+
+                // Left/right split
+                let left_w = (available.width() * self.single_left_fraction - VSPLIT * 0.5)
+                    .clamp(200.0, available.width() - 200.0 - VSPLIT);
+                let left_rect = egui::Rect::from_min_max(
+                    available.min,
+                    egui::pos2(available.min.x + left_w, available.max.y),
+                );
+                let vsplit_rect = egui::Rect::from_min_max(
+                    egui::pos2(left_rect.max.x, available.min.y),
+                    egui::pos2(left_rect.max.x + VSPLIT, available.max.y),
+                );
+                let right_rect = egui::Rect::from_min_max(
+                    egui::pos2(vsplit_rect.max.x, available.min.y),
+                    available.max,
+                );
+
+                // Vertical splitter (audience | presenter strip)
+                let vsplit_id = ui.make_persistent_id("sm_vsplit");
+                let vsplit_resp =
+                    ui.interact(vsplit_rect, vsplit_id, egui::Sense::click_and_drag());
+                if vsplit_resp.dragged()
+                    && let Some(ptr) = vsplit_resp.interact_pointer_pos()
+                {
+                    self.single_left_fraction =
+                        ((ptr.x - available.left()) / available.width()).clamp(0.3, 0.85);
+                    ui.ctx().request_repaint();
+                }
+                if vsplit_resp.hovered() || vsplit_resp.dragged() {
+                    ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+                }
+                ui.painter().rect_filled(
+                    vsplit_rect,
+                    2.0,
+                    if vsplit_resp.hovered() || vsplit_resp.dragged() {
+                        SPLITTER_HOVER
+                    } else {
+                        SPLITTER_COLOR
+                    },
+                );
+
+                // Left: audience slide (black, letterboxed)
+                ui.painter().rect_filled(left_rect, 0.0, egui::Color32::BLACK);
+                let zoom_region = if state.zoom_active {
+                    state.zoom_region.as_ref().map(|r| (r.center, r.factor))
+                } else {
+                    None
+                };
+                let mut left_ui = ui.new_child(egui::UiBuilder::new().max_rect(left_rect));
+                let aud_rect = self.audience_display.show(&mut left_ui, zoom_region);
+                let aud_response = left_ui.interact(
+                    aud_rect,
+                    egui::Id::new("sm_split_audience"),
+                    egui::Sense::click_and_drag(),
+                );
+                self.input.handle_slide_mouse(
+                    &aud_response,
+                    aud_rect,
+                    crate::input::ActiveAids {
+                        ink: state.ink_active,
+                        laser: state.laser_active,
+                        spotlight: state.spotlight_active,
+                        zoom: state.zoom_active,
+                    },
+                    state.zoom_region.as_ref().map(|r| r.factor),
+                );
+                crate::audience::overlays::draw_overlays(&mut left_ui, left_rect, aud_rect, state);
+
+                // Right: next preview | [hsplit] | notes | status bar
+                let content_h = (right_rect.height() - STATUS_H).max(0.0);
+                let next_h = (content_h * self.single_top_fraction - HSPLIT * 0.5).max(60.0);
+                let notes_h = (content_h - next_h - HSPLIT).max(40.0);
+
+                let next_rect = egui::Rect::from_min_size(
+                    right_rect.min,
+                    egui::vec2(right_rect.width(), next_h),
+                );
+                let hsplit_rect = egui::Rect::from_min_size(
+                    egui::pos2(right_rect.min.x, next_rect.max.y),
+                    egui::vec2(right_rect.width(), HSPLIT),
+                );
+                let notes_rect = egui::Rect::from_min_size(
+                    egui::pos2(right_rect.min.x, hsplit_rect.max.y),
+                    egui::vec2(right_rect.width(), notes_h),
+                );
+                let status_rect = egui::Rect::from_min_size(
+                    egui::pos2(right_rect.min.x, right_rect.max.y - STATUS_H),
+                    egui::vec2(right_rect.width(), STATUS_H),
+                );
+
+                // Horizontal splitter (next preview | notes)
+                let hsplit_id = ui.make_persistent_id("sm_hsplit");
+                let hsplit_resp =
+                    ui.interact(hsplit_rect, hsplit_id, egui::Sense::click_and_drag());
+                if hsplit_resp.dragged()
+                    && let Some(ptr) = hsplit_resp.interact_pointer_pos()
+                {
+                    self.single_top_fraction =
+                        ((ptr.y - right_rect.top()) / content_h.max(1.0)).clamp(0.15, 0.75);
+                    ui.ctx().request_repaint();
+                }
+                if hsplit_resp.hovered() || hsplit_resp.dragged() {
+                    ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeVertical);
+                }
+                ui.painter().rect_filled(
+                    hsplit_rect,
+                    2.0,
+                    if hsplit_resp.hovered() || hsplit_resp.dragged() {
+                        SPLITTER_HOVER
+                    } else {
+                        SPLITTER_COLOR
+                    },
+                );
+
+                if let Some(_np) = next_page {
+                    self.next_preview.show(ui, next_rect);
+                } else {
+                    self.next_preview.show_empty(ui, next_rect);
+                }
+
+                self.notes.show(
+                    ui,
+                    notes_rect,
+                    &NotesPanelView {
+                        notes: state.current_notes.as_deref(),
+                        font_size: state.notes_font_size,
+                        visible: state.notes_visible,
+                        editing: state.notes_editing,
+                    },
+                    sender,
+                );
+
+                self.show_status_bar(ui, status_rect, state, sender);
+
+                if state.overview_visible {
+                    self.overview.show(ctx, ui, state, cache, sender);
+                }
+
+                Self::show_quit_dialog(ui, state);
+            });
+    }
+
+    fn show_quit_dialog(ui: &mut egui::Ui, state: &PresentationState) {
+        if !state.quit_requested {
+            return;
+        }
+
+        let screen = ui.max_rect();
+        ui.painter().rect_filled(screen, 0.0, egui::Color32::from_rgba_unmultiplied(0, 0, 0, 180));
+
+        let dialog_size = egui::vec2(320.0, 120.0);
+        let dialog_rect = egui::Rect::from_center_size(screen.center(), dialog_size);
+        ui.painter().rect_filled(dialog_rect, 8.0, egui::Color32::from_gray(50));
+        ui.painter().rect_stroke(
+            dialog_rect,
+            8.0,
+            egui::Stroke::new(1.0, egui::Color32::GRAY),
+            egui::StrokeKind::Outside,
+        );
+
+        ui.painter().text(
+            dialog_rect.center_top() + egui::vec2(0.0, 25.0),
+            egui::Align2::CENTER_CENTER,
+            "Quit presentation?",
+            egui::FontId::proportional(18.0),
+            egui::Color32::WHITE,
+        );
+        ui.painter().text(
+            dialog_rect.center_top() + egui::vec2(0.0, 50.0),
+            egui::Align2::CENTER_CENTER,
+            "Press q or Escape to confirm",
+            egui::FontId::proportional(13.0),
+            egui::Color32::LIGHT_GRAY,
+        );
+        ui.painter().text(
+            dialog_rect.center_top() + egui::vec2(0.0, 75.0),
+            egui::Align2::CENTER_CENTER,
+            "Press any other key to cancel",
+            egui::FontId::proportional(12.0),
+            egui::Color32::from_gray(160),
+        );
     }
 
     fn handle_splitters(

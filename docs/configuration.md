@@ -20,6 +20,7 @@ If a config layer doesn't exist, Dais skips it. All settings are optional.
 ```toml
 [display]
 mode = "dual"                  # "dual", "single", or "screen-share"
+single_monitor_view = "split"  # "split" or "hud" when F5 enters single-monitor presentation mode
 audience_monitor = "auto"      # Monitor name, monitor id, display number like "2", or "auto"
 presenter_monitor = "auto"     # Monitor name, monitor id, display number like "1", or "auto"
 
@@ -35,7 +36,7 @@ size = 12.0                    # Pixels at 1x scale
 style = "dot"                  # "dot", "crosshair", or "arrow"
 
 [spotlight]
-radius = 150.0                 # Pixels at 1x scale
+radius = 80.0                  # Pixels at 1x scale
 dim_opacity = 0.6              # 0.0 = invisible, 1.0 = fully black
 
 [ink]
@@ -75,7 +76,7 @@ mode = "elapsed"
 | Mode | Description |
 |---|---|
 | `dual` | Audience fullscreen on secondary monitor, presenter console on primary. Default when 2+ monitors detected. |
-| `single` | Presenter console only, no audience window. Use `--single` CLI flag or set in config. |
+| `single` | Single-monitor presenter mode. Press `F5` to enter either the split workspace or HUD, depending on `single_monitor_view`. |
 | `screen-share` | Audience window is a normal resizable window (not fullscreen). For Zoom/Teams screen sharing. Use `--screen-share` CLI flag or set in config. |
 
 CLI flags (`--single`, `--screen-share`) override config. If no flag is given and config is `"dual"` (default), Dais auto-detects: 2+ monitors → dual, 1 monitor → single.
@@ -109,15 +110,31 @@ sidecar_format = "pdfpc"   # "pdfpc" (default) or "dais"
 When loading, Dais checks in order: embedded PDF metadata → `.dais` sidecar → `.pdfpc` sidecar.
 The grouping editor and `save_sidecar` action both use `sidecar_format` when choosing what to write.
 
-## Presentation Mode (F5)
+## Single-Monitor Presentation Mode (F5)
 
-In single-monitor mode, press **F5** to toggle between the presenter console and the presentation HUD. The HUD shows:
+In single-monitor mode, press **F5** to toggle between the presenter console and the active presentation surface selected by `display.single_monitor_view`.
+
+`single_monitor_view = "split"` shows:
+
+- The audience slide on the left
+- A compact presenter workspace on the right with current slide, next preview, notes, and status
+
+`single_monitor_view = "hud"` keeps the original fullscreen HUD, which shows:
 
 - The audience slide
 - A bottom bar that appears near the lower edge
 - Notes when you hover near the bottom edge
 
 Press **Escape** to exit HUD mode back to the console. In dual-monitor mode, F5 is available but the audience already has a dedicated screen.
+
+## Monitor Recovery
+
+If a configured audience monitor is missing at launch, Dais now:
+
+- Falls back gracefully to another display or single-monitor mode
+- Shows a startup dialog in the presenter window so you can reassign the audience output for the current session
+
+The reassignment dialog does not rewrite `dais.toml`; if you want the new monitor choice to persist, update `display.audience_monitor` in config afterward.
 
 ## DPI and Scaling
 

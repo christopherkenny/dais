@@ -41,6 +41,8 @@ struct PartialConfig {
 pub struct DisplayConfig {
     /// Display mode: "dual", "single", or "screen-share".
     pub mode: String,
+    /// Single-monitor presentation surface: "hud" or "split".
+    pub single_monitor_view: String,
     /// Audience monitor identifier or "auto".
     pub audience_monitor: String,
     /// Presenter monitor identifier or "auto".
@@ -51,6 +53,7 @@ pub struct DisplayConfig {
 #[serde(default)]
 struct PartialDisplayConfig {
     mode: Option<String>,
+    single_monitor_view: Option<String>,
     audience_monitor: Option<String>,
     presenter_monitor: Option<String>,
 }
@@ -202,6 +205,7 @@ impl Default for DisplayConfig {
     fn default() -> Self {
         Self {
             mode: "dual".to_string(),
+            single_monitor_view: "hud".to_string(),
             audience_monitor: "auto".to_string(),
             presenter_monitor: "auto".to_string(),
         }
@@ -341,6 +345,9 @@ fn apply_partial_config(config: &mut Config, partial: PartialConfig) {
         if let Some(mode) = display.mode {
             config.display.mode = mode;
         }
+        if let Some(v) = display.single_monitor_view {
+            config.display.single_monitor_view = v;
+        }
         if let Some(audience_monitor) = display.audience_monitor {
             config.display.audience_monitor = audience_monitor;
         }
@@ -431,6 +438,7 @@ mod tests {
         let partial = PartialConfig {
             display: Some(PartialDisplayConfig {
                 mode: Some("screen-share".to_string()),
+                single_monitor_view: Some("split".to_string()),
                 audience_monitor: Some("Projector".to_string()),
                 presenter_monitor: None,
             }),
@@ -446,6 +454,7 @@ mod tests {
         apply_partial_config(&mut config, partial);
 
         assert_eq!(config.display.mode, "screen-share");
+        assert_eq!(config.display.single_monitor_view, "split");
         assert_eq!(config.display.audience_monitor, "Projector");
         assert_eq!(config.timer.mode, TimerMode::Countdown);
         assert_eq!(config.timer.duration_minutes, Some(45));

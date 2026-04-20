@@ -69,6 +69,9 @@ impl PresentationEngine {
         state.pointer_color = parse_hex_color(&config.laser.color).unwrap_or([255, 0, 0, 255]);
         state.pointer_size = config.laser.size.clamp(2.0, 96.0);
         state.pointer_style = parse_pointer_style(&config.laser.style);
+        if config.display.mode == "single" {
+            state.laser_active = false;
+        }
         state.spotlight_radius = config.spotlight.radius.clamp(16.0, 2048.0);
         state.spotlight_dim_opacity = config.spotlight.dim_opacity.clamp(0.0, 1.0);
 

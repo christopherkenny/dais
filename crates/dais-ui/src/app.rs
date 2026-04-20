@@ -17,7 +17,7 @@ use dais_document::source::DocumentSource;
 use dais_engine::engine::PresentationEngine;
 
 use crate::audience::AudienceWindow;
-use crate::display_mode::{self, DisplayMode};
+use crate::display_mode::{self, AudienceReassignmentPrompt, DisplayMode, SingleMonitorView};
 use crate::input::InputHandler;
 use crate::presenter::PresenterConsole;
 use crate::presenter::hud::HudOverlay;
@@ -34,6 +34,8 @@ pub struct DaisApp {
     audience: AudienceWindow,
     sender: CommandSender,
     display_mode: DisplayMode,
+    single_monitor_view: SingleMonitorView,
+    audience_reassignment: Option<AudienceReassignmentPrompt>,
     toast_manager: ToastManager,
 }
 
@@ -66,12 +68,20 @@ impl DaisApp {
             audience,
             sender,
             display_mode,
+            single_monitor_view: SingleMonitorView::from_config(
+                &config.display.single_monitor_view,
+            ),
+            audience_reassignment: None,
             toast_manager: ToastManager::new(),
         }
     }
 
     pub fn toast_manager_mut(&mut self) -> &mut ToastManager {
         &mut self.toast_manager
+    }
+
+    pub fn set_audience_reassignment(&mut self, prompt: Option<AudienceReassignmentPrompt>) {
+        self.audience_reassignment = prompt;
     }
 }
 
@@ -128,15 +138,34 @@ impl eframe::App for DaisApp {
             ctx.request_repaint_after(std::time::Duration::from_millis(250));
         }
 
-        // In Single mode, show HUD or presenter console based on presentation_mode
+        // In Single mode, F5 (presentation_mode) flips between the two views.
+        // The configured single_monitor_view is the default; F5 shows the other.
         if matches!(self.display_mode, DisplayMode::Single) {
-            if state.presentation_mode {
-                let render_size = effective_audience_render_size(&state, FALLBACK_RENDER_SIZE);
-                let input = self.presenter.input_mut();
-                self.hud.show(ctx, &state, &mut self.cache, &self.sender, input, render_size);
+            let render_size = effective_audience_render_size(&state, FALLBACK_RENDER_SIZE);
+            let active_view = if state.presentation_mode {
+                match self.single_monitor_view {
+                    SingleMonitorView::Hud => SingleMonitorView::Split,
+                    SingleMonitorView::Split => SingleMonitorView::Hud,
+                }
             } else {
-                self.presenter.show(ctx, &state, &mut self.cache, &self.sender);
+                self.single_monitor_view
+            };
+            match active_view {
+                SingleMonitorView::Hud => {
+                    let input = self.presenter.input_mut();
+                    self.hud.show(ctx, &state, &mut self.cache, &self.sender, input, render_size);
+                }
+                SingleMonitorView::Split => {
+                    self.presenter.show_single_monitor_split(
+                        ctx,
+                        &state,
+                        &mut self.cache,
+                        &self.sender,
+                        render_size,
+                    );
+                }
             }
+            self.show_audience_reassignment_prompt(ctx);
             self.toast_manager.show(ctx);
             return;
         }
@@ -171,7 +200,115 @@ impl eframe::App for DaisApp {
             },
         );
 
+        self.show_audience_reassignment_prompt(ctx);
         self.toast_manager.show(ctx);
+    }
+}
+
+impl DaisApp {
+    fn show_audience_reassignment_prompt(&mut self, ctx: &egui::Context) {
+        let Some(prompt) = self.audience_reassignment.clone() else {
+            return;
+        };
+
+        egui::Window::new("Audience Monitor Changed")
+            .collapsible(false)
+            .resizable(false)
+            .anchor(egui::Align2::CENTER_CENTER, egui::vec2(0.0, 0.0))
+            .show(ctx, |ui| {
+                ui.set_min_width(420.0);
+                ui.label(format!(
+                    "Configured audience monitor '{}' is not available.",
+                    prompt.missing_selector
+                ));
+
+                if let Some(fallback) = &prompt.attempted_fallback {
+                    ui.label(format!(
+                        "Dais is currently using '{}' as a fallback for this session.",
+                        fallback.name
+                    ));
+                } else {
+                    ui.label("No audience monitor fallback was available, so Dais switched to single-monitor mode.");
+                }
+
+                ui.separator();
+                ui.label("Reassign audience output for this session:");
+
+                let mut dismiss = false;
+                let fallback_id = prompt.attempted_fallback.as_ref().map(|monitor| monitor.id.as_str());
+                let alternative_monitors = prompt
+                    .available_monitors
+                    .iter()
+                    .filter(|monitor| Some(monitor.id.as_str()) != fallback_id)
+                    .cloned()
+                    .collect::<Vec<_>>();
+
+                if alternative_monitors.is_empty() {
+                    ui.label(
+                        egui::RichText::new("No alternate audience monitors were detected.")
+                            .small()
+                            .color(egui::Color32::GRAY),
+                    );
+                }
+
+                for monitor in &alternative_monitors {
+                    let label = format!("Use {} ({})", monitor.name, monitor.id);
+                    if ui.button(label).clicked() {
+                        self.display_mode =
+                            DisplayMode::Dual { audience_monitor: monitor.clone() };
+                        self.toast_manager.push(
+                            crate::widgets::toast::ToastLevel::Info,
+                            format!("Audience moved to '{}'", monitor.name),
+                        );
+                        dismiss = true;
+                    }
+                }
+
+                ui.horizontal(|ui| {
+                    let keep_label = if prompt.attempted_fallback.is_some() {
+                        "Keep current fallback"
+                    } else {
+                        "Keep single-monitor mode"
+                    };
+                    if ui.button(keep_label).clicked() {
+                        if let Some(fallback) = &prompt.attempted_fallback {
+                            self.display_mode =
+                                DisplayMode::Dual { audience_monitor: fallback.clone() };
+                            self.toast_manager.push(
+                                crate::widgets::toast::ToastLevel::Info,
+                                format!("Keeping fallback audience monitor '{}'", fallback.name),
+                            );
+                        } else {
+                            self.display_mode = DisplayMode::Single;
+                            self.toast_manager.push(
+                                crate::widgets::toast::ToastLevel::Info,
+                                "Keeping single-monitor mode",
+                            );
+                        }
+                        dismiss = true;
+                    }
+                    if ui.button("Use single-monitor mode").clicked() {
+                        self.display_mode = DisplayMode::Single;
+                        self.toast_manager.push(
+                            crate::widgets::toast::ToastLevel::Info,
+                            "Audience reassigned to single-monitor mode",
+                        );
+                        dismiss = true;
+                    }
+                });
+
+                ui.label(
+                    egui::RichText::new(
+                        "This updates the current session only. You can make it permanent in `dais.toml` later.",
+                    )
+                    .small()
+                    .color(egui::Color32::GRAY),
+                );
+
+                if dismiss {
+                    self.audience_reassignment = None;
+                }
+            });
     }
 }
 

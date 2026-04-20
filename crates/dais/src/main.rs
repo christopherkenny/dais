@@ -90,6 +90,7 @@ fn main() -> anyhow::Result<()> {
     let display_result =
         dais_ui::display_mode::determine_display_mode(hints, &config, &monitor_mgr);
     let display_warnings = display_result.warnings;
+    let audience_reassignment = display_result.audience_reassignment;
     let display_mode = display_result.mode;
     tracing::info!("Display mode: {display_mode:?}");
 
@@ -148,6 +149,7 @@ fn main() -> anyhow::Result<()> {
                 &config_clone,
                 display_mode,
             );
+            app.set_audience_reassignment(audience_reassignment.clone());
             for warning in &display_warnings {
                 app.toast_manager_mut()
                     .push(dais_ui::widgets::toast::ToastLevel::Warning, warning.clone());
