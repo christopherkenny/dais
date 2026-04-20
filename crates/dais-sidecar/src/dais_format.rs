@@ -4,7 +4,7 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 use crate::format::{SidecarError, SidecarFormat};
-use crate::types::{PresentationMetadata, SlideGroupMeta};
+use crate::types::{InkStrokeMeta, PresentationMetadata, SlideGroupMeta};
 
 /// The native `.dais` sidecar format, stored as EON.
 pub struct DaisFormat;
@@ -24,12 +24,23 @@ struct DaisFile {
     notes: HashMap<String, String>,
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     slide_timings: HashMap<String, f64>,
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    slide_annotations: HashMap<String, Vec<DaisInkStroke>>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    whiteboard_annotations: Vec<DaisInkStroke>,
 }
 
 #[derive(Serialize, Deserialize)]
 struct DaisGroup {
     start_page: usize,
     end_page: usize,
+}
+
+#[derive(Serialize, Deserialize)]
+struct DaisInkStroke {
+    points: Vec<(f32, f32)>,
+    color: [u8; 4],
+    width: f32,
 }
 
 impl DaisFile {
@@ -46,6 +57,28 @@ impl DaisFile {
                 .collect(),
             notes: meta.notes.iter().map(|(k, v)| (k.to_string(), v.clone())).collect(),
             slide_timings: meta.slide_timings.iter().map(|(k, v)| (k.to_string(), *v)).collect(),
+            slide_annotations: meta
+                .slide_annotations
+                .iter()
+                .filter(|(_, strokes)| !strokes.is_empty())
+                .map(|(k, v)| {
+                    (
+                        k.to_string(),
+                        v.iter()
+                            .map(|s| DaisInkStroke {
+                                points: s.points.clone(),
+                                color: s.color,
+                                width: s.width,
+                            })
+                            .collect(),
+                    )
+                })
+                .collect(),
+            whiteboard_annotations: meta
+                .whiteboard_annotations
+                .iter()
+                .map(|s| DaisInkStroke { points: s.points.clone(), color: s.color, width: s.width })
+                .collect(),
         }
     }
 
@@ -68,6 +101,29 @@ impl DaisFile {
                 .slide_timings
                 .into_iter()
                 .filter_map(|(k, v)| k.parse::<usize>().ok().map(|idx| (idx, v)))
+                .collect(),
+            slide_annotations: self
+                .slide_annotations
+                .into_iter()
+                .filter_map(|(k, v)| {
+                    k.parse::<usize>().ok().map(|idx| {
+                        (
+                            idx,
+                            v.into_iter()
+                                .map(|s| InkStrokeMeta {
+                                    points: s.points,
+                                    color: s.color,
+                                    width: s.width,
+                                })
+                                .collect(),
+                        )
+                    })
+                })
+                .collect(),
+            whiteboard_annotations: self
+                .whiteboard_annotations
+                .into_iter()
+                .map(|s| InkStrokeMeta { points: s.points, color: s.color, width: s.width })
                 .collect(),
         }
     }
@@ -151,6 +207,8 @@ mod tests {
                 t.insert(1, 45.0);
                 t
             },
+            slide_annotations: HashMap::new(),
+            whiteboard_annotations: Vec::new(),
         };
 
         format.write(&path, &original).unwrap();
@@ -198,6 +256,145 @@ mod tests {
         let format = DaisFormat;
         let loaded = format.read(&path).unwrap();
         assert_eq!(loaded.title.as_deref(), Some("Future talk"));
+
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn roundtrip_slide_annotations() {
+        let dir = test_dir();
+        let path = dir.join("annotations.dais");
+        let format = DaisFormat;
+
+        let mut slide_annotations = HashMap::new();
+        slide_annotations.insert(
+            0,
+            vec![InkStrokeMeta {
+                points: vec![(0.1, 0.2), (0.3, 0.4)],
+                color: [255, 0, 0, 255],
+                width: 3.0,
+            }],
+        );
+        slide_annotations.insert(
+            5,
+            vec![
+                InkStrokeMeta { points: vec![(0.5, 0.5)], color: [0, 255, 0, 255], width: 2.0 },
+                InkStrokeMeta {
+                    points: vec![(0.7, 0.8), (0.9, 0.1)],
+                    color: [0, 0, 255, 128],
+                    width: 5.0,
+                },
+            ],
+        );
+
+        let original = PresentationMetadata { slide_annotations, ..Default::default() };
+
+        format.write(&path, &original).unwrap();
+        let loaded = format.read(&path).unwrap();
+
+        assert_eq!(loaded.slide_annotations.len(), 2);
+        assert_eq!(loaded.slide_annotations[&0].len(), 1);
+        assert_eq!(loaded.slide_annotations[&0][0].points, vec![(0.1, 0.2), (0.3, 0.4)]);
+        assert_eq!(loaded.slide_annotations[&0][0].color, [255, 0, 0, 255]);
+        assert!((loaded.slide_annotations[&0][0].width - 3.0).abs() < f32::EPSILON);
+        assert_eq!(loaded.slide_annotations[&5].len(), 2);
+
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn roundtrip_whiteboard_annotations() {
+        let dir = test_dir();
+        let path = dir.join("whiteboard.dais");
+        let format = DaisFormat;
+
+        let original = PresentationMetadata {
+            whiteboard_annotations: vec![InkStrokeMeta {
+                points: vec![(0.1, 0.1), (0.9, 0.9)],
+                color: [0, 0, 0, 255],
+                width: 4.0,
+            }],
+            ..Default::default()
+        };
+
+        format.write(&path, &original).unwrap();
+        let loaded = format.read(&path).unwrap();
+
+        assert_eq!(loaded.whiteboard_annotations.len(), 1);
+        assert_eq!(loaded.whiteboard_annotations[0].points, vec![(0.1, 0.1), (0.9, 0.9)]);
+        assert_eq!(loaded.whiteboard_annotations[0].color, [0, 0, 0, 255]);
+        assert!((loaded.whiteboard_annotations[0].width - 4.0).abs() < f32::EPSILON);
+
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn missing_annotation_fields_parse_cleanly() {
+        let dir = test_dir();
+        let path = dir.join("no_annotations.dais");
+
+        // A .dais file with no annotation fields — older format
+        let content = "version: 1\ntitle: \"No annotations\"\n";
+        std::fs::write(&path, content).unwrap();
+
+        let format = DaisFormat;
+        let loaded = format.read(&path).unwrap();
+        assert_eq!(loaded.title.as_deref(), Some("No annotations"));
+        assert!(loaded.slide_annotations.is_empty());
+        assert!(loaded.whiteboard_annotations.is_empty());
+
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn existing_fields_roundtrip_with_annotations() {
+        let dir = test_dir();
+        let path = dir.join("full_with_annotations.dais");
+        let format = DaisFormat;
+
+        let mut slide_annotations = HashMap::new();
+        slide_annotations.insert(
+            0,
+            vec![InkStrokeMeta { points: vec![(0.1, 0.2)], color: [255, 0, 0, 255], width: 3.0 }],
+        );
+
+        let original = PresentationMetadata {
+            title: Some("With Annotations".to_string()),
+            end_slide: Some(10),
+            last_minutes: Some(15),
+            groups: vec![SlideGroupMeta { start_page: 0, end_page: 2 }],
+            notes: {
+                let mut n = HashMap::new();
+                n.insert(0, "Note".to_string());
+                n
+            },
+            slide_timings: {
+                let mut t = HashMap::new();
+                t.insert(0, 5.0);
+                t
+            },
+            slide_annotations,
+            whiteboard_annotations: vec![InkStrokeMeta {
+                points: vec![(0.5, 0.5)],
+                color: [0, 0, 255, 255],
+                width: 2.0,
+            }],
+        };
+
+        format.write(&path, &original).unwrap();
+        let loaded = format.read(&path).unwrap();
+
+        // Existing fields preserved
+        assert_eq!(loaded.title.as_deref(), Some("With Annotations"));
+        assert_eq!(loaded.end_slide, Some(10));
+        assert_eq!(loaded.last_minutes, Some(15));
+        assert_eq!(loaded.groups.len(), 1);
+        assert_eq!(loaded.notes.len(), 1);
+        assert_eq!(loaded.slide_timings.len(), 1);
+
+        // Annotations also preserved
+        assert_eq!(loaded.slide_annotations.len(), 1);
+        assert_eq!(loaded.whiteboard_annotations.len(), 1);
 
         let _ = std::fs::remove_file(&path);
     }

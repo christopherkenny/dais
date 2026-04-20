@@ -154,8 +154,11 @@ impl PresenterConsole {
                     if !state.whiteboard_strokes.is_empty() {
                         crate::widgets::draw_ink_strokes(ui, image_rect, &state.whiteboard_strokes);
                     }
-                } else if !state.ink_strokes.is_empty() {
-                    crate::widgets::draw_ink_strokes(ui, image_rect, &state.ink_strokes);
+                } else {
+                    let page_ink = state.current_page_ink();
+                    if !page_ink.is_empty() {
+                        crate::widgets::draw_ink_strokes(ui, image_rect, page_ink);
+                    }
                 }
 
                 // Draw laser dot on presenter view

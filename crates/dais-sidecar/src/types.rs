@@ -19,6 +19,10 @@ pub struct PresentationMetadata {
     pub last_minutes: Option<u32>,
     /// Per-slide timing data (logical slide index → seconds spent).
     pub slide_timings: HashMap<usize, f64>,
+    /// Per-page slide annotations (`page_index` → completed strokes).
+    pub slide_annotations: HashMap<usize, Vec<InkStrokeMeta>>,
+    /// Whiteboard annotations (not tied to any slide).
+    pub whiteboard_annotations: Vec<InkStrokeMeta>,
 }
 
 /// A contiguous range of PDF pages forming one logical slide.
@@ -28,4 +32,15 @@ pub struct SlideGroupMeta {
     pub start_page: usize,
     /// Last page index in this group (0-based, inclusive).
     pub end_page: usize,
+}
+
+/// A serializable ink stroke for sidecar persistence.
+#[derive(Debug, Clone, PartialEq)]
+pub struct InkStrokeMeta {
+    /// Points along the stroke (normalized 0..1 coordinates).
+    pub points: Vec<(f32, f32)>,
+    /// Stroke color as RGBA.
+    pub color: [u8; 4],
+    /// Stroke width in logical pixels.
+    pub width: f32,
 }

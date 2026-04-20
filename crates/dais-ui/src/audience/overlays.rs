@@ -12,8 +12,9 @@ pub fn draw_overlays(
     state: &PresentationState,
 ) {
     // Ink strokes
-    if !state.ink_strokes.is_empty() {
-        crate::widgets::draw_ink_strokes(ui, image_rect, &state.ink_strokes);
+    let page_ink = state.current_page_ink();
+    if !page_ink.is_empty() {
+        crate::widgets::draw_ink_strokes(ui, image_rect, page_ink);
     }
 
     // Laser pointer

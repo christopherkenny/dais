@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::time::Duration;
 
 use crate::slide_group::SlideGroup;
@@ -54,8 +55,8 @@ pub struct PresentationState {
     pub pointer_style: PointerStyle,
     /// Whether ink drawing mode is active.
     pub ink_active: bool,
-    /// Ink strokes on the current page.
-    pub ink_strokes: Vec<InkStroke>,
+    /// Per-page slide ink annotations (`page_index` → strokes).
+    pub slide_ink_by_page: HashMap<usize, Vec<InkStroke>>,
     /// Whether the spotlight overlay is active.
     pub spotlight_active: bool,
     /// Spotlight center position (normalized 0..1).
@@ -121,7 +122,7 @@ impl PresentationState {
             pointer_size: 12.0,
             pointer_style: PointerStyle::Dot,
             ink_active: false,
-            ink_strokes: Vec::new(),
+            slide_ink_by_page: HashMap::new(),
             spotlight_active: false,
             spotlight_position: None,
             spotlight_radius: 80.0,
@@ -144,6 +145,11 @@ impl PresentationState {
     /// The page the audience should see (respects freeze).
     pub fn audience_page(&self) -> usize {
         self.frozen_page.unwrap_or(self.current_page)
+    }
+
+    /// Ink strokes for the current presenter page (read-only convenience for UI).
+    pub fn current_page_ink(&self) -> &[InkStroke] {
+        self.slide_ink_by_page.get(&self.current_page).map_or(&[], |v| v.as_slice())
     }
 }
 

@@ -6,7 +6,7 @@ use dais_core::commands::Command;
 use dais_core::config::Config;
 use dais_core::slide_group::SlideGroup;
 use dais_core::state::{InkStroke, PointerStyle, PresentationState, TimerState, ZoomRegion};
-use dais_sidecar::types::PresentationMetadata;
+use dais_sidecar::types::{InkStrokeMeta, PresentationMetadata};
 
 /// The presentation engine — processes commands and owns the authoritative state.
 ///
@@ -79,6 +79,9 @@ impl PresentationEngine {
 
         let ink_color = parse_hex_color(&config.ink.color).unwrap_or([255, 0, 0, 255]);
         let ink_width = config.ink.width;
+
+        // Hydrate runtime annotation state from metadata
+        load_annotations_into_state(&mut state, metadata);
 
         (
             Self {
@@ -302,51 +305,10 @@ impl PresentationEngine {
                     self.state.spotlight_position = Some(clamped);
                 }
             }
-            Command::ToggleInk => {
-                self.state.ink_active = !self.state.ink_active;
-                if self.state.ink_active {
-                    self.state.laser_active = false;
-                    self.state.pointer_position = None;
-                }
-            }
-            Command::AddInkPoint(x, y) if self.state.ink_active => {
-                let point = (x.clamp(0.0, 1.0), y.clamp(0.0, 1.0));
-                let strokes = if self.state.whiteboard_active {
-                    &mut self.state.whiteboard_strokes
-                } else {
-                    &mut self.state.ink_strokes
-                };
-                if let Some(stroke) = strokes.last_mut()
-                    && !stroke.finished
-                {
-                    stroke.points.push(point);
-                    return;
-                }
-                strokes.push(InkStroke {
-                    points: vec![point],
-                    color: self.ink_color,
-                    width: self.ink_width,
-                    finished: false,
-                });
-            }
-            Command::AddInkPoint(..) => {}
-            Command::FinishInkStroke => {
-                let strokes = if self.state.whiteboard_active {
-                    &mut self.state.whiteboard_strokes
-                } else {
-                    &mut self.state.ink_strokes
-                };
-                if let Some(stroke) = strokes.last_mut() {
-                    stroke.finished = true;
-                }
-            }
-            Command::ClearInk => {
-                if self.state.whiteboard_active {
-                    self.state.whiteboard_strokes.clear();
-                } else {
-                    self.state.ink_strokes.clear();
-                }
-            }
+            Command::ToggleInk
+            | Command::AddInkPoint(..)
+            | Command::FinishInkStroke
+            | Command::ClearInk => self.handle_ink(cmd),
             Command::ToggleSpotlight => {
                 self.state.spotlight_active = !self.state.spotlight_active;
                 if !self.state.spotlight_active {
@@ -370,6 +332,57 @@ impl PresentationEngine {
                 });
             }
             Command::SetZoomRegion { .. } => {}
+            _ => {}
+        }
+    }
+
+    fn handle_ink(&mut self, cmd: &Command) {
+        match *cmd {
+            Command::ToggleInk => {
+                self.state.ink_active = !self.state.ink_active;
+                if self.state.ink_active {
+                    self.state.laser_active = false;
+                    self.state.pointer_position = None;
+                }
+            }
+            Command::AddInkPoint(x, y) if self.state.ink_active => {
+                let point = (x.clamp(0.0, 1.0), y.clamp(0.0, 1.0));
+                let strokes = if self.state.whiteboard_active {
+                    &mut self.state.whiteboard_strokes
+                } else {
+                    self.state.slide_ink_by_page.entry(self.state.current_page).or_default()
+                };
+                if let Some(stroke) = strokes.last_mut()
+                    && !stroke.finished
+                {
+                    stroke.points.push(point);
+                    return;
+                }
+                strokes.push(InkStroke {
+                    points: vec![point],
+                    color: self.ink_color,
+                    width: self.ink_width,
+                    finished: false,
+                });
+            }
+            Command::AddInkPoint(..) => {}
+            Command::FinishInkStroke => {
+                let strokes = if self.state.whiteboard_active {
+                    &mut self.state.whiteboard_strokes
+                } else {
+                    self.state.slide_ink_by_page.entry(self.state.current_page).or_default()
+                };
+                if let Some(stroke) = strokes.last_mut() {
+                    stroke.finished = true;
+                }
+            }
+            Command::ClearInk => {
+                if self.state.whiteboard_active {
+                    self.state.whiteboard_strokes.clear();
+                } else {
+                    self.state.slide_ink_by_page.remove(&self.state.current_page);
+                }
+            }
             _ => {}
         }
     }
@@ -480,6 +493,35 @@ impl PresentationEngine {
         }
         metadata.slide_timings = slide_timings;
 
+        // Copy runtime annotations into metadata (completed strokes only).
+        metadata.slide_annotations = self
+            .state
+            .slide_ink_by_page
+            .iter()
+            .filter(|(_, strokes)| !strokes.is_empty())
+            .map(|(&page, strokes)| {
+                (
+                    page,
+                    strokes
+                        .iter()
+                        .filter(|s| s.finished)
+                        .map(|s| InkStrokeMeta {
+                            points: s.points.clone(),
+                            color: s.color,
+                            width: s.width,
+                        })
+                        .collect(),
+                )
+            })
+            .collect();
+        metadata.whiteboard_annotations = self
+            .state
+            .whiteboard_strokes
+            .iter()
+            .filter(|s| s.finished)
+            .map(|s| InkStrokeMeta { points: s.points.clone(), color: s.color, width: s.width })
+            .collect();
+
         let (format, sidecar_path): (Box<dyn SidecarFormat>, _) = match self.sidecar_format.as_str()
         {
             "dais" => (
@@ -581,8 +623,6 @@ impl PresentationEngine {
         self.slide_start = Instant::now().checked_sub(accumulated).unwrap_or_else(Instant::now);
         self.state.slide_elapsed = accumulated;
         self.update_notes();
-        // Clear ink on navigation
-        self.state.ink_strokes.clear();
     }
 
     fn update_notes(&mut self) {
@@ -660,6 +700,34 @@ fn parse_pointer_style(style: &str) -> PointerStyle {
         "arrow" => PointerStyle::Arrow,
         _ => PointerStyle::Dot,
     }
+}
+
+/// Hydrate runtime annotation state from sidecar metadata.
+fn load_annotations_into_state(state: &mut PresentationState, metadata: &PresentationMetadata) {
+    for (page, strokes) in &metadata.slide_annotations {
+        let runtime_strokes: Vec<InkStroke> = strokes
+            .iter()
+            .map(|s| InkStroke {
+                points: s.points.clone(),
+                color: s.color,
+                width: s.width,
+                finished: true,
+            })
+            .collect();
+        if !runtime_strokes.is_empty() {
+            state.slide_ink_by_page.insert(*page, runtime_strokes);
+        }
+    }
+    state.whiteboard_strokes = metadata
+        .whiteboard_annotations
+        .iter()
+        .map(|s| InkStroke {
+            points: s.points.clone(),
+            color: s.color,
+            width: s.width,
+            finished: true,
+        })
+        .collect();
 }
 
 #[cfg(test)]
@@ -1136,14 +1204,14 @@ mod tests {
         sender.send(Command::FinishInkStroke).unwrap();
         engine.tick();
 
-        let strokes = &engine.state().ink_strokes;
+        let strokes = engine.state().current_page_ink();
         assert_eq!(strokes.len(), 1);
         assert_eq!(strokes[0].points.len(), 2);
         assert!(strokes[0].finished);
 
         sender.send(Command::AddInkPoint(0.5, 0.6)).unwrap();
         engine.tick();
-        assert_eq!(engine.state().ink_strokes.len(), 2);
+        assert_eq!(engine.state().current_page_ink().len(), 2);
     }
 
     #[test]
@@ -1151,7 +1219,7 @@ mod tests {
         let (mut engine, _, sender) = make_engine(5);
         sender.send(Command::AddInkPoint(0.1, 0.2)).unwrap();
         engine.tick();
-        assert!(engine.state().ink_strokes.is_empty());
+        assert!(engine.state().current_page_ink().is_empty());
     }
 
     #[test]
@@ -1161,25 +1229,110 @@ mod tests {
         sender.send(Command::AddInkPoint(0.1, 0.2)).unwrap();
         sender.send(Command::FinishInkStroke).unwrap();
         engine.tick();
-        assert_eq!(engine.state().ink_strokes.len(), 1);
+        assert_eq!(engine.state().current_page_ink().len(), 1);
 
         sender.send(Command::ClearInk).unwrap();
         engine.tick();
-        assert!(engine.state().ink_strokes.is_empty());
+        assert!(engine.state().current_page_ink().is_empty());
     }
 
     #[test]
-    fn ink_cleared_on_navigation() {
+    fn ink_persists_across_navigation() {
         let (mut engine, _, sender) = make_engine(5);
+
+        // Draw on slide 0
         sender.send(Command::ToggleInk).unwrap();
         sender.send(Command::AddInkPoint(0.1, 0.2)).unwrap();
         sender.send(Command::FinishInkStroke).unwrap();
         engine.tick();
-        assert_eq!(engine.state().ink_strokes.len(), 1);
+        assert_eq!(engine.state().current_page_ink().len(), 1);
 
+        // Navigate to slide 1 — slide 0's ink should not appear
         sender.send(Command::NextSlide).unwrap();
         engine.tick();
-        assert!(engine.state().ink_strokes.is_empty());
+        assert!(engine.state().current_page_ink().is_empty());
+        assert_eq!(engine.state().current_page, 1);
+
+        // Return to slide 0 — ink should be restored
+        sender.send(Command::PreviousSlide).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().current_page_ink().len(), 1);
+        assert_eq!(engine.state().current_page_ink()[0].points.len(), 1);
+    }
+
+    #[test]
+    fn clear_ink_only_affects_current_page() {
+        let (mut engine, _, sender) = make_engine(5);
+
+        // Draw on slide 0
+        sender.send(Command::ToggleInk).unwrap();
+        sender.send(Command::AddInkPoint(0.1, 0.2)).unwrap();
+        sender.send(Command::FinishInkStroke).unwrap();
+        engine.tick();
+
+        // Draw on slide 1
+        sender.send(Command::NextSlide).unwrap();
+        sender.send(Command::AddInkPoint(0.5, 0.5)).unwrap();
+        sender.send(Command::FinishInkStroke).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().current_page_ink().len(), 1);
+
+        // Clear ink on slide 1
+        sender.send(Command::ClearInk).unwrap();
+        engine.tick();
+        assert!(engine.state().current_page_ink().is_empty());
+
+        // Return to slide 0 — its ink should still exist
+        sender.send(Command::PreviousSlide).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().current_page_ink().len(), 1);
+    }
+
+    #[test]
+    fn whiteboard_strokes_survive_navigation() {
+        let (mut engine, _, sender) = make_engine(5);
+
+        // Draw on whiteboard
+        sender.send(Command::ToggleWhiteboard).unwrap();
+        sender.send(Command::AddInkPoint(0.3, 0.3)).unwrap();
+        sender.send(Command::FinishInkStroke).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().whiteboard_strokes.len(), 1);
+
+        // Leave whiteboard, navigate, re-enter
+        sender.send(Command::ToggleWhiteboard).unwrap();
+        sender.send(Command::NextSlide).unwrap();
+        sender.send(Command::ToggleWhiteboard).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().whiteboard_strokes.len(), 1);
+    }
+
+    #[test]
+    fn annotations_loaded_from_metadata() {
+        use dais_sidecar::types::InkStrokeMeta;
+
+        let mut meta = PresentationMetadata::default();
+        meta.slide_annotations.insert(
+            0,
+            vec![InkStrokeMeta {
+                points: vec![(0.1, 0.2), (0.3, 0.4)],
+                color: [255, 0, 0, 255],
+                width: 3.0,
+            }],
+        );
+        meta.whiteboard_annotations =
+            vec![InkStrokeMeta { points: vec![(0.5, 0.5)], color: [0, 0, 255, 255], width: 2.0 }];
+
+        let (engine, _, _) = make_engine_with_metadata(5, &meta);
+
+        // Slide 0 annotations loaded
+        assert_eq!(engine.state().current_page_ink().len(), 1);
+        assert_eq!(engine.state().current_page_ink()[0].points.len(), 2);
+        assert!(engine.state().current_page_ink()[0].finished);
+
+        // Whiteboard annotations loaded
+        assert_eq!(engine.state().whiteboard_strokes.len(), 1);
+        assert!(engine.state().whiteboard_strokes[0].finished);
     }
 
     #[test]
@@ -1482,7 +1635,7 @@ mod tests {
         sender.send(Command::AddInkPoint(0.1, 0.1)).unwrap();
         sender.send(Command::FinishInkStroke).unwrap();
         engine.tick();
-        assert_eq!(engine.state().ink_strokes.len(), 1);
+        assert_eq!(engine.state().current_page_ink().len(), 1);
         assert!(engine.state().whiteboard_strokes.is_empty());
 
         // Enter whiteboard and draw
@@ -1492,7 +1645,7 @@ mod tests {
         engine.tick();
         assert_eq!(engine.state().whiteboard_strokes.len(), 1);
         // Slide strokes unchanged
-        assert_eq!(engine.state().ink_strokes.len(), 1);
+        assert_eq!(engine.state().current_page_ink().len(), 1);
     }
 
     #[test]

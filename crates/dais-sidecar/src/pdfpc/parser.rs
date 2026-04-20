@@ -189,6 +189,8 @@ Note here
                 n
             },
             slide_timings: std::collections::HashMap::new(),
+            slide_annotations: std::collections::HashMap::new(),
+            whiteboard_annotations: Vec::new(),
         };
 
         let dir = std::env::temp_dir().join("dais_test_roundtrip");
