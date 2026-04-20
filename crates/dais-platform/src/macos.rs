@@ -1,7 +1,6 @@
 //! macOS monitor management via `NSScreen`.
 
 use dais_core::monitor::{MonitorInfo, MonitorManager};
-use objc2::ffi::CGFloat;
 use objc2::rc::Retained;
 use objc2_app_kit::NSScreen;
 use objc2_foundation::{MainThreadMarker, NSArray};
@@ -20,7 +19,7 @@ impl Default for MacOsMonitorManager {
     }
 }
 
-fn cgfloat_to_i32(value: CGFloat) -> i32 {
+fn cgfloat_to_i32(value: f64) -> i32 {
     let rounded = value.round();
 
     if !rounded.is_finite() {
@@ -34,7 +33,7 @@ fn cgfloat_to_i32(value: CGFloat) -> i32 {
     clamped as i32
 }
 
-fn cgfloat_to_u32(value: CGFloat) -> u32 {
+fn cgfloat_to_u32(value: f64) -> u32 {
     let rounded = value.round();
 
     if !rounded.is_finite() {
