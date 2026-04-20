@@ -6,13 +6,14 @@
 
 use dais_core::keybindings::{Action, KeybindingMap};
 
-const OVERLAY_BG: egui::Color32 = egui::Color32::from_rgba_premultiplied(0, 0, 0, 235);
+const OVERLAY_BG: egui::Color32 = egui::Color32::BLACK;
 const HEADER_COLOR: egui::Color32 = egui::Color32::from_rgb(124, 178, 255);
 const TEXT_COLOR: egui::Color32 = egui::Color32::WHITE;
 const WINDOW_WIDTH: f32 = 560.0;
 const MAX_HEIGHT_FRACTION: f32 = 0.80;
+const SCROLLBAR_GUTTER: f32 = 22.0;
 const ROW_GAP: f32 = 12.0;
-const KEY_COLUMN_WIDTH: f32 = 220.0;
+const KEY_COLUMN_WIDTH: f32 = 200.0;
 const HEADER_BUTTON_SIZE: f32 = 28.0;
 
 /// Persistent state for the help overlay.
@@ -74,6 +75,7 @@ impl HelpOverlay {
         let mut still_open = true;
         egui::Window::new("help_overlay")
             .open(&mut still_open)
+            .enabled(true)
             .collapsible(false)
             .resizable(false)
             .title_bar(false)
@@ -123,11 +125,13 @@ impl HelpOverlay {
 
     fn render_table(ui: &mut egui::Ui, keybindings: &KeybindingMap) {
         let bindings = keybindings.action_bindings();
-        let content_width = ui.available_width().max(0.0);
+        let content_width = (ui.available_width() - SCROLLBAR_GUTTER).max(0.0);
         let key_width = KEY_COLUMN_WIDTH.min((content_width * 0.42).max(170.0));
         let action_width = (content_width - key_width - ROW_GAP).max(160.0);
 
         egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
+            ui.set_width(content_width);
+
             let mut idx = 0;
             while idx < bindings.len() {
                 let group = bindings[idx].0.group();
@@ -170,7 +174,10 @@ impl HelpOverlay {
                 egui::Layout::centered_and_justified(egui::Direction::LeftToRight),
                 |ui| {
                     ui.label(
-                        egui::RichText::new("Keyboard Shortcuts").size(20.0).color(TEXT_COLOR),
+                        egui::RichText::new("Keyboard Shortcuts")
+                            .size(20.0)
+                            .strong()
+                            .color(TEXT_COLOR),
                     );
                 },
             );
@@ -201,7 +208,10 @@ impl HelpOverlay {
             |ui| {
                 ui.add(
                     egui::Label::new(
-                        egui::RichText::new(action.description()).size(13.0).color(TEXT_COLOR),
+                        egui::RichText::new(action.description())
+                            .size(13.0)
+                            .strong()
+                            .color(TEXT_COLOR),
                     )
                     .sense(egui::Sense::hover()),
                 );
@@ -217,6 +227,7 @@ impl HelpOverlay {
                         egui::Label::new(
                             egui::RichText::new(key_text)
                                 .size(12.5)
+                                .strong()
                                 .color(TEXT_COLOR)
                                 .family(egui::FontFamily::Monospace),
                         )
