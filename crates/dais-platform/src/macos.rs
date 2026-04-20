@@ -115,9 +115,7 @@ mod tests {
     use objc2_foundation::MainThreadMarker;
 
     fn monitors_if_main_thread() -> Option<Vec<MonitorInfo>> {
-        if MainThreadMarker::new().is_none() {
-            return None;
-        }
+        MainThreadMarker::new()?;
 
         Some(MacOsMonitorManager::new().available_monitors())
     }
