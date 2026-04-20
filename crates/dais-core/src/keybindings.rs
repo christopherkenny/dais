@@ -69,6 +69,73 @@ impl Action {
         }
     }
 
+    /// Human-readable description for the help overlay.
+    pub fn description(self) -> &'static str {
+        match self {
+            Self::NextSlide => "Next slide",
+            Self::PreviousSlide => "Previous slide",
+            Self::NextOverlay => "Next overlay step",
+            Self::PreviousOverlay => "Previous overlay step",
+            Self::FirstSlide => "First slide",
+            Self::LastSlide => "Last slide",
+            Self::GoToSlide => "Go to slide…",
+            Self::ToggleFreeze => "Freeze audience",
+            Self::ToggleBlackout => "Black out audience",
+            Self::ToggleLaser => "Laser pointer",
+            Self::CycleLaserStyle => "Cycle laser style",
+            Self::ToggleInk => "Drawing mode",
+            Self::ClearInk => "Clear ink",
+            Self::ToggleSpotlight => "Spotlight",
+            Self::ToggleZoom => "Zoom mode",
+            Self::ToggleOverview => "Slide overview",
+            Self::ToggleNotes => "Toggle notes",
+            Self::ToggleNotesEdit => "Edit notes",
+            Self::StartPauseTimer => "Start / pause timer",
+            Self::ResetTimer => "Reset timer",
+            Self::IncrementNotesFont => "Increase notes font",
+            Self::DecrementNotesFont => "Decrease notes font",
+            Self::ToggleScreenShare => "Screen-share mode",
+            Self::TogglePresentationMode => "Presentation mode",
+            Self::Quit => "Quit",
+            Self::SaveSidecar => "Save sidecar",
+        }
+    }
+
+    /// Grouping label for the help overlay.
+    pub fn group(self) -> &'static str {
+        match self {
+            Self::NextSlide
+            | Self::PreviousSlide
+            | Self::NextOverlay
+            | Self::PreviousOverlay
+            | Self::FirstSlide
+            | Self::LastSlide
+            | Self::GoToSlide => "Navigation",
+
+            Self::ToggleFreeze
+            | Self::ToggleBlackout
+            | Self::ToggleScreenShare
+            | Self::TogglePresentationMode => "Display",
+
+            Self::ToggleLaser
+            | Self::CycleLaserStyle
+            | Self::ToggleInk
+            | Self::ClearInk
+            | Self::ToggleSpotlight
+            | Self::ToggleZoom => "Presenter Tools",
+
+            Self::StartPauseTimer | Self::ResetTimer => "Timer",
+
+            Self::ToggleOverview
+            | Self::ToggleNotes
+            | Self::ToggleNotesEdit
+            | Self::IncrementNotesFont
+            | Self::DecrementNotesFont => "Notes & Panels",
+
+            Self::Quit | Self::SaveSidecar => "System",
+        }
+    }
+
     /// All known actions.
     pub fn all() -> &'static [Action] {
         &[
@@ -136,6 +203,25 @@ impl KeyCombo {
 
         key.map(|key| Self { key, shift, ctrl, alt })
     }
+
+    /// Human-readable display string (e.g., "Ctrl+Shift+S").
+    pub fn display_name(&self) -> String {
+        let mut parts = Vec::new();
+        if self.ctrl {
+            parts.push("Ctrl");
+        }
+        if self.alt {
+            parts.push("Alt");
+        }
+        if self.shift {
+            parts.push("Shift");
+        }
+        // Capitalise single-character keys for display.
+        let key_display: String =
+            if self.key.len() == 1 { self.key.to_uppercase() } else { self.key.clone() };
+        parts.push(&key_display);
+        parts.join("+")
+    }
 }
 
 /// Maps key combinations to actions.
@@ -190,6 +276,26 @@ impl KeybindingMap {
     /// Look up the action bound to a key combination.
     pub fn lookup(&self, combo: &KeyCombo) -> Option<Action> {
         self.bindings.get(combo).copied()
+    }
+
+    /// Return the active bindings grouped by action with human-readable key names.
+    ///
+    /// Each action appears in `Action::all()` order. The associated `Vec` contains
+    /// the display strings for every key combo currently mapped to that action.
+    pub fn action_bindings(&self) -> Vec<(Action, Vec<String>)> {
+        Action::all()
+            .iter()
+            .map(|&action| {
+                let mut keys: Vec<String> = self
+                    .bindings
+                    .iter()
+                    .filter(|&(_, &a)| a == action)
+                    .map(|(combo, _)| combo.display_name())
+                    .collect();
+                keys.sort();
+                (action, keys)
+            })
+            .collect()
     }
 
     fn apply_clicker_profile(&mut self, clicker_bindings: &HashMap<String, String>) {
@@ -305,5 +411,50 @@ mod tests {
         let map = KeybindingMap::from_full_config(&config);
         let escape = KeyCombo::parse("Escape").unwrap();
         assert_eq!(map.lookup(&escape), Some(Action::ToggleBlackout));
+    }
+
+    #[test]
+    fn display_name_simple_key() {
+        let combo = KeyCombo::parse("Right").unwrap();
+        assert_eq!(combo.display_name(), "Right");
+    }
+
+    #[test]
+    fn display_name_modifier_combo() {
+        let combo = KeyCombo::parse("Ctrl+Shift+s").unwrap();
+        assert_eq!(combo.display_name(), "Ctrl+Shift+S");
+    }
+
+    #[test]
+    fn display_name_single_char_uppercase() {
+        let combo = KeyCombo::parse("g").unwrap();
+        assert_eq!(combo.display_name(), "G");
+    }
+
+    #[test]
+    fn action_bindings_returns_all_actions() {
+        let map = KeybindingMap::from_config(&HashMap::new());
+        let bindings = map.action_bindings();
+        assert_eq!(bindings.len(), Action::all().len());
+    }
+
+    #[test]
+    fn action_bindings_reflects_overrides() {
+        let mut user = HashMap::new();
+        user.insert("quit".to_string(), vec!["x".to_string()]);
+        let map = KeybindingMap::from_config(&user);
+        let bindings = map.action_bindings();
+
+        let quit_keys: Vec<String> =
+            bindings.iter().find(|(a, _)| *a == Action::Quit).unwrap().1.clone();
+        assert_eq!(quit_keys, vec!["X"]);
+    }
+
+    #[test]
+    fn every_action_has_description_and_group() {
+        for action in Action::all() {
+            assert!(!action.description().is_empty(), "{action:?} missing description");
+            assert!(!action.group().is_empty(), "{action:?} missing group");
+        }
     }
 }

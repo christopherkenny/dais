@@ -23,6 +23,7 @@ All keybindings are remappable via the `[keybindings]` section in `config.toml`.
 | `toggle_zoom` | Z | Toggle zoom mode |
 | `toggle_overview` | O | Toggle slide overview grid |
 | `toggle_notes` | N | Toggle notes panel visibility |
+| `toggle_notes_edit` | Ctrl+N | Toggle inline notes editing |
 | `start_pause_timer` | T | Start/pause timer |
 | `reset_timer` | Shift+T | Reset timer |
 | `increment_notes_font` | +, Shift+= | Increase notes font size |

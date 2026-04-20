@@ -24,6 +24,7 @@ use self::overview::OverviewGrid;
 use crate::audience::display::AudienceDisplay;
 
 use crate::input::{InputHandler, UiModes};
+use crate::widgets::HelpOverlay;
 
 const MIN_LEFT_FRACTION: f32 = 0.35;
 const MAX_LEFT_FRACTION: f32 = 0.8;
@@ -40,6 +41,7 @@ pub struct PresenterConsole {
     notes: NotesPanel,
     overview: OverviewGrid,
     input: InputHandler,
+    help: HelpOverlay,
     left_fraction: f32,
     top_fraction: f32,
     single_left_fraction: f32,
@@ -55,6 +57,7 @@ impl PresenterConsole {
             notes: NotesPanel::new(),
             overview: OverviewGrid::new(),
             input,
+            help: HelpOverlay::new(),
             left_fraction: 0.60,
             top_fraction: 0.50,
             single_left_fraction: 0.72,
@@ -80,16 +83,26 @@ impl PresenterConsole {
         cache: &mut PageCache,
         sender: &CommandSender,
     ) {
-        // Process input
-        self.input.handle_input(
-            ctx,
-            UiModes {
-                overview_visible: state.overview_visible,
-                ink_active: state.ink_active,
-                laser_active: state.laser_active,
-                notes_editing: state.notes_editing,
-            },
-        );
+        // Help overlay intercepts input when visible.
+        let help_consumed = self.help.show(ctx, self.input.keybindings());
+
+        // Toggle help on `?` text event when the overlay did not already handle it.
+        if !help_consumed && Self::question_mark_pressed(ctx) {
+            self.help.toggle();
+        }
+
+        // Skip normal input while help is showing.
+        if !self.help.visible {
+            self.input.handle_input(
+                ctx,
+                UiModes {
+                    overview_visible: state.overview_visible,
+                    ink_active: state.ink_active,
+                    laser_active: state.laser_active,
+                    notes_editing: state.notes_editing,
+                },
+            );
+        }
 
         // Update textures from cache (single canonical size)
         let size = FALLBACK_RENDER_SIZE;
@@ -204,7 +217,9 @@ impl PresenterConsole {
                 );
 
                 // Status bar
-                self.show_status_bar(ui, layout.status_bar, state, sender);
+                if self.show_status_bar(ui, layout.status_bar, state, sender) {
+                    self.help.toggle();
+                }
 
                 // Slide overview (modal overlay)
                 if state.overview_visible {
@@ -226,15 +241,24 @@ impl PresenterConsole {
         sender: &CommandSender,
         audience_render_size: dais_document::page::RenderSize,
     ) {
-        self.input.handle_input(
-            ctx,
-            UiModes {
-                overview_visible: state.overview_visible,
-                ink_active: state.ink_active,
-                laser_active: state.laser_active,
-                notes_editing: state.notes_editing,
-            },
-        );
+        // Help overlay intercepts input when visible.
+        let help_consumed = self.help.show(ctx, self.input.keybindings());
+
+        if !help_consumed && Self::question_mark_pressed(ctx) {
+            self.help.toggle();
+        }
+
+        if !self.help.visible {
+            self.input.handle_input(
+                ctx,
+                UiModes {
+                    overview_visible: state.overview_visible,
+                    ink_active: state.ink_active,
+                    laser_active: state.laser_active,
+                    notes_editing: state.notes_editing,
+                },
+            );
+        }
 
         let presenter_size = FALLBACK_RENDER_SIZE;
         let current_page = state.current_page;
@@ -398,7 +422,9 @@ impl PresenterConsole {
                     sender,
                 );
 
-                self.show_status_bar(ui, status_rect, state, sender);
+                if self.show_status_bar(ui, status_rect, state, sender) {
+                    self.help.toggle();
+                }
 
                 if state.overview_visible {
                     self.overview.show(ctx, ui, state, cache, sender);
@@ -509,7 +535,8 @@ impl PresenterConsole {
         area: egui::Rect,
         state: &PresentationState,
         sender: &CommandSender,
-    ) {
+    ) -> bool {
+        let mut help_clicked = false;
         let mut child_ui = ui.new_child(egui::UiBuilder::new().max_rect(area));
 
         // Background
@@ -594,7 +621,35 @@ impl PresenterConsole {
                         egui::RichText::new(format!("Go to: {buf}_")).size(14.0),
                     );
                 }
+
+                // Help button — right-aligned
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if ui
+                        .add(
+                            egui::Button::new(
+                                egui::RichText::new("?")
+                                    .size(15.0)
+                                    .color(egui::Color32::WHITE)
+                                    .strong(),
+                            )
+                            .fill(egui::Color32::from_gray(50))
+                            .corner_radius(4.0)
+                            .min_size(egui::vec2(26.0, 26.0)),
+                        )
+                        .on_hover_text("Keyboard shortcuts")
+                        .clicked()
+                    {
+                        help_clicked = true;
+                    }
+                });
             });
         });
+
+        help_clicked
+    }
+
+    /// Check whether a `?` text event was produced this frame.
+    fn question_mark_pressed(ctx: &egui::Context) -> bool {
+        ctx.input(|i| i.events.iter().any(|e| matches!(e, egui::Event::Text(t) if t == "?")))
     }
 }

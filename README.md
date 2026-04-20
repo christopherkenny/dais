@@ -61,18 +61,6 @@ cargo build --release
 
 The binary will be at `target/release/dais` (or `dais.exe` on Windows).
 
-## Source Compatibility
-
-| Source | Overlay grouping | Notes |
-|---|---|---|
-| Typst + Polylux/touying | Depends on workflow | Use `.pdfpc` metadata when available. |
-| Quarto + projector | Depends on workflow | Use emitted sidecar metadata when available. |
-| Beamer + `\pdfpc` package | Automatic | One-line preamble addition. |
-| Quarto + Beamer + pdfpc header | Automatic | One-line YAML addition. |
-| Beamer without `\pdfpc` | Manual sidecar | Built-in editor. |
-| PowerPoint PDF export | Manual sidecar | Animations expand to separate pages. |
-| Keynote PDF export | Page-per-slide | No animation expansion in export. |
-
 ## Configuration
 
 - **Windows:** `%APPDATA%\dais\config.toml`

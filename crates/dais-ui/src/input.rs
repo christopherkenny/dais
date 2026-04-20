@@ -257,6 +257,11 @@ impl InputHandler {
     pub fn jump_buffer(&self) -> &str {
         &self.jump_buffer
     }
+
+    /// Access the active keybinding map.
+    pub fn keybindings(&self) -> &KeybindingMap {
+        &self.keybindings
+    }
 }
 
 fn step_zoom_factor(current_factor: f32, scroll_delta: f32) -> f32 {

@@ -13,6 +13,7 @@ use dais_document::page::RenderSize;
 use crate::audience::display::AudienceDisplay;
 use crate::audience::overlays;
 use crate::input::{InputHandler, UiModes};
+use crate::widgets::HelpOverlay;
 
 const HUD_BAR_HEIGHT: f32 = 48.0;
 const HUD_BAR_BG: egui::Color32 = egui::Color32::from_rgba_premultiplied(20, 20, 20, 180);
@@ -26,6 +27,7 @@ pub struct HudOverlay {
     display: AudienceDisplay,
     notes_visible: bool,
     bar_visible: bool,
+    help: HelpOverlay,
 }
 
 impl HudOverlay {
@@ -42,15 +44,24 @@ impl HudOverlay {
         input: &mut InputHandler,
         render_size: RenderSize,
     ) {
-        input.handle_input(
-            ctx,
-            UiModes {
-                overview_visible: state.overview_visible,
-                ink_active: state.ink_active,
-                laser_active: state.laser_active,
-                notes_editing: state.notes_editing,
-            },
-        );
+        // Help overlay intercepts input when visible.
+        let help_consumed = self.help.show(ctx, input.keybindings());
+
+        if !help_consumed && Self::question_mark_pressed(ctx) {
+            self.help.toggle();
+        }
+
+        if !self.help.visible {
+            input.handle_input(
+                ctx,
+                UiModes {
+                    overview_visible: state.overview_visible,
+                    ink_active: state.ink_active,
+                    laser_active: state.laser_active,
+                    notes_editing: state.notes_editing,
+                },
+            );
+        }
 
         let audience_page = state.audience_page();
         if let Some(page) = cache.get(audience_page, render_size) {
@@ -110,8 +121,10 @@ impl HudOverlay {
                 }
 
                 // HUD bar
-                if self.bar_visible || self.notes_visible {
-                    Self::show_hud_bar(ui, viewport_rect, state, sender);
+                if (self.bar_visible || self.notes_visible)
+                    && Self::show_hud_bar(ui, viewport_rect, state, sender)
+                {
+                    self.help.toggle();
                 }
             },
         );
@@ -122,7 +135,8 @@ impl HudOverlay {
         viewport: egui::Rect,
         state: &PresentationState,
         sender: &CommandSender,
-    ) {
+    ) -> bool {
+        let mut help_clicked = false;
         let bar_rect = egui::Rect::from_min_max(
             egui::pos2(viewport.min.x, viewport.max.y - HUD_BAR_HEIGHT),
             viewport.max,
@@ -166,8 +180,27 @@ impl HudOverlay {
 
             super::timer::show_slide_timer(ui, state.slide_elapsed);
 
-            // Mode indicators (right-aligned)
+            // Mode indicators + help button (right-aligned)
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                // Help button (rightmost)
+                if ui
+                    .add(
+                        egui::Button::new(
+                            egui::RichText::new("?")
+                                .size(14.0)
+                                .color(egui::Color32::WHITE)
+                                .strong(),
+                        )
+                        .fill(egui::Color32::from_gray(50))
+                        .corner_radius(4.0)
+                        .min_size(egui::vec2(24.0, 24.0)),
+                    )
+                    .on_hover_text("Keyboard shortcuts")
+                    .clicked()
+                {
+                    help_clicked = true;
+                }
+
                 if state.frozen {
                     ui.colored_label(
                         egui::Color32::LIGHT_BLUE,
@@ -197,6 +230,8 @@ impl HudOverlay {
                 }
             });
         });
+
+        help_clicked
     }
 
     fn show_notes_panel(ui: &mut egui::Ui, viewport: egui::Rect, notes: &str) {
@@ -216,5 +251,9 @@ impl HudOverlay {
                 );
             });
         });
+    }
+
+    fn question_mark_pressed(ctx: &egui::Context) -> bool {
+        ctx.input(|i| i.events.iter().any(|e| matches!(e, egui::Event::Text(t) if t == "?")))
     }
 }
