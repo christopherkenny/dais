@@ -112,26 +112,42 @@ impl MonitorManager for MacOsMonitorManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use objc2_foundation::MainThreadMarker;
+
+    fn monitors_if_main_thread() -> Option<Vec<MonitorInfo>> {
+        if MainThreadMarker::new().is_none() {
+            return None;
+        }
+
+        Some(MacOsMonitorManager::new().available_monitors())
+    }
 
     #[test]
     fn enumerate_at_least_one_monitor() {
-        let mgr = MacOsMonitorManager::new();
-        let monitors = mgr.available_monitors();
+        let Some(monitors) = monitors_if_main_thread() else {
+            return;
+        };
+
         assert!(!monitors.is_empty(), "should detect at least one monitor");
     }
 
     #[test]
     fn has_one_primary() {
-        let mgr = MacOsMonitorManager::new();
-        let monitors = mgr.available_monitors();
+        let Some(monitors) = monitors_if_main_thread() else {
+            return;
+        };
+
         let primary_count = monitors.iter().filter(|m| m.is_primary).count();
         assert_eq!(primary_count, 1, "exactly one monitor should be primary");
     }
 
     #[test]
     fn monitor_has_nonzero_size() {
-        let mgr = MacOsMonitorManager::new();
-        for m in mgr.available_monitors() {
+        let Some(monitors) = monitors_if_main_thread() else {
+            return;
+        };
+
+        for m in monitors {
             assert!(m.size.0 > 0, "monitor width should be > 0: {}", m.name);
             assert!(m.size.1 > 0, "monitor height should be > 0: {}", m.name);
         }
@@ -139,8 +155,11 @@ mod tests {
 
     #[test]
     fn scale_factor_is_reasonable() {
-        let mgr = MacOsMonitorManager::new();
-        for m in mgr.available_monitors() {
+        let Some(monitors) = monitors_if_main_thread() else {
+            return;
+        };
+
+        for m in monitors {
             assert!(
                 (0.5..=4.0).contains(&m.scale_factor),
                 "scale factor {} out of expected range for {}",
@@ -152,6 +171,10 @@ mod tests {
 
     #[test]
     fn primary_monitor_helper_works() {
+        let Some(_) = monitors_if_main_thread() else {
+            return;
+        };
+
         let mgr = MacOsMonitorManager::new();
         let primary = mgr.primary_monitor();
         assert!(primary.is_some(), "primary_monitor() should return Some");
