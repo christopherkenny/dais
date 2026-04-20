@@ -30,7 +30,11 @@ fn cgfloat_to_i32(value: f64) -> i32 {
     let max = f64::from(i32::MAX);
     let clamped = rounded.clamp(min, max);
 
-    clamped as i32
+    clamped.to_string().parse::<i32>().unwrap_or(if clamped.is_sign_negative() {
+        i32::MIN
+    } else {
+        i32::MAX
+    })
 }
 
 fn cgfloat_to_u32(value: f64) -> u32 {
@@ -43,7 +47,7 @@ fn cgfloat_to_u32(value: f64) -> u32 {
     let max = f64::from(u32::MAX);
     let clamped = rounded.clamp(0.0, max);
 
-    clamped as u32
+    clamped.to_string().parse::<u32>().unwrap_or(u32::MAX)
 }
 
 impl MonitorManager for MacOsMonitorManager {
