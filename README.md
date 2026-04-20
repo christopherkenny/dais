@@ -9,7 +9,7 @@ Dais is designed for straightforward installation, reliable operation in real pr
 ## Features
 
 - Multi-monitor presenter view with an audience display and a presenter console with notes, timer, and navigation.
-- Overlay and build-step support for Polylux, touying, Beamer `\pdfpc` metadata, and manual grouping.
+- Overlay and build-step support for `pdfpc` metadata, Beamer `\pdfpc`, and manual grouping.
 - Presentation tools including a laser pointer, freehand ink, spotlight, and zoom.
 - `.pdfpc` compatibility and a native `.dais` sidecar format.
 - Fully remappable keybindings with presenter-console defaults.
@@ -65,7 +65,7 @@ The binary will be at `target/release/dais` (or `dais.exe` on Windows).
 
 | Source | Overlay grouping | Notes |
 |---|---|---|
-| Typst + Polylux/touying | Automatic | Embedded metadata. |
+| Typst + Polylux/touying | Depends on workflow | Use `.pdfpc` metadata when available. |
 | Quarto + projector | Depends on workflow | Use emitted sidecar metadata when available. |
 | Beamer + `\pdfpc` package | Automatic | One-line preamble addition. |
 | Quarto + Beamer + pdfpc header | Automatic | One-line YAML addition. |
