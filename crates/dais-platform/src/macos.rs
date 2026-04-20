@@ -35,10 +35,8 @@ impl MonitorManager for MacOsMonitorManager {
 
         // The primary screen's height is needed to convert macOS's bottom-left
         // coordinate origin to the top-left convention used by MonitorInfo.
-        let primary_height = main_screen
-            .as_deref()
-            .map(|s| unsafe { s.frame() }.size.height)
-            .unwrap_or(0.0);
+        let primary_height =
+            main_screen.as_deref().map(|s| unsafe { s.frame() }.size.height).unwrap_or(0.0);
 
         screens
             .iter()
@@ -60,9 +58,7 @@ impl MonitorManager for MacOsMonitorManager {
 
                 let is_primary = main_screen
                     .as_deref()
-                    .map(|s| {
-                        std::ptr::eq(s as *const NSScreen, &*screen as *const NSScreen)
-                    })
+                    .map(|s| std::ptr::eq(s as *const NSScreen, &*screen as *const NSScreen))
                     .unwrap_or(i == 0);
 
                 let id = format!("NSScreen:{i}");
