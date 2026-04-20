@@ -1,6 +1,7 @@
 //! macOS monitor management via `NSScreen`.
 
 use dais_core::monitor::{MonitorInfo, MonitorManager};
+use objc2::ffi::CGFloat;
 use objc2::rc::Retained;
 use objc2_app_kit::NSScreen;
 use objc2_foundation::{MainThreadMarker, NSArray};
@@ -19,15 +20,39 @@ impl Default for MacOsMonitorManager {
     }
 }
 
+fn cgfloat_to_i32(value: CGFloat) -> i32 {
+    let rounded = value.round();
+
+    if !rounded.is_finite() {
+        return 0;
+    }
+
+    let min = f64::from(i32::MIN);
+    let max = f64::from(i32::MAX);
+    let clamped = rounded.clamp(min, max);
+
+    clamped as i32
+}
+
+fn cgfloat_to_u32(value: CGFloat) -> u32 {
+    let rounded = value.round();
+
+    if !rounded.is_finite() {
+        return 0;
+    }
+
+    let max = f64::from(u32::MAX);
+    let clamped = rounded.clamp(0.0, max);
+
+    clamped as u32
+}
+
 impl MonitorManager for MacOsMonitorManager {
     fn available_monitors(&self) -> Vec<MonitorInfo> {
         // NSScreen must be accessed from the main thread.
-        let mtm = match MainThreadMarker::new() {
-            Some(m) => m,
-            None => {
-                tracing::warn!("available_monitors called off main thread; returning empty list");
-                return Vec::new();
-            }
+        let Some(mtm) = MainThreadMarker::new() else {
+            tracing::warn!("available_monitors called off main thread; returning empty list");
+            return Vec::new();
         };
 
         let screens: Retained<NSArray<NSScreen>> = NSScreen::screens(mtm);
@@ -36,30 +61,29 @@ impl MonitorManager for MacOsMonitorManager {
         // The primary screen's height is needed to convert macOS's bottom-left
         // coordinate origin to the top-left convention used by MonitorInfo.
         let primary_height =
-            main_screen.as_deref().map(|s| unsafe { s.frame() }.size.height).unwrap_or(0.0);
+            main_screen.as_deref().map_or(0.0, |screen| screen.frame().size.height);
 
         screens
             .iter()
             .enumerate()
             .map(|(i, screen)| {
-                let frame = unsafe { screen.frame() };
-                let visible = unsafe { screen.visibleFrame() };
-                let scale = unsafe { screen.backingScaleFactor() };
+                let frame = screen.frame();
+                let visible = screen.visibleFrame();
+                let scale = screen.backingScaleFactor();
 
-                let x = frame.origin.x as i32;
-                let y = (primary_height - (frame.origin.y + frame.size.height)) as i32;
-                let w = frame.size.width as u32;
-                let h = frame.size.height as u32;
+                let x = cgfloat_to_i32(frame.origin.x);
+                let y = cgfloat_to_i32(primary_height - (frame.origin.y + frame.size.height));
+                let w = cgfloat_to_u32(frame.size.width);
+                let h = cgfloat_to_u32(frame.size.height);
 
-                let vx = visible.origin.x as i32;
-                let vy = (primary_height - (visible.origin.y + visible.size.height)) as i32;
-                let vw = visible.size.width as u32;
-                let vh = visible.size.height as u32;
+                let vx = cgfloat_to_i32(visible.origin.x);
+                let vy = cgfloat_to_i32(primary_height - (visible.origin.y + visible.size.height));
+                let vw = cgfloat_to_u32(visible.size.width);
+                let vh = cgfloat_to_u32(visible.size.height);
 
-                let is_primary = main_screen
-                    .as_deref()
-                    .map(|s| std::ptr::eq(s as *const NSScreen, &*screen as *const NSScreen))
-                    .unwrap_or(i == 0);
+                let is_primary = main_screen.as_deref().map_or(i == 0, |main| {
+                    std::ptr::eq(std::ptr::from_ref(main), &raw const *screen)
+                });
 
                 let id = format!("NSScreen:{i}");
                 let name = if is_primary {
