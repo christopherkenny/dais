@@ -29,20 +29,24 @@ pub fn create_monitor_manager() -> impl MonitorManager {
     macos::MacOsMonitorManager::new()
 }
 
-// Linux stub — will use X11 or Wayland depending on features
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "x11"))]
 pub fn create_monitor_manager() -> impl MonitorManager {
-    // TODO: detect Wayland vs X11 at runtime and use real backends
-    LinuxStubMonitorManager
+    linux_x11::X11MonitorManager::new()
 }
 
-/// Placeholder Linux monitor manager until X11/Wayland backends land.
-#[cfg(target_os = "linux")]
-struct LinuxStubMonitorManager;
+#[cfg(all(target_os = "linux", not(feature = "x11")))]
+pub fn create_monitor_manager() -> impl MonitorManager {
+    LinuxFallbackMonitorManager
+}
 
-#[cfg(target_os = "linux")]
-impl MonitorManager for LinuxStubMonitorManager {
+/// Returned when no Linux display backend feature is enabled.
+#[cfg(all(target_os = "linux", not(feature = "x11")))]
+struct LinuxFallbackMonitorManager;
+
+#[cfg(all(target_os = "linux", not(feature = "x11")))]
+impl MonitorManager for LinuxFallbackMonitorManager {
     fn available_monitors(&self) -> Vec<MonitorInfo> {
+        tracing::warn!("no Linux display backend compiled in; build with --features x11");
         Vec::new()
     }
 }
