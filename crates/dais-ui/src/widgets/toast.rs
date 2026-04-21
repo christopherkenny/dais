@@ -84,7 +84,7 @@ impl ToastManager {
         // Request repaints while toasts are visible so they auto-dismiss.
         ctx.request_repaint_after(Duration::from_millis(250));
 
-        let screen = ctx.screen_rect();
+        let screen = ctx.content_rect();
         let anchor_x = screen.max.x - MARGIN_RIGHT;
         let mut y = screen.min.y + MARGIN_TOP;
 

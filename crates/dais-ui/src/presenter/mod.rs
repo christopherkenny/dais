@@ -552,7 +552,7 @@ impl PresenterConsole {
         // Background
         child_ui.painter().rect_filled(area, 0.0, egui::Color32::from_gray(20));
 
-        child_ui.allocate_new_ui(egui::UiBuilder::new().max_rect(area.shrink(4.0)), |ui| {
+        child_ui.scope_builder(egui::UiBuilder::new().max_rect(area.shrink(4.0)), |ui| {
             ui.horizontal(|ui| {
                 // Slide position
                 let slide_text = format!(

@@ -36,7 +36,7 @@ impl NotesPanel {
 
         let mut child_ui = ui.new_child(egui::UiBuilder::new().max_rect(area));
 
-        child_ui.allocate_new_ui(
+        child_ui.scope_builder(
             egui::UiBuilder::new()
                 .max_rect(egui::Rect::from_min_size(area.min, egui::vec2(area.width(), 20.0))),
             |ui| {
@@ -49,7 +49,7 @@ impl NotesPanel {
             egui::vec2((area.width() - 16.0).max(1.0), (area.height() - 28.0).max(1.0)),
         );
 
-        child_ui.allocate_new_ui(egui::UiBuilder::new().max_rect(content_area), |ui| {
+        child_ui.scope_builder(egui::UiBuilder::new().max_rect(content_area), |ui| {
             ui.style_mut().override_font_id = Some(egui::FontId::proportional(view.font_size));
 
             if view.editing {

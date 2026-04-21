@@ -251,7 +251,7 @@ impl HudOverlay {
         ui.painter().rect_filled(panel_rect, 4.0, bg);
 
         let inner = panel_rect.shrink(10.0);
-        ui.allocate_new_ui(egui::UiBuilder::new().max_rect(inner), |ui| {
+        ui.scope_builder(egui::UiBuilder::new().max_rect(inner), |ui| {
             egui::ScrollArea::vertical().max_height(inner.height()).show(ui, |ui| {
                 ui.label(
                     egui::RichText::new(notes).size(14.0).color(egui::Color32::from_gray(220)),

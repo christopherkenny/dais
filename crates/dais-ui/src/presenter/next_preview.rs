@@ -29,7 +29,7 @@ impl NextPreviewPanel {
         );
 
         // Header
-        child_ui.allocate_new_ui(
+        child_ui.scope_builder(
             egui::UiBuilder::new()
                 .max_rect(egui::Rect::from_min_size(area.min, egui::vec2(area.width(), 20.0))),
             |ui| {

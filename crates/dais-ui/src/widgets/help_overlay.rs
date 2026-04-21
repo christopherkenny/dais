@@ -57,7 +57,7 @@ impl HelpOverlay {
             return true;
         }
 
-        let screen = ctx.screen_rect();
+        let screen = ctx.content_rect();
         let max_h = screen.height() * MAX_HEIGHT_FRACTION;
 
         egui::Area::new(egui::Id::new("help_overlay_bg"))

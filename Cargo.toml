@@ -30,9 +30,9 @@ dais-ui = { path = "crates/dais-ui" }
 hayro = { version = "0.6", features = ["embed-fonts"] }
 
 # GUI
-egui = "0.31"
-eframe = "0.31"
-egui_commonmark = "0.20"
+egui = "0.33"
+eframe = "0.33"
+egui_commonmark = "0.22"
 
 # Core
 crossbeam-channel = "0.5"
@@ -51,7 +51,7 @@ winresource = "0.1"
 
 # Platform-specific (conditional)
 [workspace.dependencies.windows]
-version = "0.61"
+version = "0.62"
 features = [
     "Win32_Foundation",
     "Win32_Graphics_Gdi",
