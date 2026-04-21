@@ -14,6 +14,7 @@ pub struct Config {
     pub laser: LaserConfig,
     pub spotlight: SpotlightConfig,
     pub ink: InkConfig,
+    pub text_boxes: TextBoxConfig,
     pub notes: NotesConfig,
     pub keybindings: HashMap<String, Vec<String>>,
     pub clicker: ClickerConfig,
@@ -29,6 +30,7 @@ struct PartialConfig {
     laser: Option<PartialLaserConfig>,
     spotlight: Option<PartialSpotlightConfig>,
     ink: Option<PartialInkConfig>,
+    text_boxes: Option<PartialTextBoxConfig>,
     notes: Option<PartialNotesConfig>,
     keybindings: Option<HashMap<String, Vec<String>>>,
     clicker: Option<PartialClickerConfig>,
@@ -155,6 +157,23 @@ struct PartialInkConfig {
     width: Option<f32>,
 }
 
+/// Default style for newly created text boxes.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct TextBoxConfig {
+    /// Text color as a hex string (RGB or RGBA).
+    pub color: String,
+    /// Background fill as a hex string (RGB or RGBA), or `"transparent"`.
+    pub background: String,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(default)]
+struct PartialTextBoxConfig {
+    color: Option<String>,
+    background: Option<String>,
+}
+
 /// Clicker/remote hardware configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -197,6 +216,7 @@ impl Default for Config {
             laser: LaserConfig::default(),
             spotlight: SpotlightConfig::default(),
             ink: InkConfig::default(),
+            text_boxes: TextBoxConfig::default(),
             notes: NotesConfig::default(),
             keybindings: HashMap::new(),
             clicker: ClickerConfig::default(),
@@ -242,6 +262,12 @@ impl Default for SpotlightConfig {
 impl Default for InkConfig {
     fn default() -> Self {
         Self { colors: vec!["#FF0000".to_string()], width: 3.0 }
+    }
+}
+
+impl Default for TextBoxConfig {
+    fn default() -> Self {
+        Self { color: "#000000".to_string(), background: "transparent".to_string() }
     }
 }
 
@@ -407,6 +433,15 @@ fn apply_partial_config(config: &mut Config, partial: PartialConfig) {
         }
     }
 
+    if let Some(text_boxes) = partial.text_boxes {
+        if let Some(color) = text_boxes.color {
+            config.text_boxes.color = color;
+        }
+        if let Some(background) = text_boxes.background {
+            config.text_boxes.background = background;
+        }
+    }
+
     if let Some(notes) = partial.notes {
         if let Some(font_size) = notes.font_size {
             config.notes.font_size = font_size;
@@ -466,6 +501,23 @@ mod tests {
         assert_eq!(config.timer.duration_minutes, Some(45));
         assert_eq!(config.timer.warning_minutes, Some(10));
         assert!(!config.timer.overrun_color);
+    }
+
+    #[test]
+    fn partial_config_overrides_text_box_defaults() {
+        let mut config = Config::default();
+        let partial = PartialConfig {
+            text_boxes: Some(PartialTextBoxConfig {
+                color: Some("#112233".to_string()),
+                background: Some("#445566AA".to_string()),
+            }),
+            ..Default::default()
+        };
+
+        apply_partial_config(&mut config, partial);
+
+        assert_eq!(config.text_boxes.color, "#112233");
+        assert_eq!(config.text_boxes.background, "#445566AA");
     }
 
     #[test]

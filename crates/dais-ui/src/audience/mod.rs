@@ -10,17 +10,25 @@ use std::sync::{Arc, RwLock};
 use dais_core::state::PresentationState;
 use dais_document::cache::PageCache;
 use dais_document::page::RenderSize;
+use dais_document::typst_renderer::TextBoxRenderCache;
 
 use self::display::AudienceDisplay;
+use crate::widgets::TextBoxTextureCache;
 
 /// The audience window.
 pub struct AudienceWindow {
     display: AudienceDisplay,
+    tb_cache: TextBoxRenderCache,
+    tb_texture_cache: TextBoxTextureCache,
 }
 
 impl AudienceWindow {
     pub fn new() -> Self {
-        Self { display: AudienceDisplay::new() }
+        Self {
+            display: AudienceDisplay::new(),
+            tb_cache: TextBoxRenderCache::new(),
+            tb_texture_cache: TextBoxTextureCache::default(),
+        }
     }
 
     /// Render the audience window content.
@@ -58,7 +66,15 @@ impl AudienceWindow {
             |ui| {
                 let viewport_rect = ui.max_rect();
                 let image_rect = self.display.show(ui, zoom_region);
-                overlays::draw_overlays(ui, viewport_rect, image_rect, &state);
+                overlays::draw_overlays(
+                    ui,
+                    viewport_rect,
+                    image_rect,
+                    &state,
+                    &mut self.tb_cache,
+                    &mut self.tb_texture_cache,
+                    true,
+                );
             },
         );
     }

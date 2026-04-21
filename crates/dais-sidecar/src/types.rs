@@ -23,6 +23,8 @@ pub struct PresentationMetadata {
     pub slide_annotations: HashMap<usize, Vec<InkStrokeMeta>>,
     /// Whiteboard annotations (not tied to any slide).
     pub whiteboard_annotations: Vec<InkStrokeMeta>,
+    /// Per-page text box overlays (`page_index` → boxes).
+    pub slide_text_boxes: HashMap<usize, Vec<TextBoxMeta>>,
 }
 
 /// A contiguous range of PDF pages forming one logical slide.
@@ -43,4 +45,21 @@ pub struct InkStrokeMeta {
     pub color: [u8; 4],
     /// Stroke width in logical pixels.
     pub width: f32,
+}
+
+/// A serializable text box for sidecar persistence.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TextBoxMeta {
+    /// Unique identifier.
+    pub id: u64,
+    /// Normalized position and size: (x, y, w, h) in 0..1 coordinates.
+    pub rect: (f32, f32, f32, f32),
+    /// Text/Typst content.
+    pub content: String,
+    /// Font size in points.
+    pub font_size: f32,
+    /// Text color as RGBA.
+    pub color: [u8; 4],
+    /// Optional background fill as RGBA.
+    pub background: Option<[u8; 4]>,
 }

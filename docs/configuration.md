@@ -43,6 +43,10 @@ dim_opacity = 0.6              # 0.0 = invisible, 1.0 = fully black
 color = "#FF0000"
 width = 3.0
 
+[text_boxes]
+color = "#000000"
+background = "transparent"    # Hex color or "transparent"
+
 [notes]
 font_size = 16.0
 font_size_step = 2.0           # Increment/decrement step
@@ -91,6 +95,21 @@ Detected monitors are logged at startup with ids and names, so you can see which
 
 - **Elapsed mode:** Starts at 0:00 and counts up. This is the default. If `duration_minutes` is omitted, no limit is shown.
 - **Countdown mode:** Starts at `duration_minutes` and counts down. If you use countdown mode, you should set `duration_minutes`.
+
+## Text Boxes
+
+`[text_boxes]` controls the default style for newly created text boxes.
+
+- `color` accepts `#RRGGBB` or `#RRGGBBAA`
+- `background` accepts `#RRGGBB`, `#RRGGBBAA`, or `"transparent"`
+
+Example:
+
+```toml
+[text_boxes]
+color = "#111111"
+background = "#FFF7CCDD"
+```
 
 ## Sidecar Formats
 

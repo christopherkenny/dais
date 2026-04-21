@@ -3,6 +3,9 @@
 //! Renders visual aids over the audience slide image.
 
 use dais_core::state::{PointerStyle, PresentationState};
+use dais_document::typst_renderer::TextBoxRenderCache;
+
+use crate::widgets::TextBoxTextureCache;
 
 /// Draw all active overlays on the audience window.
 pub fn draw_overlays(
@@ -10,11 +13,29 @@ pub fn draw_overlays(
     viewport_rect: egui::Rect,
     image_rect: egui::Rect,
     state: &PresentationState,
+    tb_cache: &mut TextBoxRenderCache,
+    texture_cache: &mut TextBoxTextureCache,
+    draw_text_boxes: bool,
 ) {
     // Ink strokes
     let page_ink = state.current_page_ink();
     if !page_ink.is_empty() {
         crate::widgets::draw_ink_strokes(ui, image_rect, page_ink);
+    }
+
+    // Text boxes (non-interactive on audience display)
+    let page_text_boxes = state.current_page_text_boxes();
+    if draw_text_boxes && !page_text_boxes.is_empty() {
+        let _ = crate::widgets::draw_text_boxes(
+            ui,
+            page_text_boxes,
+            None,
+            None,
+            false,
+            image_rect,
+            tb_cache,
+            texture_cache,
+        );
     }
 
     // Laser pointer

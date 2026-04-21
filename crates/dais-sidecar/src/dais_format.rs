@@ -4,7 +4,7 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 use crate::format::{SidecarError, SidecarFormat};
-use crate::types::{InkStrokeMeta, PresentationMetadata, SlideGroupMeta};
+use crate::types::{InkStrokeMeta, PresentationMetadata, SlideGroupMeta, TextBoxMeta};
 
 /// The native `.dais` sidecar format, stored as EON.
 pub struct DaisFormat;
@@ -28,6 +28,8 @@ struct DaisFile {
     slide_annotations: HashMap<String, Vec<DaisInkStroke>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     whiteboard_annotations: Vec<DaisInkStroke>,
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    slide_text_boxes: HashMap<String, Vec<DaisTextBox>>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -41,6 +43,17 @@ struct DaisInkStroke {
     points: Vec<(f32, f32)>,
     color: [u8; 4],
     width: f32,
+}
+
+#[derive(Serialize, Deserialize)]
+struct DaisTextBox {
+    id: u64,
+    rect: (f32, f32, f32, f32),
+    content: String,
+    font_size: f32,
+    color: [u8; 4],
+    #[serde(skip_serializing_if = "Option::is_none")]
+    background: Option<[u8; 4]>,
 }
 
 impl DaisFile {
@@ -78,6 +91,26 @@ impl DaisFile {
                 .whiteboard_annotations
                 .iter()
                 .map(|s| DaisInkStroke { points: s.points.clone(), color: s.color, width: s.width })
+                .collect(),
+            slide_text_boxes: meta
+                .slide_text_boxes
+                .iter()
+                .filter(|(_, boxes)| !boxes.is_empty())
+                .map(|(k, v)| {
+                    (
+                        k.to_string(),
+                        v.iter()
+                            .map(|tb| DaisTextBox {
+                                id: tb.id,
+                                rect: tb.rect,
+                                content: tb.content.clone(),
+                                font_size: tb.font_size,
+                                color: tb.color,
+                                background: tb.background,
+                            })
+                            .collect(),
+                    )
+                })
                 .collect(),
         }
     }
@@ -124,6 +157,27 @@ impl DaisFile {
                 .whiteboard_annotations
                 .into_iter()
                 .map(|s| InkStrokeMeta { points: s.points, color: s.color, width: s.width })
+                .collect(),
+            slide_text_boxes: self
+                .slide_text_boxes
+                .into_iter()
+                .filter_map(|(k, v)| {
+                    k.parse::<usize>().ok().map(|idx| {
+                        (
+                            idx,
+                            v.into_iter()
+                                .map(|tb| TextBoxMeta {
+                                    id: tb.id,
+                                    rect: tb.rect,
+                                    content: tb.content,
+                                    font_size: tb.font_size,
+                                    color: tb.color,
+                                    background: tb.background,
+                                })
+                                .collect(),
+                        )
+                    })
+                })
                 .collect(),
         }
     }
@@ -209,6 +263,7 @@ mod tests {
             },
             slide_annotations: HashMap::new(),
             whiteboard_annotations: Vec::new(),
+            slide_text_boxes: HashMap::new(),
         };
 
         format.write(&path, &original).unwrap();
@@ -452,6 +507,7 @@ mod tests {
                 color: [0, 0, 255, 255],
                 width: 2.0,
             }],
+            slide_text_boxes: HashMap::new(),
         };
 
         format.write(&path, &original).unwrap();

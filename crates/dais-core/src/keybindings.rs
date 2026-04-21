@@ -35,6 +35,7 @@ pub enum Action {
     DecrementNotesFont,
     ToggleScreenShare,
     TogglePresentationMode,
+    ToggleTextBoxMode,
     Quit,
     SaveSidecar,
 }
@@ -70,6 +71,7 @@ impl Action {
             Self::DecrementNotesFont => "decrement_notes_font",
             Self::ToggleScreenShare => "toggle_screen_share",
             Self::TogglePresentationMode => "toggle_presentation_mode",
+            Self::ToggleTextBoxMode => "toggle_text_box_mode",
             Self::Quit => "quit",
             Self::SaveSidecar => "save_sidecar",
         }
@@ -105,6 +107,7 @@ impl Action {
             Self::DecrementNotesFont => "Decrease notes font",
             Self::ToggleScreenShare => "Screen-share mode",
             Self::TogglePresentationMode => "Presentation mode",
+            Self::ToggleTextBoxMode => "Text box mode",
             Self::Quit => "Quit",
             Self::SaveSidecar => "Save sidecar",
         }
@@ -134,7 +137,8 @@ impl Action {
             | Self::CycleInkColor
             | Self::CycleInkWidth
             | Self::ToggleSpotlight
-            | Self::ToggleZoom => "Presenter Tools",
+            | Self::ToggleZoom
+            | Self::ToggleTextBoxMode => "Presenter Tools",
 
             Self::StartPauseTimer | Self::ResetTimer => "Timer",
 
@@ -178,6 +182,7 @@ impl Action {
             Self::DecrementNotesFont,
             Self::ToggleScreenShare,
             Self::TogglePresentationMode,
+            Self::ToggleTextBoxMode,
             Self::Quit,
             Self::SaveSidecar,
         ]
@@ -362,6 +367,7 @@ fn default_keybindings() -> Vec<(Action, Vec<String>)> {
         (Action::DecrementNotesFont, vec!["-".into()]),
         (Action::ToggleScreenShare, vec!["Shift+s".into()]),
         (Action::TogglePresentationMode, vec!["F5".into()]),
+        (Action::ToggleTextBoxMode, vec!["x".into()]),
         (Action::Quit, vec!["q".into(), "Escape".into()]),
         (Action::SaveSidecar, vec!["Ctrl+s".into()]),
     ]

@@ -92,6 +92,32 @@ pub enum Command {
     /// Decrease notes font size by one step.
     DecrementNotesFontSize,
 
+    // -- Text boxes --
+    /// Toggle text box placement mode.
+    ToggleTextBoxMode,
+    /// Place a new text box on the current slide (normalized coordinates).
+    PlaceTextBox { x: f32, y: f32, w: f32, h: f32 },
+    /// Update the content of a text box.
+    EditTextBoxContent { id: u64, content: String },
+    /// Move a text box to a new position (normalized coordinates).
+    MoveTextBox { id: u64, x: f32, y: f32 },
+    /// Resize a text box (normalized size).
+    ResizeTextBox { id: u64, w: f32, h: f32 },
+    /// Delete a text box by ID.
+    DeleteTextBox { id: u64 },
+    /// Select a text box by ID.
+    SelectTextBox(u64),
+    /// Deselect the currently selected text box.
+    DeselectTextBox,
+    /// Enter inline edit mode for the selected text box.
+    BeginTextBoxEdit { id: u64 },
+    /// Set the font size of a text box.
+    SetTextBoxFontSize { id: u64, size: f32 },
+    /// Set the text color of a text box (RGBA).
+    SetTextBoxColor { id: u64, color: [u8; 4] },
+    /// Set the background fill of a text box (RGBA, or None to clear).
+    SetTextBoxBackground { id: u64, color: Option<[u8; 4]> },
+
     // -- System --
     /// Quit the application.
     Quit,

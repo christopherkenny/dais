@@ -6,9 +6,9 @@ use dais_core::commands::Command;
 use dais_core::config::Config;
 use dais_core::slide_group::SlideGroup;
 use dais_core::state::{
-    ActivePen, InkStroke, PointerStyle, PresentationState, TimerState, ZoomRegion,
+    ActivePen, InkStroke, PointerStyle, PresentationState, TextBox, TimerState, ZoomRegion,
 };
-use dais_sidecar::types::{InkStrokeMeta, PresentationMetadata};
+use dais_sidecar::types::{InkStrokeMeta, PresentationMetadata, TextBoxMeta};
 
 /// Fallback color presets appended when the user configures fewer than 4 colors.
 const INK_COLOR_FALLBACKS: &[[u8; 4]] = &[
@@ -33,6 +33,10 @@ pub struct PresentationEngine {
     slide_start: Instant,
     /// Pen color presets for cycling (from config, padded to at least 4 with fallbacks).
     ink_color_presets: Vec<[u8; 4]>,
+    /// Default text color for newly placed text boxes.
+    text_box_default_color: [u8; 4],
+    /// Default background fill for newly placed text boxes.
+    text_box_default_background: Option<[u8; 4]>,
     /// Path to the PDF file (used for sidecar save).
     pdf_path: std::path::PathBuf,
     /// Sidecar save format: `"dais"` or `"pdfpc"`.
@@ -100,6 +104,9 @@ impl PresentationEngine {
             color: ink_color_presets.first().copied().unwrap_or([255, 0, 0, 255]),
             width: config.ink.width,
         };
+        let text_box_default_color =
+            parse_hex_color(&config.text_boxes.color).unwrap_or([0, 0, 0, 255]);
+        let text_box_default_background = parse_optional_hex_color(&config.text_boxes.background);
 
         let shared_state = Arc::new(RwLock::new(state.clone()));
 
@@ -114,6 +121,8 @@ impl PresentationEngine {
                 timer_start: None,
                 slide_start: Instant::now(),
                 ink_color_presets,
+                text_box_default_color,
+                text_box_default_background,
                 pdf_path,
                 sidecar_format: config.normalized_sidecar_format().to_string(),
                 metadata: metadata.clone(),
@@ -225,6 +234,19 @@ impl PresentationEngine {
             | Command::SetSpotlightPosition(..)
             | Command::ToggleZoom
             | Command::SetZoomRegion { .. } => self.handle_aid(cmd),
+
+            Command::ToggleTextBoxMode
+            | Command::PlaceTextBox { .. }
+            | Command::EditTextBoxContent { .. }
+            | Command::MoveTextBox { .. }
+            | Command::ResizeTextBox { .. }
+            | Command::DeleteTextBox { .. }
+            | Command::SelectTextBox(_)
+            | Command::DeselectTextBox
+            | Command::BeginTextBoxEdit { .. }
+            | Command::SetTextBoxFontSize { .. }
+            | Command::SetTextBoxColor { .. }
+            | Command::SetTextBoxBackground { .. } => self.handle_text_box(cmd),
 
             Command::StartTimer
             | Command::PauseTimer
@@ -441,6 +463,106 @@ impl PresentationEngine {
         }
     }
 
+    fn reset_text_box_selection(&mut self) {
+        self.state.selected_text_box = None;
+        self.state.text_box_editing = false;
+    }
+
+    fn update_current_text_box_mut(&mut self, id: u64, f: impl FnOnce(&mut TextBox)) {
+        let page = self.state.current_page;
+        if let Some(boxes) = self.state.slide_text_boxes_by_page.get_mut(&page)
+            && let Some(tb) = boxes.iter_mut().find(|b| b.id == id)
+        {
+            f(tb);
+        }
+    }
+
+    fn create_text_box(&mut self, x: f32, y: f32, w: f32, h: f32) {
+        let id = self.state.next_text_box_id;
+        self.state.next_text_box_id += 1;
+        let x = x.clamp(0.0, 1.0);
+        let y = y.clamp(0.0, 1.0);
+        let w = w.clamp(0.01, 1.0 - x);
+        let h = h.clamp(0.01, 1.0 - y);
+        let text_box = TextBox {
+            id,
+            rect: (x, y, w, h),
+            content: String::new(),
+            font_size: 20.0,
+            color: self.text_box_default_color,
+            background: self.text_box_default_background,
+        };
+        self.state
+            .slide_text_boxes_by_page
+            .entry(self.state.current_page)
+            .or_default()
+            .push(text_box);
+        self.state.selected_text_box = Some(id);
+        self.state.text_box_editing = true;
+    }
+
+    fn handle_text_box(&mut self, cmd: &Command) {
+        match cmd {
+            Command::ToggleTextBoxMode => {
+                self.state.text_box_mode = !self.state.text_box_mode;
+                if self.state.text_box_mode {
+                    // Mutually exclusive with ink and laser
+                    self.state.ink_active = false;
+                    self.state.laser_active = false;
+                    self.state.pointer_position = None;
+                } else {
+                    self.reset_text_box_selection();
+                }
+            }
+            Command::PlaceTextBox { x, y, w, h } => self.create_text_box(*x, *y, *w, *h),
+            Command::EditTextBoxContent { id, content } => {
+                self.update_current_text_box_mut(*id, |tb| tb.content.clone_from(content));
+            }
+            Command::MoveTextBox { id, x, y } => {
+                self.update_current_text_box_mut(*id, |tb| {
+                    let (_, _, w, h) = tb.rect;
+                    tb.rect = (x.clamp(0.0, 1.0 - w), y.clamp(0.0, 1.0 - h), w, h);
+                });
+            }
+            Command::ResizeTextBox { id, w, h } => {
+                self.update_current_text_box_mut(*id, |tb| {
+                    let (x, y, _, _) = tb.rect;
+                    let w = w.clamp(0.02, 1.0 - x);
+                    let h = h.clamp(0.02, 1.0 - y);
+                    tb.rect = (x, y, w, h);
+                });
+            }
+            Command::DeleteTextBox { id } => {
+                let page = self.state.current_page;
+                if let Some(boxes) = self.state.slide_text_boxes_by_page.get_mut(&page) {
+                    boxes.retain(|b| b.id != *id);
+                }
+                if self.state.selected_text_box == Some(*id) {
+                    self.reset_text_box_selection();
+                }
+            }
+            Command::SelectTextBox(id) => {
+                self.state.selected_text_box = Some(*id);
+                self.state.text_box_editing = false;
+            }
+            Command::DeselectTextBox => self.reset_text_box_selection(),
+            Command::BeginTextBoxEdit { id } => {
+                self.state.selected_text_box = Some(*id);
+                self.state.text_box_editing = true;
+            }
+            Command::SetTextBoxFontSize { id, size } => {
+                self.update_current_text_box_mut(*id, |tb| tb.font_size = size.clamp(6.0, 144.0));
+            }
+            Command::SetTextBoxColor { id, color } => {
+                self.update_current_text_box_mut(*id, |tb| tb.color = *color);
+            }
+            Command::SetTextBoxBackground { id, color } => {
+                self.update_current_text_box_mut(*id, |tb| tb.background = *color);
+            }
+            _ => {}
+        }
+    }
+
     fn handle_timer(&mut self, cmd: &Command) {
         match *cmd {
             Command::ToggleTimer => {
@@ -574,6 +696,30 @@ impl PresentationEngine {
             .iter()
             .filter(|s| s.finished)
             .map(|s| InkStrokeMeta { points: s.points.clone(), color: s.color, width: s.width })
+            .collect();
+
+        // Copy text box overlays into metadata.
+        metadata.slide_text_boxes = self
+            .state
+            .slide_text_boxes_by_page
+            .iter()
+            .filter(|(_, boxes)| !boxes.is_empty())
+            .map(|(&page, boxes)| {
+                (
+                    page,
+                    boxes
+                        .iter()
+                        .map(|tb| TextBoxMeta {
+                            id: tb.id,
+                            rect: tb.rect,
+                            content: tb.content.clone(),
+                            font_size: tb.font_size,
+                            color: tb.color,
+                            background: tb.background,
+                        })
+                        .collect(),
+                )
+            })
             .collect();
 
         let (format, sidecar_path): (Box<dyn SidecarFormat>, _) = match self.sidecar_format.as_str()
@@ -748,6 +894,14 @@ fn parse_hex_color(color_str: &str) -> Option<[u8; 4]> {
     }
 }
 
+fn parse_optional_hex_color(color_str: &str) -> Option<[u8; 4]> {
+    if color_str.trim().eq_ignore_ascii_case("transparent") {
+        None
+    } else {
+        parse_hex_color(color_str)
+    }
+}
+
 fn parse_pointer_style(style: &str) -> PointerStyle {
     match style.trim().to_ascii_lowercase().as_str() {
         "crosshair" => PointerStyle::Crosshair,
@@ -782,6 +936,32 @@ fn load_annotations_into_state(state: &mut PresentationState, metadata: &Present
             finished: true,
         })
         .collect();
+
+    // Load text boxes from metadata
+    let mut max_id: u64 = 0;
+    for (page, boxes) in &metadata.slide_text_boxes {
+        let runtime_boxes: Vec<TextBox> = boxes
+            .iter()
+            .map(|tb| {
+                if tb.id > max_id {
+                    max_id = tb.id;
+                }
+                TextBox {
+                    id: tb.id,
+                    rect: tb.rect,
+                    content: tb.content.clone(),
+                    font_size: tb.font_size,
+                    color: tb.color,
+                    background: tb.background,
+                }
+            })
+            .collect();
+        if !runtime_boxes.is_empty() {
+            state.slide_text_boxes_by_page.insert(*page, runtime_boxes);
+        }
+    }
+    // Ensure new IDs don't collide with loaded ones
+    state.next_text_box_id = max_id + 1;
 }
 
 #[cfg(test)]
@@ -841,6 +1021,13 @@ mod tests {
         assert_eq!(parse_hex_color(""), None);
         assert_eq!(parse_hex_color("#FFF"), None);
         assert_eq!(parse_hex_color("ZZZZZZ"), None);
+    }
+
+    #[test]
+    fn parse_optional_hex_color_transparent() {
+        assert_eq!(parse_optional_hex_color("transparent"), None);
+        assert_eq!(parse_optional_hex_color(" TRANSPARENT "), None);
+        assert_eq!(parse_optional_hex_color("#01020380"), Some([1, 2, 3, 128]));
     }
 
     #[test]

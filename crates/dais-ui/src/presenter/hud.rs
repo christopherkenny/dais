@@ -9,11 +9,12 @@ use dais_core::bus::CommandSender;
 use dais_core::state::PresentationState;
 use dais_document::cache::PageCache;
 use dais_document::page::RenderSize;
+use dais_document::typst_renderer::TextBoxRenderCache;
 
 use crate::audience::display::AudienceDisplay;
 use crate::audience::overlays;
 use crate::input::{InputHandler, UiModes};
-use crate::widgets::HelpOverlay;
+use crate::widgets::{HelpOverlay, TextBoxTextureCache};
 
 const HUD_BAR_HEIGHT: f32 = 48.0;
 const HUD_BAR_BG: egui::Color32 = egui::Color32::from_rgba_premultiplied(20, 20, 20, 180);
@@ -22,19 +23,35 @@ const NOTES_HOVER_ZONE: f32 = 80.0;
 const HUD_BAR_HOVER_ZONE: f32 = 64.0;
 
 /// The presentation HUD — fullscreen slide with a hoverable info bar.
-#[derive(Default)]
 pub struct HudOverlay {
     display: AudienceDisplay,
     notes_visible: bool,
     bar_visible: bool,
     help: HelpOverlay,
+    tb_cache: TextBoxRenderCache,
+    tb_texture_cache: TextBoxTextureCache,
 }
 
 impl HudOverlay {
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            display: AudienceDisplay::default(),
+            notes_visible: false,
+            bar_visible: false,
+            help: HelpOverlay::new(),
+            tb_cache: TextBoxRenderCache::new(),
+            tb_texture_cache: TextBoxTextureCache::default(),
+        }
     }
+}
 
+impl Default for HudOverlay {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl HudOverlay {
     pub fn show(
         &mut self,
         ctx: &egui::Context,
@@ -59,6 +76,9 @@ impl HudOverlay {
                     ink_active: state.ink_active,
                     laser_active: state.laser_active,
                     notes_editing: state.notes_editing,
+                    text_box_mode: state.text_box_mode,
+                    text_box_editing: state.text_box_editing,
+                    selected_text_box: state.selected_text_box,
                 },
             );
         }
@@ -101,7 +121,15 @@ impl HudOverlay {
                 );
 
                 // Audience overlays (ink, laser, spotlight, zoom, blackout)
-                overlays::draw_overlays(ui, viewport_rect, image_rect, state);
+                overlays::draw_overlays(
+                    ui,
+                    viewport_rect,
+                    image_rect,
+                    state,
+                    &mut self.tb_cache,
+                    &mut self.tb_texture_cache,
+                    true,
+                );
 
                 // Notes hover detection
                 if let Some(pointer) = ctx.pointer_hover_pos() {

@@ -26,12 +26,24 @@ impl CurrentSlidePanel {
     /// Render the current slide in the given area.
     /// Returns the response and the image rect for mouse handling.
     pub fn show(&mut self, ui: &mut egui::Ui, area: egui::Rect) -> (egui::Response, egui::Rect) {
+        self.show_with_sense(ui, area, egui::Sense::click_and_drag())
+    }
+
+    /// Render the current slide with a caller-provided interaction sense.
+    /// Returns the response and the image rect for mouse handling.
+    pub fn show_with_sense(
+        &mut self,
+        ui: &mut egui::Ui,
+        area: egui::Rect,
+        sense: egui::Sense,
+    ) -> (egui::Response, egui::Rect) {
         let padding = egui::vec2(8.0, 8.0);
         let content_rect = area.shrink2(padding);
         let mut child_ui = ui.new_child(egui::UiBuilder::new().max_rect(content_rect));
         let available = content_rect.size().max(egui::vec2(1.0, 1.0));
 
-        let (response, image_rect) = self.thumbnail.show_interactive(&mut child_ui, available);
+        let (response, image_rect) =
+            self.thumbnail.show_with_sense(&mut child_ui, available, sense);
         self.last_image_rect = image_rect;
         (response, image_rect)
     }

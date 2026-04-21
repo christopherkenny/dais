@@ -3,7 +3,7 @@
 //! Renders a PDF page as an egui texture with correct aspect ratio.
 
 use dais_document::page::RenderedPage;
-use egui::{Response, TextureHandle, Ui, Vec2};
+use egui::{Response, Sense, TextureHandle, Ui, Vec2};
 
 /// A reusable widget that displays a rendered PDF page as an egui texture.
 pub struct SlideThumbnail {
@@ -75,9 +75,19 @@ impl SlideThumbnail {
     /// response and the image rect (for coordinate normalization).
     #[allow(clippy::cast_precision_loss)]
     pub fn show_interactive(&self, ui: &mut Ui, desired_size: Vec2) -> (Response, egui::Rect) {
+        self.show_with_sense(ui, desired_size, egui::Sense::click_and_drag())
+    }
+
+    /// Display the thumbnail with a caller-provided interaction sense.
+    #[allow(clippy::cast_precision_loss)]
+    pub fn show_with_sense(
+        &self,
+        ui: &mut Ui,
+        desired_size: Vec2,
+        sense: Sense,
+    ) -> (Response, egui::Rect) {
         let Some(tex) = &self.texture else {
-            let (rect, response) =
-                ui.allocate_exact_size(desired_size, egui::Sense::click_and_drag());
+            let (rect, response) = ui.allocate_exact_size(desired_size, sense);
             ui.painter().rect_filled(rect, 0.0, egui::Color32::from_gray(40));
             return (response, rect);
         };
@@ -91,7 +101,7 @@ impl SlideThumbnail {
             Vec2::new(desired_size.y * tex_aspect, desired_size.y)
         };
 
-        let (rect, response) = ui.allocate_exact_size(desired_size, egui::Sense::click_and_drag());
+        let (rect, response) = ui.allocate_exact_size(desired_size, sense);
 
         let offset = (desired_size - display_size) / 2.0;
         let image_rect = egui::Rect::from_min_size(rect.min + offset, display_size);

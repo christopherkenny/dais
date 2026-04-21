@@ -3,6 +3,23 @@ use std::time::Duration;
 
 use crate::slide_group::SlideGroup;
 
+/// A positioned text overlay on a slide.
+#[derive(Debug, Clone)]
+pub struct TextBox {
+    /// Unique identifier for this text box.
+    pub id: u64,
+    /// Normalized position and size: (x, y, w, h) in 0..1 coordinates.
+    pub rect: (f32, f32, f32, f32),
+    /// Typst markup content.
+    pub content: String,
+    /// Font size in points.
+    pub font_size: f32,
+    /// Text color as RGBA.
+    pub color: [u8; 4],
+    /// Optional background fill as RGBA.
+    pub background: Option<[u8; 4]>,
+}
+
 /// The single authoritative state of the presentation.
 ///
 /// The engine owns and mutates this. The UI reads it (via watch channel) and renders it.
@@ -59,6 +76,16 @@ pub struct PresentationState {
     pub active_pen: ActivePen,
     /// Per-page slide ink annotations (`page_index` → strokes).
     pub slide_ink_by_page: HashMap<usize, Vec<InkStroke>>,
+    /// Per-page text box overlays (`page_index` → boxes).
+    pub slide_text_boxes_by_page: HashMap<usize, Vec<TextBox>>,
+    /// Whether text box placement mode is active.
+    pub text_box_mode: bool,
+    /// The currently selected text box id, if any.
+    pub selected_text_box: Option<u64>,
+    /// Whether the selected text box is in inline edit mode.
+    pub text_box_editing: bool,
+    /// Counter for assigning unique text box IDs.
+    pub next_text_box_id: u64,
     /// Whether the spotlight overlay is active.
     pub spotlight_active: bool,
     /// Spotlight center position (normalized 0..1).
@@ -126,6 +153,11 @@ impl PresentationState {
             ink_active: false,
             active_pen: ActivePen::default(),
             slide_ink_by_page: HashMap::new(),
+            slide_text_boxes_by_page: HashMap::new(),
+            text_box_mode: false,
+            selected_text_box: None,
+            text_box_editing: false,
+            next_text_box_id: 1,
             spotlight_active: false,
             spotlight_position: None,
             spotlight_radius: 80.0,
@@ -153,6 +185,11 @@ impl PresentationState {
     /// Ink strokes for the current presenter page (read-only convenience for UI).
     pub fn current_page_ink(&self) -> &[InkStroke] {
         self.slide_ink_by_page.get(&self.current_page).map_or(&[], |v| v.as_slice())
+    }
+
+    /// Text boxes for the current presenter page (read-only convenience for UI).
+    pub fn current_page_text_boxes(&self) -> &[TextBox] {
+        self.slide_text_boxes_by_page.get(&self.current_page).map_or(&[], |v| v.as_slice())
     }
 }
 

@@ -15,6 +15,7 @@ use dais_core::bus::CommandSender;
 use dais_core::state::PresentationState;
 use dais_document::cache::PageCache;
 use dais_document::render_pipeline::FALLBACK_RENDER_SIZE;
+use dais_document::typst_renderer::TextBoxRenderCache;
 
 use self::current_slide::CurrentSlidePanel;
 use self::layout::PresenterLayout;
@@ -24,7 +25,7 @@ use self::overview::OverviewGrid;
 use crate::audience::display::AudienceDisplay;
 
 use crate::input::{InputHandler, UiModes};
-use crate::widgets::HelpOverlay;
+use crate::widgets::{HelpOverlay, TextBoxTextureCache};
 
 const MIN_LEFT_FRACTION: f32 = 0.35;
 const MAX_LEFT_FRACTION: f32 = 0.8;
@@ -42,6 +43,8 @@ pub struct PresenterConsole {
     overview: OverviewGrid,
     input: InputHandler,
     help: HelpOverlay,
+    tb_cache: TextBoxRenderCache,
+    tb_texture_cache: TextBoxTextureCache,
     left_fraction: f32,
     top_fraction: f32,
     single_left_fraction: f32,
@@ -58,6 +61,8 @@ impl PresenterConsole {
             overview: OverviewGrid::new(),
             input,
             help: HelpOverlay::new(),
+            tb_cache: TextBoxRenderCache::new(),
+            tb_texture_cache: TextBoxTextureCache::default(),
             left_fraction: 0.60,
             top_fraction: 0.50,
             single_left_fraction: 0.72,
@@ -101,6 +106,9 @@ impl PresenterConsole {
                     ink_active: state.ink_active,
                     laser_active: state.laser_active,
                     notes_editing: state.notes_editing,
+                    text_box_mode: state.text_box_mode,
+                    text_box_editing: state.text_box_editing,
+                    selected_text_box: state.selected_text_box,
                 },
             );
         }
@@ -133,7 +141,13 @@ impl PresenterConsole {
                 self.handle_splitters(ui, available, &layout);
 
                 // Current slide
-                let (response, image_rect) = self.current_slide.show(ui, layout.current_slide);
+                let slide_sense = if state.text_box_mode {
+                    egui::Sense::hover()
+                } else {
+                    egui::Sense::click_and_drag()
+                };
+                let (response, image_rect) =
+                    self.current_slide.show_with_sense(ui, layout.current_slide, slide_sense);
 
                 // Handle mouse on current slide
                 self.input.handle_slide_mouse(
@@ -160,6 +174,23 @@ impl PresenterConsole {
                     if !page_ink.is_empty() {
                         crate::widgets::draw_ink_strokes(ui, image_rect, page_ink);
                     }
+                }
+
+                // Draw text boxes on presenter view (interactive in text box mode)
+                let editing_id =
+                    if state.text_box_editing { state.selected_text_box } else { None };
+                let tb_cmds = crate::widgets::draw_text_boxes(
+                    ui,
+                    state.current_page_text_boxes(),
+                    state.selected_text_box,
+                    editing_id,
+                    state.text_box_mode,
+                    image_rect,
+                    &mut self.tb_cache,
+                    &mut self.tb_texture_cache,
+                );
+                for cmd in tb_cmds {
+                    let _ = sender.send(cmd);
                 }
 
                 // Draw laser dot on presenter view
@@ -266,6 +297,9 @@ impl PresenterConsole {
                     ink_active: state.ink_active,
                     laser_active: state.laser_active,
                     notes_editing: state.notes_editing,
+                    text_box_mode: state.text_box_mode,
+                    text_box_editing: state.text_box_editing,
+                    selected_text_box: state.selected_text_box,
                 },
             );
         }
@@ -366,7 +400,30 @@ impl PresenterConsole {
                     },
                     state.zoom_region.as_ref().map(|r| r.factor),
                 );
-                crate::audience::overlays::draw_overlays(&mut left_ui, left_rect, aud_rect, state);
+                let editing_id =
+                    if state.text_box_editing { state.selected_text_box } else { None };
+                let tb_cmds = crate::widgets::draw_text_boxes(
+                    &mut left_ui,
+                    state.current_page_text_boxes(),
+                    state.selected_text_box,
+                    editing_id,
+                    state.text_box_mode,
+                    aud_rect,
+                    &mut self.tb_cache,
+                    &mut self.tb_texture_cache,
+                );
+                for cmd in tb_cmds {
+                    let _ = sender.send(cmd);
+                }
+                crate::audience::overlays::draw_overlays(
+                    &mut left_ui,
+                    left_rect,
+                    aud_rect,
+                    state,
+                    &mut self.tb_cache,
+                    &mut self.tb_texture_cache,
+                    false,
+                );
 
                 // Right: next preview | [hsplit] | notes | status bar
                 let content_h = (right_rect.height() - STATUS_H).max(0.0);
@@ -539,6 +596,7 @@ impl PresenterConsole {
         );
     }
 
+    #[allow(clippy::too_many_lines)]
     fn show_status_bar(
         &self,
         ui: &mut egui::Ui,
@@ -617,6 +675,9 @@ impl PresenterConsole {
                 }
                 if state.zoom_active {
                     indicators.push(("[Z]oom", egui::Color32::LIGHT_GREEN));
+                }
+                if state.text_box_mode {
+                    indicators.push(("[X]Text", egui::Color32::from_rgb(180, 130, 255)));
                 }
 
                 for (text, color) in indicators {

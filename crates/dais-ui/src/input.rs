@@ -24,6 +24,8 @@ pub enum InputMode {
     NotesEdit,
     /// Digit accumulation for jump-to-slide (G → digits → Enter).
     JumpToSlide,
+    /// Text box placement and editing mode.
+    TextBox,
 }
 
 /// Which presentation aids are currently active, used to drive mouse handling.
@@ -41,6 +43,9 @@ pub struct UiModes {
     pub ink_active: bool,
     pub laser_active: bool,
     pub notes_editing: bool,
+    pub text_box_mode: bool,
+    pub text_box_editing: bool,
+    pub selected_text_box: Option<u64>,
 }
 
 /// Processes egui events and dispatches [`Command`]s.
@@ -88,6 +93,8 @@ impl InputHandler {
                 self.mode = InputMode::Ink;
             } else if modes.laser_active {
                 self.mode = InputMode::Laser;
+            } else if modes.text_box_mode {
+                self.mode = InputMode::TextBox;
             } else {
                 self.mode = InputMode::Normal;
             }
@@ -103,6 +110,17 @@ impl InputHandler {
 
         if self.mode == InputMode::NotesEdit {
             self.process_notes_editor_keys(ctx);
+            return;
+        }
+
+        if self.mode == InputMode::TextBox && modes.text_box_editing {
+            // While inline editor is active, only handle commit shortcuts
+            self.process_text_box_editor_keys(ctx, modes.selected_text_box);
+            return;
+        }
+
+        if self.mode == InputMode::TextBox {
+            self.process_text_box_mode_keys(ctx, modes.selected_text_box);
             return;
         }
 
@@ -126,6 +144,55 @@ impl InputHandler {
                             self.dispatch_action(action);
                         }
                         _ => {}
+                    }
+                }
+            }
+        }
+    }
+
+    fn process_text_box_editor_keys(&mut self, ctx: &egui::Context, _selected: Option<u64>) {
+        // When the TextEdit overlay is focused, Escape exits edit mode
+        let events: Vec<egui::Event> = ctx.input(|i| i.events.clone());
+        for event in &events {
+            if let egui::Event::Key { key: egui::Key::Escape, pressed: true, .. } = event {
+                let _ = self.sender.send(Command::DeselectTextBox);
+            }
+        }
+    }
+
+    fn process_text_box_mode_keys(&mut self, ctx: &egui::Context, selected: Option<u64>) {
+        let events: Vec<egui::Event> = ctx.input(|i| i.events.clone());
+        for event in &events {
+            if let egui::Event::Key { key, pressed: true, modifiers, .. } = event {
+                match key {
+                    egui::Key::Escape => {
+                        if selected.is_some() {
+                            let _ = self.sender.send(Command::DeselectTextBox);
+                        } else {
+                            let _ = self.sender.send(Command::ToggleTextBoxMode);
+                        }
+                    }
+                    egui::Key::Delete | egui::Key::Backspace => {
+                        if let Some(id) = selected {
+                            let _ = self.sender.send(Command::DeleteTextBox { id });
+                        }
+                    }
+                    egui::Key::Enter => {
+                        if let Some(id) = selected {
+                            let _ = self.sender.send(Command::BeginTextBoxEdit { id });
+                        }
+                    }
+                    _ => {
+                        let combo = egui_to_key_combo(*key, *modifiers);
+                        if let Some(action) = self.keybindings.lookup(&combo) {
+                            // Allow global shortcuts to work even in text box mode
+                            match action {
+                                Action::SaveSidecar | Action::ToggleTextBoxMode | Action::Quit => {
+                                    self.dispatch_action(action);
+                                }
+                                _ => {}
+                            }
+                        }
                     }
                 }
             }
@@ -413,6 +480,7 @@ fn action_to_command(action: Action) -> Option<Command> {
         Action::DecrementNotesFont => Some(Command::DecrementNotesFontSize),
         Action::ToggleScreenShare => Some(Command::ToggleScreenShareMode),
         Action::TogglePresentationMode => Some(Command::TogglePresentationMode),
+        Action::ToggleTextBoxMode => Some(Command::ToggleTextBoxMode),
         Action::Quit => Some(Command::Quit),
         Action::SaveSidecar => Some(Command::SaveSidecar),
         Action::GoToSlide | Action::StartPauseTimer => None,
