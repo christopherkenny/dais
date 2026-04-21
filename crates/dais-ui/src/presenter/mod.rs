@@ -86,8 +86,9 @@ impl PresenterConsole {
         // Help overlay intercepts input when visible.
         let help_consumed = self.help.show(ctx, self.input.keybindings());
 
-        // Toggle help on `?` text event when the overlay did not already handle it.
-        if !help_consumed && Self::question_mark_pressed(ctx) {
+        // Toggle help on `?` — but not while notes are being edited (? should type normally).
+        let notes_editing = state.notes_editing;
+        if !help_consumed && !notes_editing && Self::question_mark_pressed(ctx) {
             self.help.toggle();
         }
 
@@ -253,7 +254,7 @@ impl PresenterConsole {
         // Help overlay intercepts input when visible.
         let help_consumed = self.help.show(ctx, self.input.keybindings());
 
-        if !help_consumed && Self::question_mark_pressed(ctx) {
+        if !help_consumed && !state.notes_editing && Self::question_mark_pressed(ctx) {
             self.help.toggle();
         }
 
@@ -620,6 +621,16 @@ impl PresenterConsole {
 
                 for (text, color) in indicators {
                     ui.colored_label(color, egui::RichText::new(text).size(12.0));
+                }
+                if state.ink_active {
+                    let p = state.active_pen.color;
+                    let swatch = egui::Color32::from_rgba_unmultiplied(p[0], p[1], p[2], p[3]);
+                    let gray = egui::Color32::from_gray(180);
+                    ui.colored_label(swatch, egui::RichText::new("■").size(12.0));
+                    ui.colored_label(
+                        gray,
+                        egui::RichText::new(format!("{}px", state.active_pen.width)).size(11.0),
+                    );
                 }
 
                 // Jump mode indicator

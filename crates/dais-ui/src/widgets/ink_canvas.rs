@@ -24,10 +24,14 @@ pub fn draw_ink_strokes(ui: &mut Ui, image_rect: Rect, strokes: &[InkStroke]) {
 
         let color = rgba_to_color32(stroke.color);
         let egui_stroke = Stroke::new(stroke.width, color);
+        let radius = stroke.width * 0.5;
 
         let points: Vec<egui::Pos2> =
             stroke.points.iter().map(|&(x, y)| denormalize(image_rect, x, y)).collect();
 
+        for &pt in &points {
+            painter.circle_filled(pt, radius, color);
+        }
         for window in points.windows(2) {
             painter.line_segment([window[0], window[1]], egui_stroke);
         }

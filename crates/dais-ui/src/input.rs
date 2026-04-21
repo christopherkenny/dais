@@ -50,6 +50,9 @@ pub struct InputHandler {
     mode: InputMode,
     jump_buffer: String,
     jump_start: Option<Instant>,
+    /// True while an ink stroke is being built (pointer held down). Used to
+    /// finish the stroke reliably even when egui's drag threshold isn't met.
+    stroke_in_progress: bool,
 }
 
 /// Timeout for jump-to-slide digit accumulation.
@@ -67,6 +70,7 @@ impl InputHandler {
             mode: InputMode::Normal,
             jump_buffer: String::new(),
             jump_start: None,
+            stroke_in_progress: false,
         }
     }
 
@@ -200,7 +204,7 @@ impl InputHandler {
     /// Call this with the egui `Response` and image `Rect` from the current
     /// slide widget.
     pub fn handle_slide_mouse(
-        &self,
+        &mut self,
         response: &egui::Response,
         image_rect: egui::Rect,
         aids: ActiveAids,
@@ -242,11 +246,18 @@ impl InputHandler {
             let norm = normalize_to_rect(pos, image_rect);
             if (0.0..=1.0).contains(&norm.0) && (0.0..=1.0).contains(&norm.1) {
                 let _ = self.sender.send(Command::AddInkPoint(norm.0, norm.1));
+                self.stroke_in_progress = true;
             }
         }
 
-        if aids.ink && response.drag_stopped() {
+        // Finish the stroke when the pointer is released. We use our own
+        // tracking flag rather than drag_stopped() because egui's drag
+        // detection requires a minimum movement threshold — a tap or tiny
+        // movement never fires drag_stopped(), leaving the stroke open and
+        // causing the next press to connect back to the old position.
+        if aids.ink && self.stroke_in_progress && !pointer_down {
             let _ = self.sender.send(Command::FinishInkStroke);
+            self.stroke_in_progress = false;
         }
     }
 
@@ -390,6 +401,8 @@ fn action_to_command(action: Action) -> Option<Command> {
         Action::CycleLaserStyle => Some(Command::CycleLaserStyle),
         Action::ToggleInk => Some(Command::ToggleInk),
         Action::ClearInk => Some(Command::ClearInk),
+        Action::CycleInkColor => Some(Command::CycleInkColor),
+        Action::CycleInkWidth => Some(Command::CycleInkWidth),
         Action::ToggleSpotlight => Some(Command::ToggleSpotlight),
         Action::ToggleZoom => Some(Command::ToggleZoom),
         Action::ToggleOverview => Some(Command::ToggleSlideOverview),

@@ -138,8 +138,9 @@ struct PartialSpotlightConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct InkConfig {
-    /// Hex color string.
-    pub color: String,
+    /// Pen color presets as hex strings (RGBA or RGB). `CycleInkColor` steps through these.
+    /// Accepts a single string (`color = "#FF0000"`) or an array (`colors = ["#FF0000", "#0000FF"]`).
+    pub colors: Vec<String>,
     /// Stroke width in logical pixels.
     pub width: f32,
 }
@@ -147,6 +148,9 @@ pub struct InkConfig {
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(default)]
 struct PartialInkConfig {
+    /// New array form: `colors = ["#FF0000", "#0000FF"]`.
+    colors: Option<Vec<String>>,
+    /// Legacy single-color form: `color = "#FF0000"`. Ignored if `colors` is also set.
     color: Option<String>,
     width: Option<f32>,
 }
@@ -237,7 +241,7 @@ impl Default for SpotlightConfig {
 
 impl Default for InkConfig {
     fn default() -> Self {
-        Self { color: "#FF0000".to_string(), width: 3.0 }
+        Self { colors: vec!["#FF0000".to_string()], width: 3.0 }
     }
 }
 
@@ -393,8 +397,10 @@ fn apply_partial_config(config: &mut Config, partial: PartialConfig) {
     }
 
     if let Some(ink) = partial.ink {
-        if let Some(color) = ink.color {
-            config.ink.color = color;
+        if let Some(colors) = ink.colors {
+            config.ink.colors = colors;
+        } else if let Some(color) = ink.color {
+            config.ink.colors = vec![color];
         }
         if let Some(width) = ink.width {
             config.ink.width = width;

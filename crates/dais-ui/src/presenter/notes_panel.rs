@@ -50,10 +50,13 @@ impl NotesPanel {
         );
 
         child_ui.allocate_new_ui(egui::UiBuilder::new().max_rect(content_area), |ui| {
-            // Apply font size override
             ui.style_mut().override_font_id = Some(egui::FontId::proportional(view.font_size));
 
             if view.editing {
+                // Slightly lighter dark grey box so the editing state is visually distinct.
+                ui.visuals_mut().extreme_bg_color = egui::Color32::from_gray(45);
+                ui.visuals_mut().override_text_color = Some(egui::Color32::WHITE);
+                ui.visuals_mut().widgets.active.fg_stroke.color = egui::Color32::WHITE;
                 let mut buffer = view.notes.unwrap_or_default().to_string();
                 let edit = egui::TextEdit::multiline(&mut buffer)
                     .desired_width(f32::INFINITY)
@@ -64,6 +67,8 @@ impl NotesPanel {
                     let _ = sender.send(Command::SetCurrentSlideNotes(buffer));
                 }
             } else {
+                ui.visuals_mut().override_text_color = Some(egui::Color32::WHITE);
+                ui.visuals_mut().widgets.active.fg_stroke.color = egui::Color32::WHITE;
                 egui::ScrollArea::vertical().max_height(content_area.height()).show(ui, |ui| {
                     if let Some(text) = view.notes {
                         egui_commonmark::CommonMarkViewer::new().show(ui, &mut self.cache, text);

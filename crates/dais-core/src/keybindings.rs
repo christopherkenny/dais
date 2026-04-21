@@ -22,6 +22,8 @@ pub enum Action {
     CycleLaserStyle,
     ToggleInk,
     ClearInk,
+    CycleInkColor,
+    CycleInkWidth,
     ToggleSpotlight,
     ToggleZoom,
     ToggleOverview,
@@ -55,6 +57,8 @@ impl Action {
             Self::CycleLaserStyle => "cycle_laser_style",
             Self::ToggleInk => "toggle_ink",
             Self::ClearInk => "clear_ink",
+            Self::CycleInkColor => "cycle_ink_color",
+            Self::CycleInkWidth => "cycle_ink_width",
             Self::ToggleSpotlight => "toggle_spotlight",
             Self::ToggleZoom => "toggle_zoom",
             Self::ToggleOverview => "toggle_overview",
@@ -88,6 +92,8 @@ impl Action {
             Self::CycleLaserStyle => "Cycle laser style",
             Self::ToggleInk => "Drawing mode",
             Self::ClearInk => "Clear ink",
+            Self::CycleInkColor => "Cycle pen color",
+            Self::CycleInkWidth => "Cycle pen width",
             Self::ToggleSpotlight => "Spotlight",
             Self::ToggleZoom => "Zoom mode",
             Self::ToggleOverview => "Slide overview",
@@ -125,6 +131,8 @@ impl Action {
             | Self::CycleLaserStyle
             | Self::ToggleInk
             | Self::ClearInk
+            | Self::CycleInkColor
+            | Self::CycleInkWidth
             | Self::ToggleSpotlight
             | Self::ToggleZoom => "Presenter Tools",
 
@@ -157,6 +165,8 @@ impl Action {
             Self::CycleLaserStyle,
             Self::ToggleInk,
             Self::ClearInk,
+            Self::CycleInkColor,
+            Self::CycleInkWidth,
             Self::ToggleSpotlight,
             Self::ToggleZoom,
             Self::ToggleOverview,
@@ -339,6 +349,8 @@ fn default_keybindings() -> Vec<(Action, Vec<String>)> {
         (Action::CycleLaserStyle, vec!["Ctrl+l".into()]),
         (Action::ToggleInk, vec!["d".into()]),
         (Action::ClearInk, vec!["c".into()]),
+        (Action::CycleInkColor, vec!["Ctrl+d".into()]),
+        (Action::CycleInkWidth, vec!["Shift+d".into()]),
         (Action::ToggleSpotlight, vec!["s".into()]),
         (Action::ToggleZoom, vec!["z".into()]),
         (Action::ToggleOverview, vec!["o".into()]),

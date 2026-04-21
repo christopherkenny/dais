@@ -5,8 +5,21 @@ use dais_core::bus::CommandReceiver;
 use dais_core::commands::Command;
 use dais_core::config::Config;
 use dais_core::slide_group::SlideGroup;
-use dais_core::state::{InkStroke, PointerStyle, PresentationState, TimerState, ZoomRegion};
+use dais_core::state::{
+    ActivePen, InkStroke, PointerStyle, PresentationState, TimerState, ZoomRegion,
+};
 use dais_sidecar::types::{InkStrokeMeta, PresentationMetadata};
+
+/// Fallback color presets appended when the user configures fewer than 4 colors.
+const INK_COLOR_FALLBACKS: &[[u8; 4]] = &[
+    [220, 30, 30, 255],  // red
+    [30, 100, 220, 255], // blue
+    [30, 180, 30, 255],  // green
+    [220, 200, 0, 255],  // yellow
+];
+
+/// Built-in pen width presets cycled by `CycleInkWidth` (logical pixels).
+const INK_WIDTH_PRESETS: &[f32] = &[1.0, 2.0, 4.0, 8.0, 16.0];
 
 /// The presentation engine — processes commands and owns the authoritative state.
 ///
@@ -18,10 +31,8 @@ pub struct PresentationEngine {
     shared_state: Arc<RwLock<PresentationState>>,
     timer_start: Option<Instant>,
     slide_start: Instant,
-    /// Ink color from config (RGBA).
-    ink_color: [u8; 4],
-    /// Ink width from config.
-    ink_width: f32,
+    /// Pen color presets for cycling (from config, padded to at least 4 with fallbacks).
+    ink_color_presets: Vec<[u8; 4]>,
     /// Path to the PDF file (used for sidecar save).
     pdf_path: std::path::PathBuf,
     /// Sidecar save format: `"dais"` or `"pdfpc"`.
@@ -75,10 +86,22 @@ impl PresentationEngine {
         state.spotlight_radius = config.spotlight.radius.clamp(16.0, 2048.0);
         state.spotlight_dim_opacity = config.spotlight.dim_opacity.clamp(0.0, 1.0);
 
-        let shared_state = Arc::new(RwLock::new(state.clone()));
+        // Parse user-configured colors, then pad with fallbacks until we have at least 4.
+        let mut ink_color_presets: Vec<[u8; 4]> =
+            config.ink.colors.iter().filter_map(|s| parse_hex_color(s)).collect();
+        for &fallback in INK_COLOR_FALLBACKS {
+            if ink_color_presets.len() >= 4 {
+                break;
+            }
+            ink_color_presets.push(fallback);
+        }
 
-        let ink_color = parse_hex_color(&config.ink.color).unwrap_or([255, 0, 0, 255]);
-        let ink_width = config.ink.width;
+        state.active_pen = ActivePen {
+            color: ink_color_presets.first().copied().unwrap_or([255, 0, 0, 255]),
+            width: config.ink.width,
+        };
+
+        let shared_state = Arc::new(RwLock::new(state.clone()));
 
         // Hydrate runtime annotation state from metadata
         load_annotations_into_state(&mut state, metadata);
@@ -90,8 +113,7 @@ impl PresentationEngine {
                 shared_state: Arc::clone(&shared_state),
                 timer_start: None,
                 slide_start: Instant::now(),
-                ink_color,
-                ink_width,
+                ink_color_presets,
                 pdf_path,
                 sidecar_format: config.normalized_sidecar_format().to_string(),
                 metadata: metadata.clone(),
@@ -195,6 +217,10 @@ impl PresentationEngine {
             | Command::AddInkPoint(..)
             | Command::FinishInkStroke
             | Command::ClearInk
+            | Command::SetInkColor(_)
+            | Command::SetInkWidth(_)
+            | Command::CycleInkColor
+            | Command::CycleInkWidth
             | Command::ToggleSpotlight
             | Command::SetSpotlightPosition(..)
             | Command::ToggleZoom
@@ -308,7 +334,11 @@ impl PresentationEngine {
             Command::ToggleInk
             | Command::AddInkPoint(..)
             | Command::FinishInkStroke
-            | Command::ClearInk => self.handle_ink(cmd),
+            | Command::ClearInk
+            | Command::SetInkColor(_)
+            | Command::SetInkWidth(_)
+            | Command::CycleInkColor
+            | Command::CycleInkWidth => self.handle_ink(cmd),
             Command::ToggleSpotlight => {
                 self.state.spotlight_active = !self.state.spotlight_active;
                 if !self.state.spotlight_active {
@@ -347,6 +377,7 @@ impl PresentationEngine {
             }
             Command::AddInkPoint(x, y) if self.state.ink_active => {
                 let point = (x.clamp(0.0, 1.0), y.clamp(0.0, 1.0));
+                let active_pen = self.state.active_pen;
                 let strokes = if self.state.whiteboard_active {
                     &mut self.state.whiteboard_strokes
                 } else {
@@ -358,10 +389,11 @@ impl PresentationEngine {
                     stroke.points.push(point);
                     return;
                 }
+                // Snapshot active pen into the stroke — later pen changes won't affect this.
                 strokes.push(InkStroke {
                     points: vec![point],
-                    color: self.ink_color,
-                    width: self.ink_width,
+                    color: active_pen.color,
+                    width: active_pen.width,
                     finished: false,
                 });
             }
@@ -382,6 +414,28 @@ impl PresentationEngine {
                 } else {
                     self.state.slide_ink_by_page.remove(&self.state.current_page);
                 }
+            }
+            Command::SetInkColor(color) => {
+                self.state.active_pen.color = color;
+            }
+            Command::SetInkWidth(width) => {
+                self.state.active_pen.width = width.max(0.5);
+            }
+            Command::CycleInkColor if !self.ink_color_presets.is_empty() => {
+                let current = self.state.active_pen.color;
+                let idx = self.ink_color_presets.iter().position(|c| *c == current).unwrap_or(0);
+                self.state.active_pen.color =
+                    self.ink_color_presets[(idx + 1) % self.ink_color_presets.len()];
+            }
+            Command::CycleInkColor => {}
+            Command::CycleInkWidth => {
+                let current = self.state.active_pen.width;
+                let idx = INK_WIDTH_PRESETS
+                    .iter()
+                    .position(|w| (w - current).abs() < f32::EPSILON)
+                    .unwrap_or(0);
+                self.state.active_pen.width =
+                    INK_WIDTH_PRESETS[(idx + 1) % INK_WIDTH_PRESETS.len()];
             }
             _ => {}
         }
@@ -1662,5 +1716,101 @@ mod tests {
         sender.send(Command::ClearInk).unwrap();
         engine.tick();
         assert!(engine.state().whiteboard_strokes.is_empty());
+    }
+
+    // ---- ActivePen / pen settings ----
+
+    #[test]
+    fn active_pen_initializes_from_config() {
+        let mut config = Config::default();
+        config.ink.colors = vec!["#FF000080".to_string()]; // red, 50% alpha
+        config.ink.width = 7.5;
+        let (engine, _, _) = make_engine_with_config(3, &PresentationMetadata::default(), &config);
+        assert_eq!(engine.state().active_pen.color, [255, 0, 0, 128]);
+        assert!((engine.state().active_pen.width - 7.5).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn set_ink_color_updates_active_pen_only() {
+        let (mut engine, _, sender) = make_engine(3);
+        sender.send(Command::ToggleInk).unwrap();
+        sender.send(Command::AddInkPoint(0.1, 0.1)).unwrap();
+        sender.send(Command::FinishInkStroke).unwrap();
+        engine.tick();
+
+        // Change color — must not touch the already-finished stroke.
+        sender.send(Command::SetInkColor([0, 0, 255, 200])).unwrap();
+        engine.tick();
+
+        let strokes = engine.state().current_page_ink();
+        assert_eq!(strokes.len(), 1);
+        assert_eq!(engine.state().active_pen.color, [0, 0, 255, 200]);
+        // First stroke unchanged.
+        assert_ne!(strokes[0].color, [0, 0, 255, 200]);
+    }
+
+    #[test]
+    fn set_ink_width_updates_active_pen_only() {
+        let (mut engine, _, sender) = make_engine(3);
+        sender.send(Command::ToggleInk).unwrap();
+        sender.send(Command::AddInkPoint(0.2, 0.2)).unwrap();
+        sender.send(Command::FinishInkStroke).unwrap();
+        engine.tick();
+
+        let original_width = engine.state().current_page_ink()[0].width;
+
+        sender.send(Command::SetInkWidth(12.0)).unwrap();
+        engine.tick();
+
+        assert!((engine.state().active_pen.width - 12.0).abs() < f32::EPSILON);
+        // First stroke unchanged.
+        assert!((engine.state().current_page_ink()[0].width - original_width).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn pen_change_does_not_mutate_prior_strokes() {
+        let (mut engine, _, sender) = make_engine(3);
+        sender.send(Command::ToggleInk).unwrap();
+
+        // Stroke A with red, width 3.
+        sender.send(Command::SetInkColor([255, 0, 0, 255])).unwrap();
+        sender.send(Command::SetInkWidth(3.0)).unwrap();
+        sender.send(Command::AddInkPoint(0.1, 0.1)).unwrap();
+        sender.send(Command::FinishInkStroke).unwrap();
+        engine.tick();
+
+        // Change pen to blue, width 10, alpha 128.
+        sender.send(Command::SetInkColor([0, 0, 255, 128])).unwrap();
+        sender.send(Command::SetInkWidth(10.0)).unwrap();
+        sender.send(Command::AddInkPoint(0.5, 0.5)).unwrap();
+        sender.send(Command::FinishInkStroke).unwrap();
+        engine.tick();
+
+        let strokes = engine.state().current_page_ink();
+        assert_eq!(strokes.len(), 2);
+        // First stroke keeps its original style.
+        assert_eq!(strokes[0].color, [255, 0, 0, 255]);
+        assert!((strokes[0].width - 3.0).abs() < f32::EPSILON);
+        // Second stroke uses the new pen.
+        assert_eq!(strokes[1].color, [0, 0, 255, 128]);
+        assert!((strokes[1].width - 10.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn new_stroke_snapshots_active_pen_at_creation() {
+        let mut config = Config::default();
+        config.ink.colors = vec!["#00FF0080".to_string()]; // green, 50% alpha
+        config.ink.width = 5.0;
+        let (mut engine, _, sender) =
+            make_engine_with_config(3, &PresentationMetadata::default(), &config);
+
+        sender.send(Command::ToggleInk).unwrap();
+        sender.send(Command::AddInkPoint(0.3, 0.3)).unwrap();
+        sender.send(Command::FinishInkStroke).unwrap();
+        engine.tick();
+
+        let strokes = engine.state().current_page_ink();
+        assert_eq!(strokes[0].color, [0, 255, 0, 128]);
+        assert!((strokes[0].width - 5.0).abs() < f32::EPSILON);
     }
 }

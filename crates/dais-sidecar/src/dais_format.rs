@@ -329,6 +329,79 @@ mod tests {
     }
 
     #[test]
+    fn alpha_roundtrips_for_slide_annotations() {
+        let dir = test_dir();
+        let path = dir.join("alpha_slide.dais");
+        let format = DaisFormat;
+
+        let mut slide_annotations = HashMap::new();
+        slide_annotations.insert(
+            0,
+            vec![InkStrokeMeta {
+                points: vec![(0.1, 0.2)],
+                color: [255, 128, 0, 77], // non-opaque alpha
+                width: 3.0,
+            }],
+        );
+        let original = PresentationMetadata { slide_annotations, ..Default::default() };
+
+        format.write(&path, &original).unwrap();
+        let loaded = format.read(&path).unwrap();
+
+        let stroke = &loaded.slide_annotations[&0][0];
+        assert_eq!(stroke.color, [255, 128, 0, 77], "RGBA including alpha must roundtrip exactly");
+
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn alpha_roundtrips_for_whiteboard_annotations() {
+        let dir = test_dir();
+        let path = dir.join("alpha_whiteboard.dais");
+        let format = DaisFormat;
+
+        let original = PresentationMetadata {
+            whiteboard_annotations: vec![InkStrokeMeta {
+                points: vec![(0.5, 0.5)],
+                color: [0, 200, 255, 51], // 20% alpha — highlighter-like
+                width: 8.0,
+            }],
+            ..Default::default()
+        };
+
+        format.write(&path, &original).unwrap();
+        let loaded = format.read(&path).unwrap();
+
+        let stroke = &loaded.whiteboard_annotations[0];
+        assert_eq!(stroke.color, [0, 200, 255, 51], "Whiteboard RGBA + alpha must roundtrip");
+        assert!((stroke.width - 8.0).abs() < f32::EPSILON, "Whiteboard width must roundtrip");
+
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn width_roundtrips_for_non_default_values() {
+        let dir = test_dir();
+        let path = dir.join("width.dais");
+        let format = DaisFormat;
+
+        let mut slide_annotations = HashMap::new();
+        slide_annotations.insert(
+            2,
+            vec![InkStrokeMeta { points: vec![(0.0, 0.0)], color: [0, 0, 0, 255], width: 12.5 }],
+        );
+        let original = PresentationMetadata { slide_annotations, ..Default::default() };
+
+        format.write(&path, &original).unwrap();
+        let loaded = format.read(&path).unwrap();
+
+        let stroke = &loaded.slide_annotations[&2][0];
+        assert!((stroke.width - 12.5).abs() < f32::EPSILON, "Non-default width must roundtrip");
+
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
     fn missing_annotation_fields_parse_cleanly() {
         let dir = test_dir();
         let path = dir.join("no_annotations.dais");

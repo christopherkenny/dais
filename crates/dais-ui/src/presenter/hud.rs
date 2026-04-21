@@ -47,7 +47,7 @@ impl HudOverlay {
         // Help overlay intercepts input when visible.
         let help_consumed = self.help.show(ctx, input.keybindings());
 
-        if !help_consumed && Self::question_mark_pressed(ctx) {
+        if !help_consumed && !state.notes_editing && Self::question_mark_pressed(ctx) {
             self.help.toggle();
         }
 
@@ -208,6 +208,13 @@ impl HudOverlay {
                     );
                 }
                 if state.ink_active {
+                    let p = state.active_pen.color;
+                    let swatch = egui::Color32::from_rgba_unmultiplied(p[0], p[1], p[2], p[3]);
+                    ui.colored_label(
+                        egui::Color32::from_gray(180),
+                        egui::RichText::new(format!("{}px", state.active_pen.width)).size(11.0),
+                    );
+                    ui.colored_label(swatch, egui::RichText::new("■").size(14.0));
                     ui.colored_label(
                         egui::Color32::from_rgb(255, 165, 0),
                         egui::RichText::new("INK").size(12.0),

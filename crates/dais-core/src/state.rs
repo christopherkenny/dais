@@ -55,6 +55,8 @@ pub struct PresentationState {
     pub pointer_style: PointerStyle,
     /// Whether ink drawing mode is active.
     pub ink_active: bool,
+    /// Active pen settings — used to initialise the next stroke.
+    pub active_pen: ActivePen,
     /// Per-page slide ink annotations (`page_index` → strokes).
     pub slide_ink_by_page: HashMap<usize, Vec<InkStroke>>,
     /// Whether the spotlight overlay is active.
@@ -122,6 +124,7 @@ impl PresentationState {
             pointer_size: 12.0,
             pointer_style: PointerStyle::Dot,
             ink_active: false,
+            active_pen: ActivePen::default(),
             slide_ink_by_page: HashMap::new(),
             spotlight_active: false,
             spotlight_position: None,
@@ -170,12 +173,30 @@ pub enum PointerStyle {
 pub struct InkStroke {
     /// Points along the stroke (normalized 0..1 coordinates).
     pub points: Vec<(f32, f32)>,
-    /// Stroke color as RGBA.
+    /// Stroke color as RGBA — snapshotted from `ActivePen` at stroke creation.
     pub color: [u8; 4],
-    /// Stroke width in logical pixels.
+    /// Stroke width in logical pixels — snapshotted from `ActivePen` at stroke creation.
     pub width: f32,
     /// Whether this stroke is complete (pen lifted).
     pub finished: bool,
+}
+
+/// The currently selected pen settings used to initialise the next stroke.
+///
+/// These are runtime-only; they are not persisted. Changing them never mutates
+/// already-existing strokes — each stroke snapshots `ActivePen` at creation time.
+#[derive(Debug, Clone, Copy)]
+pub struct ActivePen {
+    /// Pen color as RGBA (alpha included for highlighter / semitransparent pens).
+    pub color: [u8; 4],
+    /// Stroke width in logical pixels.
+    pub width: f32,
+}
+
+impl Default for ActivePen {
+    fn default() -> Self {
+        Self { color: [255, 0, 0, 255], width: 3.0 }
+    }
 }
 
 /// Defines a zoom region on the slide.

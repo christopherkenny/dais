@@ -51,6 +51,14 @@ pub enum Command {
     FinishInkStroke,
     /// Clear all ink on the current page.
     ClearInk,
+    /// Set the active pen color (RGBA). Affects only future strokes.
+    SetInkColor([u8; 4]),
+    /// Set the active pen width in logical pixels. Affects only future strokes.
+    SetInkWidth(f32),
+    /// Cycle the active pen color through the built-in preset list.
+    CycleInkColor,
+    /// Cycle the active pen width through the built-in preset list.
+    CycleInkWidth,
     /// Toggle the spotlight overlay.
     ToggleSpotlight,
     /// Update the spotlight center position (normalized coordinates).
