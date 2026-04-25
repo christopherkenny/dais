@@ -1,0 +1,26 @@
+version: 1
+groups: [
+	{
+		start_page: 0
+		end_page: 0
+	}
+	{
+		start_page: 1
+		end_page: 1
+	}
+	{
+		start_page: 2
+		end_page: 2
+	}
+	{
+		start_page: 3
+		end_page: 3
+	}
+	{
+		start_page: 4
+		end_page: 4
+	}
+]
+slide_timings: {
+	"0": 9.7e-6
+}

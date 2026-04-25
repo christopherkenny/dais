@@ -1,0 +1,39 @@
+[package]
+name = "dais-platform"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/dais-platform"
+keywords.workspace = true
+categories.workspace = true
+description = "Platform-specific monitor management for Dais"
+readme = "README.md"
+
+[features]
+default = []
+x11 = ["dep:x11rb"]
+wayland = []
+
+[dependencies]
+dais-core = { workspace = true }
+
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+windows = { workspace = true }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-foundation = { version = "0.3", features = ["NSArray", "NSString"] }
+objc2-app-kit = { version = "0.3", features = ["NSScreen"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+x11rb = { version = "0.13", features = ["randr"], optional = true }
+
+[lints]
+workspace = true
