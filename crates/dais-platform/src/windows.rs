@@ -15,6 +15,7 @@ use windows::core::{BOOL, PCWSTR};
 pub struct WindowsMonitorManager;
 
 impl WindowsMonitorManager {
+    /// Create a Windows monitor manager.
     pub fn new() -> Self {
         Self
     }

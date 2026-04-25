@@ -20,12 +20,15 @@ pub trait SidecarFormat {
 /// Errors that can occur during sidecar operations.
 #[derive(Debug, thiserror::Error)]
 pub enum SidecarError {
+    /// Filesystem read/write failure.
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 
+    /// The sidecar file could not be parsed.
     #[error("Parse error at line {line}: {message}")]
     Parse { line: usize, message: String },
 
+    /// A required sidecar section was absent.
     #[error("Missing required section: {0}")]
     MissingSection(String),
 }

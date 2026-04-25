@@ -36,23 +36,30 @@ pub struct EmbeddedMetadata {
 /// A bookmark/outline entry in the document.
 #[derive(Debug, Clone)]
 pub struct OutlineEntry {
+    /// Bookmark title as displayed by the document.
     pub title: String,
+    /// Destination page index, 0-based.
     pub page_index: usize,
+    /// Nesting depth in the outline tree, starting at 0.
     pub level: usize,
 }
 
 /// Errors from document operations.
 #[derive(Debug, thiserror::Error)]
 pub enum DocumentError {
+    /// The document could not be opened or parsed.
     #[error("Failed to open document: {0}")]
     Open(String),
 
+    /// A page render failed after the document was opened successfully.
     #[error("Failed to render page {page_index}: {message}")]
     Render { page_index: usize, message: String },
 
+    /// The requested page index is outside the document.
     #[error("Page index {0} out of range")]
     PageOutOfRange(usize),
 
+    /// An underlying filesystem operation failed.
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 }

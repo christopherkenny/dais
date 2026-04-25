@@ -8,35 +8,65 @@ use crate::config::Config;
 /// the TOML config file and in documentation. Renaming one is a breaking change.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Action {
+    /// Advance to the next logical slide or overlay-aware build step.
     NextSlide,
+    /// Move to the previous logical slide or overlay-aware build step.
     PreviousSlide,
+    /// Advance by one raw PDF page.
     NextOverlay,
+    /// Move back by one raw PDF page.
     PreviousOverlay,
+    /// Jump to the first logical slide.
     FirstSlide,
+    /// Jump to the last logical slide.
     LastSlide,
+    /// Enter a numeric slide jump.
     GoToSlide,
+    /// Freeze or unfreeze the audience display.
     ToggleFreeze,
+    /// Black out or restore the audience display.
     ToggleBlackout,
+    /// Show or hide the whiteboard canvas.
     ToggleWhiteboard,
+    /// Enable or disable the laser pointer.
     ToggleLaser,
+    /// Rotate through configured laser pointer styles.
     CycleLaserStyle,
+    /// Enable or disable freehand ink mode.
     ToggleInk,
+    /// Clear ink from the active slide or whiteboard.
     ClearInk,
+    /// Rotate through configured ink colors.
     CycleInkColor,
+    /// Rotate through configured ink widths.
     CycleInkWidth,
+    /// Enable or disable the spotlight overlay.
     ToggleSpotlight,
+    /// Enable or disable the zoom overlay.
     ToggleZoom,
+    /// Show or hide the slide overview.
     ToggleOverview,
+    /// Show or hide slide notes.
     ToggleNotes,
+    /// Toggle markdown editing for slide notes.
     ToggleNotesEdit,
+    /// Start, pause, or resume the main timer.
     StartPauseTimer,
+    /// Reset the main timer.
     ResetTimer,
+    /// Increase the notes font size.
     IncrementNotesFont,
+    /// Decrease the notes font size.
     DecrementNotesFont,
+    /// Toggle screen-share window mode.
     ToggleScreenShare,
+    /// Toggle the single-monitor presentation surface.
     TogglePresentationMode,
+    /// Enable or disable text box placement mode.
     ToggleTextBoxMode,
+    /// Request application shutdown.
     Quit,
+    /// Save the active sidecar file.
     SaveSidecar,
 }
 

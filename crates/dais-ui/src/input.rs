@@ -1,7 +1,6 @@
 //! Input handling — mode-aware key/mouse → Command pipeline.
 //!
-//! Converts egui key/mouse events into [`Command`]s dispatched via the
-//! [`CommandBus`].
+//! Converts egui key/mouse events into [`Command`]s dispatched via a [`CommandSender`].
 
 use std::time::Instant;
 

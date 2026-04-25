@@ -157,7 +157,7 @@ Use `tests/fixtures/test.pdf` with the `beamer-example.pdfpc` sidecar for overla
 | I5 | Ink off | Press `d` again | Ink mode deactivates. Indicator disappears. Existing strokes remain visible until cleared or slide change | | |
 | I6 | Ink ↔ laser exclusive | With ink on, press `l` | Ink deactivates, laser activates. Mutually exclusive | | |
 | I7 | Ink cleared on slide change | Draw ink, then press `Right` | Strokes cleared when navigating to a new slide (go_to_group clears ink) | | |
-| I8 | Ink config color | Set config `[ink]\ncolor = "#00FF00"\nwidth = 5.0`. Draw | Strokes are green and thicker | | |
+| I8 | Ink config color | Set config `[ink]\ncolors = ["#00FF00"]\nwidth = 5.0`. Draw | Strokes are green and thicker | | |
 
 ---
 
@@ -245,8 +245,8 @@ Use `tests/fixtures/test.pdf` with the `beamer-example.pdfpc` sidecar for overla
 | P1 | .pdfpc load | Place `beamer-example.pdfpc` next to a test PDF (rename appropriately). Launch | Notes from sidecar appear. Overlay groups are applied (check slide count vs page count). Log shows metadata source | | |
 | P2 | .dais load | Place `quarto-example.dais` next to a test PDF. Launch | Notes and groups from .dais file are loaded. Check that notes and grouping match the fixture content | | |
 | P3 | .dais > .pdfpc priority | Place both `.dais` and `.pdfpc` sidecars next to the same PDF. Launch | `.dais` sidecar takes priority. Log confirms which source was used | | |
-| P4 | Save as pdfpc (Ctrl+S) | With default config (`sidecar_format = "pdfpc"`), press `Ctrl+S` | `.pdfpc` sidecar file written next to the PDF. Log shows "Saved sidecar to <path>". File contains valid pdfpc format with current groups and notes | | |
-| P5 | Save as dais | Set `sidecar_format = "dais"` in config. Press `Ctrl+S` | `.dais` TOML sidecar written. Contains `version = 1`, groups, and notes | | |
+| P4 | Save as dais (Ctrl+S) | With default config (`sidecar_format = "dais"`), press `Ctrl+S` | `.dais` sidecar file written next to the PDF. Log shows "Saved sidecar to <path>". File contains valid Dais metadata with current groups, notes, annotations, and text boxes | | |
+| P5 | Save as pdfpc | Set `sidecar_format = "pdfpc"` in config. Press `Ctrl+S` | `.pdfpc` sidecar written. Contains pdfpc-compatible groups and notes | | |
 | P6 | No sidecar | Launch a PDF with no sidecar file nearby | Works normally. Each page is its own slide (1:1 grouping). Notes panel shows "No notes for this slide" | | |
 
 ---
@@ -409,7 +409,7 @@ color = "#00FF00"
 size = 16.0
 
 [ink]
-color = "#0000FF"
+colors = ["#0000FF"]
 width = 5.0
 
 [spotlight]

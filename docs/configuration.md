@@ -18,9 +18,11 @@ If a config layer doesn't exist, Dais skips it. All settings are optional.
 ## Full Default Configuration
 
 ```toml
+sidecar_format = "dais"        # "dais" (default) or "pdfpc"
+
 [display]
 mode = "dual"                  # "dual", "single", or "screen-share"
-single_monitor_view = "split"  # "split" or "hud" when F5 enters single-monitor presentation mode
+single_monitor_view = "hud"    # "hud" or "split" when F5 enters single-monitor presentation mode
 audience_monitor = "auto"      # Monitor name, monitor id, display number like "2", or "auto"
 presenter_monitor = "auto"     # Monitor name, monitor id, display number like "1", or "auto"
 
@@ -40,7 +42,7 @@ radius = 80.0                  # Pixels at 1x scale
 dim_opacity = 0.6              # 0.0 = invisible, 1.0 = fully black
 
 [ink]
-color = "#FF0000"
+colors = ["#FF0000"]           # Pen color presets, RGB or RGBA hex strings
 width = 3.0
 
 [text_boxes]
@@ -117,16 +119,16 @@ Dais stores slide grouping, notes, and metadata in sidecar files next to your PD
 
 | Format | Extension | Description |
 |---|---|---|
-| `pdfpc` | `.pdfpc` | Compatible with pdfpc — the default for maximum interop. |
-| `dais` | `.dais` | Native EON-based format with versioning for forward compatibility. |
+| `dais` | `.dais` | Native EON-based format with versioning for Dais annotations and text boxes. Default save format. |
+| `pdfpc` | `.pdfpc` | Compatible with pdfpc for notes and overlay grouping. |
 
 Set the save format in config:
 
 ```toml
-sidecar_format = "pdfpc"   # "pdfpc" (default) or "dais"
+sidecar_format = "pdfpc"   # "dais" (default) or "pdfpc"
 ```
 
-When loading, Dais checks in order: embedded PDF metadata → `.dais` sidecar → `.pdfpc` sidecar.
+When loading, Dais checks in order: `.dais` sidecar → `.pdfpc` sidecar → embedded PDF metadata.
 The grouping editor and `save_sidecar` action both use `sidecar_format` when choosing what to write.
 
 ## Single-Monitor Presentation Mode (F5)

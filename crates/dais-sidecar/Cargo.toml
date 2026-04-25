@@ -3,9 +3,15 @@ name = "dais-sidecar"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
+authors.workspace = true
 license.workspace = true
 repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/dais-sidecar"
+keywords.workspace = true
+categories.workspace = true
 description = "Sidecar format abstraction and .pdfpc implementation for Dais"
+readme = "README.md"
 
 [dependencies]
 dais-core = { workspace = true }

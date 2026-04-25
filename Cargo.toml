@@ -14,17 +14,22 @@ resolver = "2"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.92"
+authors = ["Christopher T. Kenny"]
 license = "MIT"
 repository = "https://github.com/christopherkenny/dais"
+homepage = "https://github.com/christopherkenny/dais"
+documentation = "https://docs.rs/dais"
+keywords = ["pdf", "presentation", "slides"]
+categories = ["command-line-utilities", "multimedia"]
 
 [workspace.dependencies]
 # Internal crates
-dais-core = { path = "crates/dais-core" }
-dais-sidecar = { path = "crates/dais-sidecar" }
-dais-document = { path = "crates/dais-document" }
-dais-engine = { path = "crates/dais-engine" }
-dais-platform = { path = "crates/dais-platform" }
-dais-ui = { path = "crates/dais-ui" }
+dais-core = { path = "crates/dais-core", version = "0.1.0" }
+dais-sidecar = { path = "crates/dais-sidecar", version = "0.1.0" }
+dais-document = { path = "crates/dais-document", version = "0.1.0" }
+dais-engine = { path = "crates/dais-engine", version = "0.1.0" }
+dais-platform = { path = "crates/dais-platform", version = "0.1.0" }
+dais-ui = { path = "crates/dais-ui", version = "0.1.0" }
 
 # PDF rendering
 hayro = { version = "0.6", features = ["embed-fonts"] }

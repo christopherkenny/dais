@@ -31,6 +31,9 @@ pub enum SingleMonitorView {
 }
 
 impl SingleMonitorView {
+    /// Parse a config value into a single-monitor view mode.
+    ///
+    /// Unknown values fall back to [`SingleMonitorView::Hud`].
     pub fn from_config(value: &str) -> Self {
         if value.eq_ignore_ascii_case("split") { Self::Split } else { Self::Hud }
     }
@@ -49,10 +52,10 @@ fn app_icon() -> Option<Arc<egui::IconData>> {
     static ICON: OnceLock<Option<Arc<egui::IconData>>> = OnceLock::new();
 
     ICON.get_or_init(|| {
-        match eframe::icon_data::from_png_bytes(include_bytes!("../../../assets/dais.png")) {
+        match eframe::icon_data::from_png_bytes(include_bytes!("../assets/dais.png")) {
             Ok(icon) => Some(Arc::new(icon)),
             Err(err) => {
-                tracing::warn!("Failed to load app icon from assets/dais.png: {err}");
+                tracing::warn!("Failed to load app icon from bundled assets/dais.png: {err}");
                 None
             }
         }
@@ -60,22 +63,29 @@ fn app_icon() -> Option<Arc<egui::IconData>> {
     .clone()
 }
 
+/// Attach the bundled Dais icon to an egui viewport builder when it can be decoded.
 pub fn with_app_icon(builder: egui::ViewportBuilder) -> egui::ViewportBuilder {
     if let Some(icon) = app_icon() { builder.with_icon(icon) } else { builder }
 }
 
 /// Result of display mode determination, including any warnings.
 pub struct DisplayModeResult {
+    /// Selected display mode.
     pub mode: DisplayMode,
+    /// Human-readable warnings for recoverable monitor/config issues.
     pub warnings: Vec<String>,
+    /// Recovery data when the configured audience monitor was unavailable.
     pub audience_reassignment: Option<AudienceReassignmentPrompt>,
 }
 
 /// Interactive recovery data when the configured audience monitor is unavailable.
 #[derive(Debug, Clone)]
 pub struct AudienceReassignmentPrompt {
+    /// The configured monitor selector that could not be resolved.
     pub missing_selector: String,
+    /// Non-primary monitor chosen as a temporary fallback, if any.
     pub attempted_fallback: Option<MonitorInfo>,
+    /// Available non-primary monitors that the user could choose from.
     pub available_monitors: Vec<MonitorInfo>,
 }
 

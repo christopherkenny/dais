@@ -3,9 +3,15 @@ name = "dais-core"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
+authors.workspace = true
 license.workspace = true
 repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/dais-core"
+keywords.workspace = true
+categories.workspace = true
 description = "Core types, command bus, and state machine for Dais"
+readme = "README.md"
 
 [dependencies]
 crossbeam-channel = { workspace = true }

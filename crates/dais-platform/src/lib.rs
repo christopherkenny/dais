@@ -1,7 +1,7 @@
 //! Platform-specific monitor management backends for Dais.
 //!
 //! Each platform has a separate module compiled in via `cfg`.
-//! All implement the [`MonitorManager`](dais_core::monitor::MonitorManager) trait.
+//! All implement the [`MonitorManager`] trait.
 
 // Re-export the trait for convenience.
 pub use dais_core::monitor::{MonitorInfo, MonitorManager};

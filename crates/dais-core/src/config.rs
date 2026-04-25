@@ -9,14 +9,23 @@ use crate::state::TimerMode;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
+    /// Window layout and monitor selection.
     pub display: DisplayConfig,
+    /// Main presentation timer behavior.
     pub timer: TimerConfig,
+    /// Laser pointer defaults.
     pub laser: LaserConfig,
+    /// Spotlight overlay defaults.
     pub spotlight: SpotlightConfig,
+    /// Freehand ink defaults.
     pub ink: InkConfig,
+    /// Text box defaults.
     pub text_boxes: TextBoxConfig,
+    /// Notes panel defaults.
     pub notes: NotesConfig,
+    /// User keybindings, keyed by [`Action`](crate::keybindings::Action) config names.
     pub keybindings: HashMap<String, Vec<String>>,
+    /// Clicker/remote profile configuration.
     pub clicker: ClickerConfig,
     /// Sidecar save format: `"dais"` or `"pdfpc"`.
     pub sidecar_format: String,
@@ -333,6 +342,9 @@ pub fn project_config_path(pdf_path: &Path) -> Option<PathBuf> {
 /// 2. Machine-wide config (`config.toml` in the standard OS config dir)
 /// 3. Project-local config (`dais.toml` next to the PDF)
 /// 4. Explicit `--config` path, if provided
+///
+/// Missing or invalid config files are logged and ignored; this function always
+/// returns a usable configuration by falling back to defaults.
 pub fn load_config_for(pdf_path: &Path, explicit_config: Option<&Path>) -> Config {
     let mut config = Config::default();
 

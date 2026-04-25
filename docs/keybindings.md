@@ -20,6 +20,8 @@ All keybindings are remappable via the `[keybindings]` section in `config.toml`.
 | `cycle_laser_style` | Ctrl+L | Cycle laser style: dot, crosshair, arrow |
 | `toggle_ink` | D | Toggle freehand drawing |
 | `clear_ink` | C | Clear all ink on current slide |
+| `cycle_ink_color` | Ctrl+D | Cycle pen color |
+| `cycle_ink_width` | Shift+D | Cycle pen width |
 | `toggle_spotlight` | S | Toggle spotlight mode |
 | `toggle_zoom` | Z | Toggle zoom mode |
 | `toggle_overview` | O | Toggle slide overview grid |
@@ -31,6 +33,7 @@ All keybindings are remappable via the `[keybindings]` section in `config.toml`.
 | `decrement_notes_font` | - | Decrease notes font size |
 | `toggle_screen_share` | Shift+S | Toggle screen-share mode |
 | `toggle_presentation_mode` | F5 | Toggle the active single-monitor presentation surface |
+| `toggle_text_box_mode` | X | Toggle text box placement mode |
 | `quit` | Q, Escape | Quit presentation (exits HUD first) |
 | `save_sidecar` | Ctrl+S | Save sidecar file |
 

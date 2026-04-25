@@ -3,9 +3,15 @@ name = "dais-document"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
+authors.workspace = true
 license.workspace = true
 repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/dais-document"
+keywords.workspace = true
+categories.workspace = true
 description = "Document source abstraction and PDF rendering for Dais"
+readme = "README.md"
 
 [features]
 default = ["hayro"]
