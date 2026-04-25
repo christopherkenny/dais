@@ -1,0 +1,93 @@
+/*-- scss:defaults --*/
+
+$font-family-sans-serif: "Fira Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+  "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !default;
+
+$web-font-path: "https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" !default;
+@if $web-font-path {
+  @import url($web-font-path);
+}
+
+$body-bg: #f7f4ef !default;
+$body-color: #222222 !default;
+$link-color: #006699 !default;
+$link-hover-color: #004d73 !default;
+$headings-font-weight: 600 !default;
+$border-radius: 0.5rem !default;
+$code-bg: #eaebeb !default;
+
+/*-- scss:rules --*/
+
+html {
+  color-scheme: light;
+}
+
+.navbar {
+  --bs-navbar-color: rgba(255, 255, 255, 0.85);
+  --bs-navbar-hover-color: #ffffff;
+  --bs-navbar-active-color: #ffffff;
+  --bs-navbar-brand-color: #ffffff;
+  --bs-navbar-brand-hover-color: #ffffff;
+}
+
+.navbar .nav-link,
+.navbar .navbar-title {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.navbar .nav-link:hover,
+.navbar .navbar-title:hover {
+  color: #ffffff;
+}
+
+h1,
+.h1 {
+  letter-spacing: -0.03em;
+  font-weight: 600;
+}
+
+h2,
+.h2 {
+  letter-spacing: -0.03em;
+}
+
+h3,
+h4,
+.h3,
+.h4 {
+  letter-spacing: -0.02em;
+}
+
+#quarto-content {
+  background: #f7f4ef;
+}
+
+.sidebar nav[role="doc-toc"] ul > li > a.active,
+.sidebar nav[role="doc-toc"] ul > li > ul > li > a.active {
+  border-left-color: #b31b1b;
+  color: #222222 !important;
+}
+
+.sidebar-item-container .active,
+.sidebar-item-container .show > .nav-link,
+.sidebar-item-container .sidebar-link > code {
+  color: #222222;
+}
+
+pre,
+code {
+  background-color: #eaebeb;
+}
+
+.sourceCode {
+  border-radius: 0.5rem;
+}
+
+.page-footer {
+  background: #b31b1b;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.page-footer a {
+  color: #ffffff;
+}

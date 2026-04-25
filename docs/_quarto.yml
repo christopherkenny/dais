@@ -1,0 +1,37 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: Dais
+  site-url: https://christopherkenny.github.io/dais
+  repo-url: https://github.com/christopherkenny/dais
+  repo-actions: [source, issue]
+  description: A native PDF presenter console for academic and research talks.
+  navbar:
+    background: "#B31B1B"
+    left:
+      - text: Home
+        href: index.qmd
+      - text: Configuration
+        href: configuration.md
+      - text: Keybindings
+        href: keybindings.md
+      - text: Clickers
+        href: clicker-setup.md
+      - text: Testing
+        href: interactive-testing-checklist.md
+  page-footer:
+    left: |
+      Dais documentation.
+    right: |
+      Built with [Quarto](https://quarto.org/).
+
+format:
+  html:
+    theme:
+      - flatly
+      - custom.scss
+    toc: false
+    code-copy: true
+    code-overflow: wrap
