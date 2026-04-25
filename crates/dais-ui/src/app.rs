@@ -232,7 +232,7 @@ impl DaisApp {
                 }
 
                 ui.separator();
-                ui.label("Reassign audience output for this session:");
+                ui.label("Choose the audience output for this session:");
 
                 let mut dismiss = false;
                 let fallback_id = prompt.attempted_fallback.as_ref().map(|monitor| monitor.id.as_str());
@@ -252,7 +252,8 @@ impl DaisApp {
                 }
 
                 for monitor in &alternative_monitors {
-                    let label = format!("Use {} ({})", monitor.name, monitor.id);
+                    let primary = if monitor.is_primary { ", primary" } else { "" };
+                    let label = format!("Use {} ({}{primary})", monitor.name, monitor.id);
                     if ui.button(label).clicked() {
                         self.display_mode =
                             DisplayMode::Dual { audience_monitor: monitor.clone() };
@@ -265,33 +266,30 @@ impl DaisApp {
                 }
 
                 ui.horizontal(|ui| {
-                    let keep_label = if prompt.attempted_fallback.is_some() {
-                        "Keep current fallback"
-                    } else {
-                        "Keep single-monitor mode"
-                    };
-                    if ui.button(keep_label).clicked() {
-                        if let Some(fallback) = &prompt.attempted_fallback {
+                    if let Some(fallback) = &prompt.attempted_fallback {
+                        if ui.button("Keep current fallback").clicked() {
                             self.display_mode =
                                 DisplayMode::Dual { audience_monitor: fallback.clone() };
                             self.toast_manager.push(
                                 crate::widgets::toast::ToastLevel::Info,
                                 format!("Keeping fallback audience monitor '{}'", fallback.name),
                             );
-                        } else {
+                            dismiss = true;
+                        }
+
+                        if ui.button("Use single-monitor mode").clicked() {
                             self.display_mode = DisplayMode::Single;
                             self.toast_manager.push(
                                 crate::widgets::toast::ToastLevel::Info,
-                                "Keeping single-monitor mode",
+                                "Audience reassigned to single-monitor mode",
                             );
+                            dismiss = true;
                         }
-                        dismiss = true;
-                    }
-                    if ui.button("Use single-monitor mode").clicked() {
+                    } else if ui.button("Stay in single-monitor mode").clicked() {
                         self.display_mode = DisplayMode::Single;
                         self.toast_manager.push(
                             crate::widgets::toast::ToastLevel::Info,
-                            "Audience reassigned to single-monitor mode",
+                            "Keeping single-monitor mode",
                         );
                         dismiss = true;
                     }

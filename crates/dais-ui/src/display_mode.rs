@@ -85,7 +85,7 @@ pub struct AudienceReassignmentPrompt {
     pub missing_selector: String,
     /// Non-primary monitor chosen as a temporary fallback, if any.
     pub attempted_fallback: Option<MonitorInfo>,
-    /// Available non-primary monitors that the user could choose from.
+    /// Available monitors that the user could choose from.
     pub available_monitors: Vec<MonitorInfo>,
 }
 
@@ -168,8 +168,7 @@ fn resolve_dual_mode(
         warnings.push(msg);
 
         let attempted_fallback = monitor_mgr.secondary_monitor();
-        let available_monitors =
-            monitors.iter().filter(|monitor| !monitor.is_primary).cloned().collect::<Vec<_>>();
+        let available_monitors = monitors.to_vec();
         let prompt = Some(AudienceReassignmentPrompt {
             missing_selector: audience_name.clone(),
             attempted_fallback: attempted_fallback.clone(),
@@ -471,6 +470,22 @@ mod tests {
         let prompt = result.audience_reassignment.expect("missing reassignment prompt");
         assert_eq!(prompt.missing_selector, "NONEXISTENT");
         assert!(prompt.attempted_fallback.is_some());
+        assert_eq!(prompt.available_monitors.len(), 2);
+    }
+
+    #[test]
+    fn configured_monitor_mismatch_on_one_monitor_can_reassign_to_primary() {
+        let hints = DisplayHints { force_single: false, force_screen_share: false };
+        let mut config = Config::default();
+        config.display.audience_monitor = "NONEXISTENT".to_string();
+        let mgr = single_monitor();
+        let result = determine_display_mode(hints, &config, &mgr);
+
+        assert!(matches!(result.mode, DisplayMode::Single));
+        let prompt = result.audience_reassignment.expect("missing reassignment prompt");
+        assert!(prompt.attempted_fallback.is_none());
+        assert_eq!(prompt.available_monitors.len(), 1);
+        assert!(prompt.available_monitors[0].is_primary);
     }
 
     #[test]
