@@ -1,0 +1,2761 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.3">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>interactive-testing-checklist – Dais</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-e44360b8a8db1e130c7792fece1c8032.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-8c7cbda2e8393c615678d894c1b4bf43.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-fixed fullcontent quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Dais</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="./index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./configuration.html"> 
+<span class="menu-text">Configuration</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./keybindings.html"> 
+<span class="menu-text">Keybindings</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./clicker-setup.html"> 
+<span class="menu-text">Clickers</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link active" href="./interactive-testing-checklist.html" aria-current="page"> 
+<span class="menu-text">Testing</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="dais-interactive-testing-checklist" class="level1">
+<h1>Dais Interactive Testing Checklist</h1>
+<p>Manual QA checklist for verifying all user-facing functionality. Organized by category so tests can be executed efficiently in batches.</p>
+<p><strong>Test files:</strong> <code>tests/example.pdf</code>, <code>tests/fixtures/test.pdf</code>, <code>tests/fixtures/beamer-example.pdfpc</code>, <code>tests/fixtures/quarto-example.dais</code></p>
+<blockquote class="blockquote">
+<p><strong>Notation:</strong> ✅ = pass, ❌ = fail, ⏭ = skipped (note reason)</p>
+<p>Fill in the result column as you go. If a test fails, note what actually happened in the <strong>Actual</strong> column.</p>
+</blockquote>
+<hr>
+<section id="a.-startup-cli" class="level2">
+<h2 class="anchored" data-anchor-id="a.-startup-cli">A. Startup &amp; CLI</h2>
+<p>Run each from a terminal. Verify before interacting with the window.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>A1</td>
+<td>No-arg launch</td>
+<td>Run <code>dais</code> with no arguments</td>
+<td>Prints error: <code>Usage: dais &lt;file.pdf&gt;</code> and exits with non-zero code</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>A2</td>
+<td>PDF open</td>
+<td>Run <code>dais tests/example.pdf</code></td>
+<td>Presenter window opens titled “Dais — Presenter Console”. First slide is visible. No crash, no error in terminal</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>A3</td>
+<td><code>--single</code> flag</td>
+<td>Run <code>dais --single tests/example.pdf</code></td>
+<td>Opens in single mode: only one window appears (no audience window). Starts in fullscreen HUD immediately (presentation_mode toggled on at launch)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>A4</td>
+<td><code>--screen-share</code> flag</td>
+<td>Run <code>dais --screen-share tests/example.pdf</code></td>
+<td>Two windows: presenter console + a resizable “Dais — Audience” window (not fullscreen). Audience window is draggable and resizable</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>A5</td>
+<td><code>--config</code> flag</td>
+<td>Create a <code>test.toml</code> with <code>[timer]\nmode = "countdown"\nduration_minutes = 5</code>. Run <code>dais --config test.toml tests/example.pdf</code></td>
+<td>Timer shows countdown from 05:00 instead of 00:00 count-up</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>A6</td>
+<td><code>--edit</code> flag</td>
+<td>Run <code>dais --edit tests/example.pdf</code></td>
+<td>Opens the Grouping Editor window titled “Dais — Grouping Editor”. Shows a horizontal filmstrip of page thumbnails with alternating group backgrounds</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>A7</td>
+<td><code>--test-input</code> no PDF</td>
+<td>Run <code>dais --test-input</code></td>
+<td>Opens a “Dais — Test Input” diagnostic window. No PDF required. Shows key event log area</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>A8</td>
+<td><code>--test-input</code> with config</td>
+<td>Run <code>dais --test-input --config test.toml</code></td>
+<td>Same as A7, but uses keybindings from the config file. Pressing keys shows mapped actions in the log</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>A9</td>
+<td>Invalid PDF</td>
+<td>Run <code>dais nonexistent.pdf</code></td>
+<td>Prints a clear error about file not found and exits non-zero</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>A10</td>
+<td>Version</td>
+<td>Run <code>dais --version</code></td>
+<td>Prints <code>dais &lt;version&gt;</code> and exits</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>A11</td>
+<td>App icon</td>
+<td>After A2 launch, inspect the taskbar/dock icon</td>
+<td>Dais icon (not default framework icon) is visible in the taskbar and window title bar</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="b.-dual-monitor-display-requires-2-monitors" class="level2">
+<h2 class="anchored" data-anchor-id="b.-dual-monitor-display-requires-2-monitors">B. Dual-Monitor Display (requires 2 monitors)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>B1</td>
+<td>Auto dual detection</td>
+<td>With 2 monitors connected, run <code>dais tests/example.pdf</code></td>
+<td>Presenter console on primary monitor, audience window fullscreen on secondary. Log shows “Dual mode: audience on ‘<name>’”</name></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>B2</td>
+<td>Audience fullscreen</td>
+<td>Observe the audience window on secondary</td>
+<td>Window is truly fullscreen — no title bar, no borders, fills entire monitor. Background is black with centered slide</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>B3</td>
+<td>Presenter placement</td>
+<td>Observe the presenter console</td>
+<td>Window is centered on primary monitor, clamped to fit within monitor bounds (not overflowing off screen)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>B4</td>
+<td>Audience monitor by name</td>
+<td>Set <code>[display]\naudience_monitor = "&lt;exact monitor name&gt;"</code> in config. Launch</td>
+<td>Audience window placed on the named monitor. Log confirms match</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>B5</td>
+<td>Audience monitor by number</td>
+<td>Set <code>audience_monitor = "2"</code> in config. Launch</td>
+<td>Audience window placed on 2nd monitor (matches by ordinal position)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>B6</td>
+<td>Wrong monitor name</td>
+<td>Set <code>audience_monitor = "NONEXISTENT"</code> in config. Launch with 2 monitors</td>
+<td>Warning toast appears (“Configured audience monitor ‘NONEXISTENT’ not found”). Falls back to secondary monitor for audience. Presenter still works</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>B7</td>
+<td>Runtime screen-share toggle</td>
+<td>Press <code>Shift+S</code> during dual-mode presentation</td>
+<td>Audience window changes from fullscreen to resizable windowed. Status bar shows “[S]creen-share” indicator</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>B8</td>
+<td>Screen-share toggle back</td>
+<td>Press <code>Shift+S</code> again</td>
+<td>Audience returns to fullscreen on secondary. Indicator disappears</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="c.-single-monitor-fallback" class="level2">
+<h2 class="anchored" data-anchor-id="c.-single-monitor-fallback">C. Single-Monitor Fallback</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>C1</td>
+<td>Auto fallback</td>
+<td>With only 1 monitor, run <code>dais tests/example.pdf</code> (default dual config)</td>
+<td>Falls back to Single mode. Warning toast: “Single monitor detected — expected dual. Using single mode.” Only one window visible. Starts in HUD presentation mode</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>C2</td>
+<td>Exit HUD to console</td>
+<td>Press <code>Escape</code> (or <code>q</code>)</td>
+<td>Exits fullscreen HUD. Shows the normal presenter console layout (current slide, next preview, notes, status bar) in a single window</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>C3</td>
+<td>Re-enter HUD</td>
+<td>Press <code>F5</code></td>
+<td>Returns to fullscreen HUD with the slide filling the screen and a semi-transparent bottom bar</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>C4</td>
+<td>No audience window in single</td>
+<td>Verify after C2</td>
+<td>Only one application window exists. No second “Audience” window spawned</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="d.-hud-presentation-mode-single-monitor" class="level2">
+<h2 class="anchored" data-anchor-id="d.-hud-presentation-mode-single-monitor">D. HUD Presentation Mode (Single Monitor)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>D1</td>
+<td>F5 toggles HUD</td>
+<td>From presenter console, press <code>F5</code></td>
+<td>View switches to fullscreen HUD: slide fills screen, black background. Semi-transparent bar appears when cursor near bottom</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>D2</td>
+<td>HUD bar hover</td>
+<td>Move cursor to bottom ~64px of screen</td>
+<td>Semi-transparent dark bar (48px tall) fades in at the bottom. Shows: slide position (e.g., “1 / 5”), timer, per-slide timer, and mode indicators (right side)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>D3</td>
+<td>HUD bar content</td>
+<td>Read the HUD bar</td>
+<td>Shows: <code>&lt;slide&gt;/&lt;total&gt;</code>, overlay step if multi-overlay group (e.g., “step 1/3”), timer with ▶/⏸ icon, “Slide 00:XX” per-slide timer</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>D4</td>
+<td>HUD bar hide</td>
+<td>Move cursor to center of screen</td>
+<td>HUD bar fades out (no longer visible)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>D5</td>
+<td>HUD notes hover</td>
+<td>Move cursor to bottom ~80px of screen (on a slide that has notes)</td>
+<td>Notes panel (200px tall) appears above the HUD bar. Shows notes text (scrollable if long). Only shows if current slide has notes</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>D6</td>
+<td>HUD notes absent</td>
+<td>Navigate to a slide with no notes, hover at bottom</td>
+<td>HUD bar appears but notes panel does NOT appear</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>D7</td>
+<td>HUD timer click</td>
+<td>In HUD bar, click on the timer text</td>
+<td>Timer toggles between running/paused. Icon changes from ▶ to ⏸</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>D8</td>
+<td>HUD mode indicators</td>
+<td>Activate laser (<code>l</code>), then hover HUD bar</td>
+<td>“LASER” indicator appears in red on the right side of the HUD bar. Similarly “INK”, “FROZEN”, “SPOT”, “ZOOM” appear for their respective modes</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>D9</td>
+<td>Escape exits HUD first</td>
+<td>In HUD mode, press <code>Escape</code></td>
+<td>Exits HUD → shows presenter console. Does NOT quit the app. A second <code>Escape</code> (or <code>q</code>) would quit</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>D10</td>
+<td>Navigation in HUD</td>
+<td>Press <code>Right</code> arrow while in HUD</td>
+<td>Slide advances. Audience slide (the displayed one) updates</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>D11</td>
+<td>All overlays in HUD</td>
+<td>Activate laser, ink, spotlight, zoom while in HUD</td>
+<td>Each overlay renders on the fullscreen slide just as it would on the audience display</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>D12</td>
+<td>Blackout in HUD</td>
+<td>Press <code>b</code> while in HUD</td>
+<td>Screen goes black (audience blackout overlay covers the slide)</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="e.-navigation" class="level2">
+<h2 class="anchored" data-anchor-id="e.-navigation">E. Navigation</h2>
+<p>Use <code>tests/fixtures/test.pdf</code> with the <code>beamer-example.pdfpc</code> sidecar for overlay group tests (copy .pdfpc next to test.pdf or use <code>tests/example.pdf</code>).</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>E1</td>
+<td>Next slide (Right)</td>
+<td>Press <code>Right</code></td>
+<td>Jumps to the first page of the <strong>next logical slide group</strong> (skips overlays). Slide counter increments by 1. Current slide panel updates, next preview updates</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>E2</td>
+<td>Next slide (Space)</td>
+<td>Press <code>Space</code></td>
+<td>Same as E1</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>E3</td>
+<td>Next slide (Down)</td>
+<td>Press <code>Down</code></td>
+<td>Same as E1</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>E4</td>
+<td>Next slide (PageDown)</td>
+<td>Press <code>PageDown</code></td>
+<td>Same as E1</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>E5</td>
+<td>Previous slide (Left)</td>
+<td>Press <code>Left</code></td>
+<td>Jumps to the first page of the previous logical slide group. Slide counter decrements</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>E6</td>
+<td>Previous slide (Up/PageUp)</td>
+<td>Press <code>Up</code> or <code>PageUp</code></td>
+<td>Same as E5</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>E7</td>
+<td>Next overlay (Shift+Right)</td>
+<td>Press <code>Shift+Right</code></td>
+<td>Advances one raw PDF page within the current group. Status bar shows step counter (e.g., “step 2/3”). If at last overlay, advances to next slide</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>E8</td>
+<td>Previous overlay (Shift+Left)</td>
+<td>Press <code>Shift+Left</code></td>
+<td>Goes back one raw page within the group. If at first overlay of a group, goes to last overlay of the previous group</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>E9</td>
+<td>First slide (Home)</td>
+<td>Press <code>Home</code></td>
+<td>Jumps to slide 1 / page 0. Slide counter shows “1 / N”</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>E10</td>
+<td>Last slide (End)</td>
+<td>Press <code>End</code></td>
+<td>Jumps to the last logical slide</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>E11</td>
+<td>Go to slide (G + digits + Enter)</td>
+<td>Press <code>g</code>, then <code>3</code>, then <code>Enter</code></td>
+<td>Jumps to logical slide 3 (1-based). Status bar briefly shows “Go to: 3_” while digits accumulate</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>E12</td>
+<td>Go to slide cancel</td>
+<td>Press <code>g</code>, then <code>5</code>, then <code>Escape</code></td>
+<td>Jump-to-slide mode cancelled. No navigation occurs</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>E13</td>
+<td>Go to slide timeout</td>
+<td>Press <code>g</code>, then <code>1</code>, wait 3+ seconds</td>
+<td>Jump-to-slide mode auto-cancels after 3 seconds of inactivity</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>E14</td>
+<td>Past last slide → blackout</td>
+<td>Navigate to the last slide, then press <code>Right</code></td>
+<td>Audience display goes black (end-of-deck blackout). Presenter still shows the last slide</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>E15</td>
+<td>Blackout recovery</td>
+<td>From E14 state, press <code>Left</code></td>
+<td>Blackout clears, returns to the last slide (not the second-to-last)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>E16</td>
+<td>Ink cleared on navigate</td>
+<td>Draw some ink (press <code>d</code>, draw, press <code>d</code>), then press <code>Right</code></td>
+<td>Ink strokes are cleared when navigating to a new slide</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>E17</td>
+<td>Audience follows navigation</td>
+<td>During dual mode, navigate slides</td>
+<td>Audience window updates in sync with presenter navigation (unless frozen)</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="f.-timer" class="level2">
+<h2 class="anchored" data-anchor-id="f.-timer">F. Timer</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>F1</td>
+<td>Timer click to start</td>
+<td>Click the timer text in the status bar</td>
+<td>Timer starts counting. Display changes from <code>▶ 00:00</code> to <code>⏸ 00:01</code>, <code>00:02</code>, … Icon shows ⏸ (pause-able)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>F2</td>
+<td>Timer click to pause</td>
+<td>Click again while running</td>
+<td>Timer pauses. Time value freezes. Icon shows ▶ (resume-able)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>F3</td>
+<td>Timer keyboard toggle</td>
+<td>Press <code>t</code></td>
+<td>Timer toggles running/paused (same as click)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>F4</td>
+<td>Timer reset</td>
+<td>Press <code>Shift+T</code></td>
+<td>Timer resets to 00:00 and stops</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>F5</td>
+<td>Countdown mode</td>
+<td>Set config <code>[timer]\nmode = "countdown"\nduration_minutes = 2</code>. Launch</td>
+<td>Timer shows <code>▶ 02:00 / 02:00</code>. Clicking starts countdown. Display shows remaining time</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>F6</td>
+<td>Countdown warning</td>
+<td>Set config <code>warning_minutes = 1</code> with 2-min countdown. Start timer, wait until under 1 min remaining</td>
+<td>Timer text color changes to <strong>yellow</strong> (warning phase)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>F7</td>
+<td>Countdown overrun</td>
+<td>Let the countdown reach 00:00 and continue</td>
+<td>Timer text changes to <strong>red</strong> (overrun phase). Time shows <code>00:00</code> (clamped, doesn’t go negative)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>F8</td>
+<td>Per-slide timer</td>
+<td>Navigate between slides while timer is running</td>
+<td>“Slide XX:XX” counter resets when changing slides. Each slide accumulates its own time. Going back to a previous slide resumes its accumulated time</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>F9</td>
+<td>Timer persists resume</td>
+<td>Pause timer, navigate slides, resume timer</td>
+<td>Elapsed time resumes from where it was paused (not reset)</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="g.-freeze-blackout" class="level2">
+<h2 class="anchored" data-anchor-id="g.-freeze-blackout">G. Freeze &amp; Blackout</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>G1</td>
+<td>Freeze toggle</td>
+<td>Press <code>f</code></td>
+<td>Audience display freezes on current slide. Status bar shows <strong>[F]rozen</strong> in light blue. Presenter can navigate freely; audience stays on frozen page</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>G2</td>
+<td>Freeze verify audience</td>
+<td>While frozen, press <code>Right</code> several times</td>
+<td>Presenter advances slides (current slide panel updates). Audience window does NOT change — still shows the frozen page</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>G3</td>
+<td>Unfreeze</td>
+<td>Press <code>f</code> again</td>
+<td>Audience jumps to the presenter’s current page. [F]rozen indicator disappears</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>G4</td>
+<td>Blackout toggle</td>
+<td>Press <code>b</code></td>
+<td>Audience display goes completely black. Status bar shows <strong>[B]lack</strong> in yellow</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>G5</td>
+<td>Blackout also with period</td>
+<td>Press <code>.</code></td>
+<td>Same as G4</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>G6</td>
+<td>Unblackout</td>
+<td>Press <code>b</code> again</td>
+<td>Audience display returns to current slide. Indicator disappears</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>G7</td>
+<td>Navigate during blackout</td>
+<td>While blacked out, press <code>Right</code></td>
+<td>Blackout clears, navigates forward (blackout is cleared on NextSlide)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>G8</td>
+<td>Overlay during blackout</td>
+<td>While blacked out, press <code>Shift+Right</code></td>
+<td>Blackout clears, advances one overlay step</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="h.-presentation-aids-laser-pointer" class="level2">
+<h2 class="anchored" data-anchor-id="h.-presentation-aids-laser-pointer">H. Presentation Aids: Laser Pointer</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>H1</td>
+<td>Laser toggle</td>
+<td>Press <code>l</code></td>
+<td>Laser mode activates. Status bar shows <strong>[L]aser</strong> in red</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>H2</td>
+<td>Laser dot on presenter</td>
+<td>With laser on, move mouse over the current slide panel</td>
+<td>Small red dot follows the cursor on the presenter’s current slide view</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>H3</td>
+<td>Laser dot on audience</td>
+<td>Same mouse movement</td>
+<td>Red dot (with outer glow) appears at the corresponding position on the audience window</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>H4</td>
+<td>Laser off</td>
+<td>Press <code>l</code> again</td>
+<td>Laser deactivates. Dot disappears from both windows. Pointer position clears</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>H5</td>
+<td>Laser ↔︎ ink exclusive</td>
+<td>With laser on, press <code>d</code> (ink toggle)</td>
+<td>Laser deactivates, ink activates. They are mutually exclusive — only one at a time</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>H6</td>
+<td>Laser off-slide</td>
+<td>Move cursor outside the slide image area</td>
+<td>Laser position does not update (remains at last valid position or disappears)</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="i.-presentation-aids-freehand-ink" class="level2">
+<h2 class="anchored" data-anchor-id="i.-presentation-aids-freehand-ink">I. Presentation Aids: Freehand Ink</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>I1</td>
+<td>Ink toggle</td>
+<td>Press <code>d</code></td>
+<td>Ink mode activates. Status bar shows <strong>[D]raw</strong> in orange</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>I2</td>
+<td>Draw stroke</td>
+<td>With ink on, click-drag on the current slide</td>
+<td>A red stroke (default: #FF0000, width 3.0) appears following the drag path. Stroke renders on both presenter and audience</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>I3</td>
+<td>Multiple strokes</td>
+<td>Release and draw again</td>
+<td>Each drag creates a separate stroke. All persist on screen</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>I4</td>
+<td>Clear ink</td>
+<td>Press <code>c</code></td>
+<td>All ink strokes on the current page are cleared from both displays</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>I5</td>
+<td>Ink off</td>
+<td>Press <code>d</code> again</td>
+<td>Ink mode deactivates. Indicator disappears. Existing strokes remain visible until cleared or slide change</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>I6</td>
+<td>Ink ↔︎ laser exclusive</td>
+<td>With ink on, press <code>l</code></td>
+<td>Ink deactivates, laser activates. Mutually exclusive</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>I7</td>
+<td>Ink cleared on slide change</td>
+<td>Draw ink, then press <code>Right</code></td>
+<td>Strokes cleared when navigating to a new slide (go_to_group clears ink)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>I8</td>
+<td>Ink config color</td>
+<td>Set config <code>[ink]\ncolors = ["#00FF00"]\nwidth = 5.0</code>. Draw</td>
+<td>Strokes are green and thicker</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="j.-presentation-aids-spotlight" class="level2">
+<h2 class="anchored" data-anchor-id="j.-presentation-aids-spotlight">J. Presentation Aids: Spotlight</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>J1</td>
+<td>Spotlight toggle</td>
+<td>Press <code>s</code></td>
+<td>Spotlight mode activates. Status bar shows <strong>Spotlight</strong> in light yellow</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>J2</td>
+<td>Spotlight effect</td>
+<td>Move mouse over the slide</td>
+<td>Area around the cursor is bright; rest of the slide is dimmed with semi-transparent black overlay. A thin white circle border marks the spotlight edge</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>J3</td>
+<td>Spotlight on audience</td>
+<td>Move mouse on presenter</td>
+<td>Audience window shows same spotlight effect at corresponding position</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>J4</td>
+<td>Spotlight off</td>
+<td>Press <code>s</code> again</td>
+<td>Dim overlay removed, full slide visible. Spotlight position clears</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="k.-presentation-aids-zoom" class="level2">
+<h2 class="anchored" data-anchor-id="k.-presentation-aids-zoom">K. Presentation Aids: Zoom</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>K1</td>
+<td>Zoom toggle</td>
+<td>Press <code>z</code></td>
+<td>Zoom mode activates. Status bar shows <strong>[Z]oom</strong> in green</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>K2</td>
+<td>Zoom indicator</td>
+<td>With zoom on, observe audience window</td>
+<td>A yellow rectangle on the audience display indicates the zoom region, with a label like “2.0x”</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>K3</td>
+<td>Zoom off</td>
+<td>Press <code>z</code> again</td>
+<td>Zoom indicator disappears. Zoom region clears</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="l.-slide-overview-grid" class="level2">
+<h2 class="anchored" data-anchor-id="l.-slide-overview-grid">L. Slide Overview Grid</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>L1</td>
+<td>Open overview</td>
+<td>Press <code>o</code></td>
+<td>Dark semi-transparent overlay appears with a grid of slide thumbnails. Each thumbnail shows the first page of its logical slide group. Current slide has a <strong>light blue</strong> border</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>L2</td>
+<td>Keyboard navigation</td>
+<td>Press <code>Right</code>, <code>Left</code>, <code>Down</code>, <code>Up</code> in overview</td>
+<td>Selection highlight (blue border) moves between thumbnails. Down/Up jump by one row (column count adapts to window width)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>L3</td>
+<td>Select slide</td>
+<td>Navigate to a slide and press <code>Enter</code></td>
+<td>Overview closes. Presentation jumps to the selected slide</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>L4</td>
+<td>Close overview (Escape)</td>
+<td>Press <code>Escape</code> in overview</td>
+<td>Overview closes. Presentation stays on current slide</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>L5</td>
+<td>Close overview (o)</td>
+<td>Press <code>o</code> again while overview is open</td>
+<td>Overview closes (toggle behavior)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>L6</td>
+<td>Click thumbnail</td>
+<td>Click a slide thumbnail with mouse</td>
+<td>Overview closes and jumps to that slide</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>L7</td>
+<td>Slide numbers</td>
+<td>Observe the labels below thumbnails</td>
+<td>Each thumbnail has its 1-based logical slide number centered below it</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>L8</td>
+<td>Scrollable grid</td>
+<td>Open overview with many slides</td>
+<td>Grid is vertically scrollable if thumbnails don’t fit in the viewport</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="m.-notes-panel" class="level2">
+<h2 class="anchored" data-anchor-id="m.-notes-panel">M. Notes Panel</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>M1</td>
+<td>Notes visible by default</td>
+<td>Open a PDF with a .pdfpc or .dais sidecar that has notes</td>
+<td>Notes panel shows “Notes” header with the slide’s markdown content rendered below. Panel is on the right side of the presenter console</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>M2</td>
+<td>Notes update on navigate</td>
+<td>Navigate between slides</td>
+<td>Notes content changes to match the current logical slide’s notes. Slides without notes show “No notes for this slide” in gray</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>M3</td>
+<td>Toggle notes visibility</td>
+<td>Press <code>n</code></td>
+<td>Notes panel hides. Press <code>n</code> again — panel reappears</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>M4</td>
+<td>Markdown rendering</td>
+<td>Add notes with <strong>bold</strong>, <em>italic</em>, <code>code</code>, lists, headers</td>
+<td>Notes render as formatted Markdown (using egui_commonmark), not raw text</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>M5</td>
+<td>Notes scrollable</td>
+<td>Add very long notes to a slide</td>
+<td>Notes panel has a vertical scroll area; content is scrollable without overflowing</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>M6</td>
+<td>Increase font</td>
+<td>Press <code>+</code> or <code>Shift+=</code></td>
+<td>Notes text gets larger by 2pt (default step). Repeatable</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>M7</td>
+<td>Decrease font</td>
+<td>Press <code>-</code></td>
+<td>Notes text gets smaller by 2pt. Minimum 8pt</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>M8</td>
+<td>Font size limits</td>
+<td>Press <code>+</code> repeatedly (&gt;30 times)</td>
+<td>Font maxes out at 72pt and stops growing</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="n.-timer-display-status-bar" class="level2">
+<h2 class="anchored" data-anchor-id="n.-timer-display-status-bar">N. Timer Display &amp; Status Bar</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>N1</td>
+<td>Status bar layout</td>
+<td>Observe the bottom status bar</td>
+<td>Shows (left to right): slide position, separator, timer, separator, per-slide timer, separator, mode indicators, separator, jump-to-slide buffer (if active)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>N2</td>
+<td>Slide position text</td>
+<td>Navigate to slide 3 of 5</td>
+<td>Status bar shows “Slide 3/5”</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>N3</td>
+<td>Overlay step</td>
+<td>Navigate to a multi-overlay slide, step 2 of 3</td>
+<td>Status bar shows “Slide 2/5 (step 2/3)”</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>N4</td>
+<td>Timer cursor</td>
+<td>Hover over the timer text</td>
+<td>Cursor changes to pointing hand (indicating clickable)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>N5</td>
+<td>Mode indicators</td>
+<td>Activate freeze, blackout, laser, ink, spotlight, zoom individually</td>
+<td>Each shows its indicator: [F]rozen (light blue), [B]lack (yellow), [L]aser (red), [D]raw (orange), Spotlight (light yellow), [Z]oom (green)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>N6</td>
+<td>Jump indicator</td>
+<td>Press <code>g</code></td>
+<td>Status bar shows “Go to: <em>” in yellow. As digits are pressed, they appear (e.g., ”Go to: 12</em>”)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>N7</td>
+<td>Multiple indicators</td>
+<td>Activate freeze + spotlight simultaneously</td>
+<td>Both indicators show side by side in the status bar</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="o.-toast-notifications" class="level2">
+<h2 class="anchored" data-anchor-id="o.-toast-notifications">O. Toast Notifications</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>O1</td>
+<td>Monitor warning toast</td>
+<td>Launch with 1 monitor (default dual config)</td>
+<td>Yellow warning toast appears at top-right: “Single monitor detected — expected dual. Using single mode.”</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>O2</td>
+<td>Toast auto-dismiss</td>
+<td>Wait 4 seconds after O1</td>
+<td>Toast fades/disappears automatically</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>O3</td>
+<td>Toast dismiss button</td>
+<td>While toast is visible, click the “×” button</td>
+<td>Toast dismisses immediately</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>O4</td>
+<td>Monitor name mismatch toast</td>
+<td>Set <code>audience_monitor = "NONEXISTENT"</code> with 2 monitors. Launch</td>
+<td>Warning toast: “Configured audience monitor ‘NONEXISTENT’ not found. Available: <list>”</list></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>O5</td>
+<td>Toast stacking</td>
+<td>If multiple warnings fire, observe</td>
+<td>Toasts stack vertically from top-right, with spacing between them</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="p.-sidecar-loading-saving" class="level2">
+<h2 class="anchored" data-anchor-id="p.-sidecar-loading-saving">P. Sidecar Loading &amp; Saving</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>P1</td>
+<td>.pdfpc load</td>
+<td>Place <code>beamer-example.pdfpc</code> next to a test PDF (rename appropriately). Launch</td>
+<td>Notes from sidecar appear. Overlay groups are applied (check slide count vs page count). Log shows metadata source</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>P2</td>
+<td>.dais load</td>
+<td>Place <code>quarto-example.dais</code> next to a test PDF. Launch</td>
+<td>Notes and groups from .dais file are loaded. Check that notes and grouping match the fixture content</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>P3</td>
+<td>.dais &gt; .pdfpc priority</td>
+<td>Place both <code>.dais</code> and <code>.pdfpc</code> sidecars next to the same PDF. Launch</td>
+<td><code>.dais</code> sidecar takes priority. Log confirms which source was used</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>P4</td>
+<td>Save as dais (Ctrl+S)</td>
+<td>With default config (<code>sidecar_format = "dais"</code>), press <code>Ctrl+S</code></td>
+<td><code>.dais</code> sidecar file written next to the PDF. Log shows “Saved sidecar to <path>”. File contains valid Dais metadata with current groups, notes, annotations, and text boxes</path></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>P5</td>
+<td>Save as pdfpc</td>
+<td>Set <code>sidecar_format = "pdfpc"</code> in config. Press <code>Ctrl+S</code></td>
+<td><code>.pdfpc</code> sidecar written. Contains pdfpc-compatible groups and notes</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>P6</td>
+<td>No sidecar</td>
+<td>Launch a PDF with no sidecar file nearby</td>
+<td>Works normally. Each page is its own slide (1:1 grouping). Notes panel shows “No notes for this slide”</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="q.-grouping-editor---edit" class="level2">
+<h2 class="anchored" data-anchor-id="q.-grouping-editor---edit">Q. Grouping Editor (<code>--edit</code>)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Q1</td>
+<td>Editor layout</td>
+<td>Run <code>dais --edit tests/example.pdf</code></td>
+<td>Window shows: top bar with “Grouping Editor” heading, page/slide count, “💾 Save” and “✕ Close” buttons. Below: horizontal filmstrip of page thumbnails</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Q2</td>
+<td>Alternating group colors</td>
+<td>Observe the filmstrip</td>
+<td>Adjacent groups have alternating background colors (darker/lighter gray) to distinguish them visually</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Q3</td>
+<td>Split a group</td>
+<td>Click the small gap between two pages within a group</td>
+<td>A boundary is inserted. The group splits into two. Slide count increases by 1. Gap highlights blue on hover</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Q4</td>
+<td>Merge groups</td>
+<td>Click the boundary separator between two groups</td>
+<td>Boundary removed. The two groups merge into one. Slide count decreases by 1</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Q5</td>
+<td>Page 0 immovable</td>
+<td>Attempt to toggle boundary on page 0</td>
+<td>Nothing happens — page 0 is always the start of a boundary and cannot be toggled</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Q6</td>
+<td>Save from editor</td>
+<td>Click “💾 Save”</td>
+<td>Status message briefly shows “Saved to <path>” in green. Sidecar file written in the configured format</path></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Q7</td>
+<td>Close editor</td>
+<td>Click “✕ Close”</td>
+<td>Editor window closes</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Q8</td>
+<td>Thumbnail labels</td>
+<td>Observe thumbnails</td>
+<td>Each group has a label like “Slide 1 (2 pages)” below its thumbnail row</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Q9</td>
+<td>Scrollable filmstrip</td>
+<td>Open a PDF with many pages</td>
+<td>Filmstrip is horizontally scrollable</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="r.-audience-window-display-quality" class="level2">
+<h2 class="anchored" data-anchor-id="r.-audience-window-display-quality">R. Audience Window Display Quality</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>R1</td>
+<td>Aspect ratio preserved</td>
+<td>Open a 4:3 PDF on a 16:9 monitor</td>
+<td>Slide is centered with black letterbox bars on left/right. No stretching or cropping</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R2</td>
+<td>Aspect ratio 16:9 on 16:9</td>
+<td>Open a 16:9 PDF on a 16:9 monitor</td>
+<td>Slide fills the entire audience window perfectly</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R3</td>
+<td>Black background</td>
+<td>Observe audience window at any aspect ratio</td>
+<td>Non-slide area is solid black</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R4</td>
+<td>Sharpness</td>
+<td>Compare slide text on audience window to the original PDF</td>
+<td>Text is crisp and readable. In dual mode, renders at the audience monitor’s native resolution</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R5</td>
+<td>Presenter vs audience resolution</td>
+<td>In dual mode with different DPI monitors</td>
+<td>Presenter renders at 1920×1080 (fallback). Audience renders at native monitor size (e.g., 3840×2160 for 4K). Both are sharp for their respective displays</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="s.-presenter-console-layout" class="level2">
+<h2 class="anchored" data-anchor-id="s.-presenter-console-layout">S. Presenter Console Layout</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>S1</td>
+<td>Four-panel layout</td>
+<td>Observe the presenter console</td>
+<td>Four main areas: current slide (large, upper-left), next preview (upper-right), notes panel (lower-right), status bar (bottom strip)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>S2</td>
+<td>Current slide panel</td>
+<td>Observe</td>
+<td>Shows the current PDF page rendered with aspect ratio preservation. Centered in its allocated area</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>S3</td>
+<td>Next preview panel</td>
+<td>Navigate to a non-last slide</td>
+<td>Shows a smaller preview of the next page. Helpful for anticipating transitions</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>S4</td>
+<td>Next preview on last slide</td>
+<td>Navigate to the last slide</td>
+<td>Next preview shows empty/blank (no next page to preview)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>S5</td>
+<td>Resize window</td>
+<td>Drag the presenter window to resize</td>
+<td>All panels re-layout proportionally. No panels disappear or overlap. Minimum sizes respected</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="t.-keybinding-configuration" class="level2">
+<h2 class="anchored" data-anchor-id="t.-keybinding-configuration">T. Keybinding Configuration</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>T1</td>
+<td>Default bindings</td>
+<td>Press <code>Right</code>, <code>Left</code>, <code>Space</code>, <code>f</code>, <code>b</code>, etc. without any config override</td>
+<td>All default keybindings work as documented in docs/keybindings.md</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>T2</td>
+<td>Override a binding</td>
+<td>Add config <code>[keybindings]\nnext_slide = ["x"]</code>. Launch</td>
+<td><code>x</code> advances slide. <code>Right</code>, <code>Space</code>, <code>Down</code>, <code>PageDown</code> no longer advance (all defaults for that action replaced)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>T3</td>
+<td>Multiple keys per action</td>
+<td>Add config <code>[keybindings]\nnext_slide = ["x", "j"]</code></td>
+<td>Both <code>x</code> and <code>j</code> advance slides</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>T4</td>
+<td>Modifier combos</td>
+<td>Add config <code>[keybindings]\ntoggle_freeze = ["Ctrl+f"]</code></td>
+<td><code>Ctrl+F</code> freezes. Plain <code>f</code> no longer freezes (replaced)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>T5</td>
+<td>Unknown action warning</td>
+<td>Add config <code>[keybindings]\nfake_action = ["x"]</code>. Launch</td>
+<td>Warning in terminal log: “Unknown action in keybinding config: fake_action”. No crash</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="u.-clicker-remote-profile" class="level2">
+<h2 class="anchored" data-anchor-id="u.-clicker-remote-profile">U. Clicker / Remote Profile</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>U1</td>
+<td>Default clicker profile</td>
+<td>Without any clicker config, press <code>PageDown</code> / <code>PageUp</code></td>
+<td>PageDown advances slide, PageUp goes back (mapped via default clicker profile)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>U2</td>
+<td>Custom profile</td>
+<td>Add config: <code>[clicker]\nprofile = "custom"\n[clicker.profiles.custom]\nEscape = "toggle_blackout"</code></td>
+<td><code>Escape</code> now toggles blackout instead of quitting (clicker profile overrides keybindings for that key)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>U3</td>
+<td>Unknown profile fallback</td>
+<td>Set <code>profile = "nonexistent"</code></td>
+<td>Warning in log: “Configured clicker profile ‘nonexistent’ not found; using default profile”. Default profile applies</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>U4</td>
+<td>Test-input clicker verification</td>
+<td>Run <code>--test-input</code> with custom clicker config</td>
+<td>Pressing the clicker key shows the mapped action in the test-input log</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="v.-config-layering" class="level2">
+<h2 class="anchored" data-anchor-id="v.-config-layering">V. Config Layering</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>V1</td>
+<td>Machine-wide config</td>
+<td>Place a <code>config.toml</code> in the OS config dir (e.g., <code>%APPDATA%\dais\config.toml</code> on Windows). Set <code>[timer]\nmode = "countdown"</code></td>
+<td>Timer uses countdown mode on any PDF launched</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>V2</td>
+<td>Project-local config</td>
+<td>Place <code>dais.toml</code> next to the PDF. Set <code>[timer]\nduration_minutes = 10</code></td>
+<td>Duration comes from project config, overriding machine-wide</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>V3</td>
+<td><code>--config</code> highest precedence</td>
+<td>Use <code>--config explicit.toml</code> with different timer settings</td>
+<td><code>--config</code> values win over project-local and machine-wide</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>V4</td>
+<td>Partial configs merge</td>
+<td>Machine config sets timer mode. Project config sets display mode. Neither sets the other</td>
+<td>Both timer and display settings apply. Fields not in a partial config keep their prior values</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="w.-test-input-diagnostic-mode" class="level2">
+<h2 class="anchored" data-anchor-id="w.-test-input-diagnostic-mode">W. Test-Input Diagnostic Mode</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>W1</td>
+<td>Window opens</td>
+<td>Run <code>dais --test-input</code></td>
+<td>Window titled “Dais — Test Input” at 600×500</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>W2</td>
+<td>Key event logging</td>
+<td>Press any key (e.g., <code>Right</code>)</td>
+<td>Event appears in the log area showing: key name, modifiers (if any), and the mapped action (e.g., “Right → next_slide”)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>W3</td>
+<td>Unmapped key</td>
+<td>Press a key not bound to any action (e.g., <code>F12</code> by default)</td>
+<td>Shows the key name but “No action mapped” (or similar)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>W4</td>
+<td>Modifier display</td>
+<td>Press <code>Shift+T</code></td>
+<td>Shows “Shift+T → reset_timer” (or equivalent)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>W5</td>
+<td>Continuous logging</td>
+<td>Press several keys in sequence</td>
+<td>All events appear in order. Log scrolls as entries accumulate</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="x.-edge-cases-robustness" class="level2">
+<h2 class="anchored" data-anchor-id="x.-edge-cases-robustness">X. Edge Cases &amp; Robustness</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>X1</td>
+<td>Single-page PDF</td>
+<td>Open a PDF with exactly 1 page</td>
+<td>Works without error. Navigation keys do nothing (already at first = last slide). Next preview is empty. End-of-deck blackout triggers on NextSlide</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>X2</td>
+<td>Large PDF</td>
+<td>Open a PDF with 100+ pages</td>
+<td>Opens without noticeable delay. Navigation is responsive (no multi-second lag). Slide overview grid renders thumbnails progressively</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>X3</td>
+<td>Rapid key presses</td>
+<td>Press <code>Right</code> rapidly 20+ times</td>
+<td>All key events processed. Slide counter advances smoothly without lag, skipping, or crashing</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>X4</td>
+<td>Rapid mode toggles</td>
+<td>Press <code>f</code> rapidly 10 times</td>
+<td>Freeze toggles cleanly each time. No stuck state</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>X5</td>
+<td>All aids simultaneously</td>
+<td>Activate spotlight + zoom, navigate, toggle freeze</td>
+<td>No crash. Overlays render in the correct layer order. State is coherent</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>X6</td>
+<td>Jump to out-of-range slide</td>
+<td>Press <code>g</code>, type <code>999</code>, press <code>Enter</code> on a 5-slide deck</td>
+<td>Jumps to the last valid slide (clamped by <code>go_to_group</code> bounds check). No crash</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>X7</td>
+<td>Jump to 0</td>
+<td>Press <code>g</code>, type <code>0</code>, press <code>Enter</code></td>
+<td>Jumps to slide 0 (first slide), since input is 1-based: <code>0.saturating_sub(1) = 0</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>X8</td>
+<td>Quit with q</td>
+<td>Press <code>q</code></td>
+<td>Application closes cleanly</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>X9</td>
+<td>Quit with Escape</td>
+<td>Press <code>Escape</code> (when not in overview or HUD)</td>
+<td>Application closes cleanly</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>X10</td>
+<td>Window close button</td>
+<td>Click the OS window close button on the presenter</td>
+<td>Application closes cleanly</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="y.-performance-checks" class="level2">
+<h2 class="anchored" data-anchor-id="y.-performance-checks">Y. Performance Checks</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Y1</td>
+<td>Startup time</td>
+<td>Launch with a ~20-page PDF</td>
+<td>Window appears within 2 seconds. First slide visible within 3 seconds</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Y2</td>
+<td>Navigation latency</td>
+<td>Press <code>Right</code> and observe slide change</td>
+<td>Slide updates within ~100ms (perceptibly instant). No 1+ second delay</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Y3</td>
+<td>Background prefetch</td>
+<td>Navigate normally, then jump to a slide 3 ahead</td>
+<td>Slide should be pre-cached and appear immediately (pipeline prefetches neighborhood)</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Y4</td>
+<td>Timer updates</td>
+<td>Start timer, observe updates</td>
+<td>Timer increments smoothly every ~100ms while running (ctx.request_repaint_after(100ms))</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Y5</td>
+<td>Idle CPU</td>
+<td>Leave app idle (timer stopped, no input)</td>
+<td>CPU usage should be minimal. Repaint interval is 250ms when idle</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="z.-logging-diagnostics" class="level2">
+<h2 class="anchored" data-anchor-id="z.-logging-diagnostics">Z. Logging &amp; Diagnostics</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 36%">
+<col style="width: 15%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Test</th>
+<th>Action</th>
+<th>Expected Behavior</th>
+<th>Result</th>
+<th>Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Z1</td>
+<td>Default log level</td>
+<td>Run <code>dais tests/example.pdf</code> normally</td>
+<td>Terminal shows <code>info</code>-level logs: version, page count, display mode, metadata source</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Z2</td>
+<td>Debug logging</td>
+<td>Run <code>RUST_LOG=debug dais tests/example.pdf</code></td>
+<td>Verbose debug output: config file paths checked, monitor topology, render pipeline activity</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Z3</td>
+<td>Monitor topology logged</td>
+<td>Launch with 2 monitors</td>
+<td>Log shows “Detected 2 monitor(s):” with name, size, position, scale, [primary] for each</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Z4</td>
+<td>Config source logged</td>
+<td>Launch with a project-local <code>dais.toml</code></td>
+<td>Log shows “Loaded config layer from <path>”</path></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="test-setup-notes" class="level2">
+<h2 class="anchored" data-anchor-id="test-setup-notes">Test Setup Notes</h2>
+<section id="creating-test-sidecars" class="level3">
+<h3 class="anchored" data-anchor-id="creating-test-sidecars">Creating test sidecars</h3>
+<p>To test sidecar loading, copy and rename fixtures:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># For pdfpc testing</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> tests/fixtures/beamer-example.pdfpc tests/example.pdfpc</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># For dais testing (must rename to match PDF)</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> tests/fixtures/quarto-example.dais tests/example.dais</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="quick-config-file-for-testing" class="level3">
+<h3 class="anchored" data-anchor-id="quick-config-file-for-testing">Quick config file for testing</h3>
+<p>Save as <code>test-config.toml</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[display]</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="dt">mode</span> <span class="op">=</span> <span class="st">"dual"</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[timer]</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="dt">mode</span> <span class="op">=</span> <span class="st">"countdown"</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="dt">duration_minutes</span> <span class="op">=</span> <span class="dv">5</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="dt">warning_minutes</span> <span class="op">=</span> <span class="dv">1</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="kw">[laser]</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#00FF00"</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="dt">size</span> <span class="op">=</span> <span class="fl">16.0</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="kw">[ink]</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="dt">colors</span> <span class="op">=</span> <span class="op">[</span><span class="st">"#0000FF"</span><span class="op">]</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="dt">width</span> <span class="op">=</span> <span class="fl">5.0</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="kw">[spotlight]</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="dt">radius</span> <span class="op">=</span> <span class="fl">200.0</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="kw">[notes]</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="dt">font_size</span> <span class="op">=</span> <span class="fl">18.0</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="dt">sidecar_format</span> <span class="op">=</span> <span class="st">"dais"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Launch with: <code>dais --config test-config.toml tests/example.pdf</code></p>
+</section>
+<section id="multi-monitor-testing" class="level3">
+<h3 class="anchored" data-anchor-id="multi-monitor-testing">Multi-monitor testing</h3>
+<p>Tests B1–B8 require physically connecting a second monitor (or using a virtual display adapter). The remaining tests can be verified on a single monitor using <code>--single</code> or <code>--screen-share</code>.</p>
+
+
+</section>
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/christopherkenny\.github\.io\/dais");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Dais documentation.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    <div class="toc-actions"><ul><li><a href="https://github.com/christopherkenny/dais/blob/main/interactive-testing-checklist.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/christopherkenny/dais/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div>
+    <div class="nav-footer-right">
+<p>Built with <a href="https://quarto.org/">Quarto</a>.</p>
+</div>
+  </div>
+</footer>
+
+
+
+
+</body></html>
