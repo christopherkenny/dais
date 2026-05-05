@@ -1,31 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://christopherkenny.github.io/dais/text-box-feature.html</loc>
-    <lastmod>2026-04-25T01:46:18.665Z</lastmod>
-  </url>
-  <url>
-    <loc>https://christopherkenny.github.io/dais/interactive-testing-checklist.html</loc>
-    <lastmod>2026-04-25T01:46:18.664Z</lastmod>
-  </url>
-  <url>
-    <loc>https://christopherkenny.github.io/dais/design-proposal.html</loc>
-    <lastmod>2026-04-25T01:46:18.662Z</lastmod>
-  </url>
-  <url>
-    <loc>https://christopherkenny.github.io/dais/clicker-setup.html</loc>
-    <lastmod>2026-04-25T01:46:18.660Z</lastmod>
-  </url>
-  <url>
     <loc>https://christopherkenny.github.io/dais/configuration.html</loc>
-    <lastmod>2026-04-25T01:46:18.661Z</lastmod>
+    <lastmod>2026-05-05T16:40:45.050Z</lastmod>
   </url>
   <url>
     <loc>https://christopherkenny.github.io/dais/index.html</loc>
-    <lastmod>2026-04-25T01:46:18.662Z</lastmod>
+    <lastmod>2026-05-05T16:40:45.050Z</lastmod>
+  </url>
+  <url>
+    <loc>https://christopherkenny.github.io/dais/interactive-testing-checklist.html</loc>
+    <lastmod>2026-05-05T16:40:45.050Z</lastmod>
   </url>
   <url>
     <loc>https://christopherkenny.github.io/dais/keybindings.html</loc>
-    <lastmod>2026-04-25T01:46:18.664Z</lastmod>
+    <lastmod>2026-05-05T16:40:45.050Z</lastmod>
+  </url>
+  <url>
+    <loc>https://christopherkenny.github.io/dais/clicker-setup.html</loc>
+    <lastmod>2026-05-05T16:40:45.050Z</lastmod>
+  </url>
+  <url>
+    <loc>https://christopherkenny.github.io/dais/text-box-feature.html</loc>
+    <lastmod>2026-05-05T16:40:45.050Z</lastmod>
+  </url>
+  <url>
+    <loc>https://christopherkenny.github.io/dais/design-proposal.html</loc>
+    <lastmod>2026-05-05T16:40:45.050Z</lastmod>
   </url>
 </urlset>
