@@ -60,9 +60,7 @@ sidecar format. When loading, Dais checks `.dais` before `.pdfpc`.
 Requires Rust 1.92+.
 
 ```bash
-git clone https://github.com/christopherkenny/dais.git
-cd dais
-cargo build --release
+cargo install --git https://github.com/christopherkenny/dais.git --package dais --bin dais
 ```
 
 The binary will be at `target/release/dais`, or `dais.exe` on Windows.

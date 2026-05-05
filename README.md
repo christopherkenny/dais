@@ -52,11 +52,16 @@ Click between thumbnails to set group boundaries. Save writes the configured sid
 ## Building from Source
 
 Requires Rust 1.92+ (for the hayro PDF renderer).
+For a local version, simply run:
 
 ```bash
-git clone https://github.com/christopherkenny/dais.git
-cd dais
-cargo build --release
+cargo install --path crates/dais
+```
+
+To install without cloning from GitHub:
+
+```bash
+cargo install --git https://github.com/christopherkenny/dais.git --package dais --bin dais
 ```
 
 The binary will be at `target/release/dais` (or `dais.exe` on Windows).
