@@ -197,13 +197,14 @@ impl PresenterConsole {
                 if state.laser_active
                     && let Some((px, py)) = state.pointer_position
                 {
+                    let appearance = state.current_pointer_appearance();
                     crate::audience::overlays::draw_laser_overlay(
                         ui,
                         image_rect,
                         px,
                         py,
-                        state.pointer_color,
-                        state.pointer_size,
+                        appearance.color,
+                        appearance.size,
                         state.pointer_style,
                     );
                 }

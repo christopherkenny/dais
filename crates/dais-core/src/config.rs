@@ -112,12 +112,28 @@ impl OptionalU32Value {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct LaserConfig {
-    /// Hex color string (e.g., "#FF0000").
+    /// Default hex color string (e.g., "#FF0000") applied to all pointer styles unless overridden.
     pub color: String,
-    /// Size in logical pixels at 1x scale.
+    /// Default size in logical pixels at 1x scale applied to all pointer styles unless overridden.
     pub size: f32,
     /// Style: "dot", "crosshair", or "arrow".
     pub style: String,
+    /// Dot pointer appearance.
+    pub dot: PointerStyleConfig,
+    /// Crosshair pointer appearance.
+    pub crosshair: PointerStyleConfig,
+    /// Arrow pointer appearance.
+    pub arrow: PointerStyleConfig,
+}
+
+/// Appearance configuration for one laser pointer style.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct PointerStyleConfig {
+    /// Hex color string (e.g., "#FF0000" or "#FF000080").
+    pub color: String,
+    /// Size in logical pixels at 1x scale.
+    pub size: f32,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -126,6 +142,16 @@ struct PartialLaserConfig {
     color: Option<String>,
     size: Option<f32>,
     style: Option<String>,
+    dot: Option<PartialPointerStyleConfig>,
+    crosshair: Option<PartialPointerStyleConfig>,
+    arrow: Option<PartialPointerStyleConfig>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(default)]
+struct PartialPointerStyleConfig {
+    color: Option<String>,
+    size: Option<f32>,
 }
 
 /// Spotlight configuration.
@@ -258,7 +284,21 @@ impl Default for TimerConfig {
 
 impl Default for LaserConfig {
     fn default() -> Self {
-        Self { color: "#FF0000".to_string(), size: 12.0, style: "dot".to_string() }
+        let pointer = PointerStyleConfig::default();
+        Self {
+            color: pointer.color.clone(),
+            size: pointer.size,
+            style: "dot".to_string(),
+            dot: pointer.clone(),
+            crosshair: pointer.clone(),
+            arrow: pointer,
+        }
+    }
+}
+
+impl Default for PointerStyleConfig {
+    fn default() -> Self {
+        Self { color: "#FF0000".to_string(), size: 12.0 }
     }
 }
 
@@ -414,15 +454,7 @@ fn apply_partial_config(config: &mut Config, partial: PartialConfig) {
     }
 
     if let Some(laser) = partial.laser {
-        if let Some(color) = laser.color {
-            config.laser.color = color;
-        }
-        if let Some(size) = laser.size {
-            config.laser.size = size;
-        }
-        if let Some(style) = laser.style {
-            config.laser.style = style;
-        }
+        apply_laser_config(&mut config.laser, laser);
     }
 
     if let Some(spotlight) = partial.spotlight {
@@ -481,6 +513,42 @@ fn apply_partial_config(config: &mut Config, partial: PartialConfig) {
     }
 }
 
+fn apply_laser_config(config: &mut LaserConfig, partial: PartialLaserConfig) {
+    if let Some(color) = partial.color {
+        config.color = color.clone();
+        config.dot.color = color.clone();
+        config.crosshair.color = color.clone();
+        config.arrow.color = color;
+    }
+    if let Some(size) = partial.size {
+        config.size = size;
+        config.dot.size = size;
+        config.crosshair.size = size;
+        config.arrow.size = size;
+    }
+    if let Some(style) = partial.style {
+        config.style = style;
+    }
+    if let Some(dot) = partial.dot {
+        apply_pointer_style_config(&mut config.dot, dot);
+    }
+    if let Some(crosshair) = partial.crosshair {
+        apply_pointer_style_config(&mut config.crosshair, crosshair);
+    }
+    if let Some(arrow) = partial.arrow {
+        apply_pointer_style_config(&mut config.arrow, arrow);
+    }
+}
+
+fn apply_pointer_style_config(config: &mut PointerStyleConfig, partial: PartialPointerStyleConfig) {
+    if let Some(color) = partial.color {
+        config.color = color;
+    }
+    if let Some(size) = partial.size {
+        config.size = size;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -530,6 +598,56 @@ mod tests {
 
         assert_eq!(config.text_boxes.color, "#112233");
         assert_eq!(config.text_boxes.background, "#445566AA");
+    }
+
+    #[test]
+    fn partial_laser_defaults_apply_to_all_pointer_styles() {
+        let mut config = Config::default();
+        let partial = PartialConfig {
+            laser: Some(PartialLaserConfig {
+                color: Some("#FFFFFF".to_string()),
+                size: Some(20.0),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+
+        apply_partial_config(&mut config, partial);
+
+        assert_eq!(config.laser.dot.color, "#FFFFFF");
+        assert_eq!(config.laser.crosshair.color, "#FFFFFF");
+        assert_eq!(config.laser.arrow.color, "#FFFFFF");
+        assert!((config.laser.dot.size - 20.0).abs() < f32::EPSILON);
+        assert!((config.laser.crosshair.size - 20.0).abs() < f32::EPSILON);
+        assert!((config.laser.arrow.size - 20.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn partial_laser_pointer_style_overrides_defaults() {
+        let partial: PartialConfig = toml::from_str(
+            r##"
+            [laser]
+            color = "#FFFFFF"
+            size = 14.0
+            style = "crosshair"
+
+            [laser.crosshair]
+            color = "#00FF00"
+            size = 30.0
+            "##,
+        )
+        .unwrap();
+        let mut config = Config::default();
+
+        apply_partial_config(&mut config, partial);
+
+        assert_eq!(config.laser.style, "crosshair");
+        assert_eq!(config.laser.dot.color, "#FFFFFF");
+        assert!((config.laser.dot.size - 14.0).abs() < f32::EPSILON);
+        assert_eq!(config.laser.crosshair.color, "#00FF00");
+        assert!((config.laser.crosshair.size - 30.0).abs() < f32::EPSILON);
+        assert_eq!(config.laser.arrow.color, "#FFFFFF");
+        assert!((config.laser.arrow.size - 14.0).abs() < f32::EPSILON);
     }
 
     #[test]

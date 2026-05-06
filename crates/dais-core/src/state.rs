@@ -64,12 +64,10 @@ pub struct PresentationState {
     pub laser_active: bool,
     /// Current pointer position (normalized 0..1), None if pointer is off-slide.
     pub pointer_position: Option<(f32, f32)>,
-    /// Pointer color as RGBA.
-    pub pointer_color: [u8; 4],
-    /// Pointer size in logical pixels.
-    pub pointer_size: f32,
     /// Pointer visual style.
     pub pointer_style: PointerStyle,
+    /// Pointer appearance settings for each visual style.
+    pub pointer_appearances: PointerAppearances,
     /// Whether ink drawing mode is active.
     pub ink_active: bool,
     /// Active pen settings — used to initialise the next stroke.
@@ -147,9 +145,8 @@ impl PresentationState {
             presentation_mode: false,
             laser_active: true,
             pointer_position: None,
-            pointer_color: [255, 0, 0, 255],
-            pointer_size: 12.0,
             pointer_style: PointerStyle::Dot,
+            pointer_appearances: PointerAppearances::default(),
             ink_active: false,
             active_pen: ActivePen::default(),
             slide_ink_by_page: HashMap::new(),
@@ -191,6 +188,11 @@ impl PresentationState {
     pub fn current_page_text_boxes(&self) -> &[TextBox] {
         self.slide_text_boxes_by_page.get(&self.current_page).map_or(&[], |v| v.as_slice())
     }
+
+    /// Appearance for the currently selected pointer style.
+    pub fn current_pointer_appearance(&self) -> PointerAppearance {
+        self.pointer_appearances.for_style(self.pointer_style)
+    }
 }
 
 /// Visual style for the audience laser pointer.
@@ -203,6 +205,50 @@ pub enum PointerStyle {
     Crosshair,
     /// Arrow-style marker.
     Arrow,
+}
+
+/// Color and size for one pointer visual style.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PointerAppearance {
+    /// Pointer color as RGBA.
+    pub color: [u8; 4],
+    /// Pointer size in logical pixels.
+    pub size: f32,
+}
+
+impl Default for PointerAppearance {
+    fn default() -> Self {
+        Self { color: [255, 0, 0, 255], size: 12.0 }
+    }
+}
+
+/// Per-style pointer appearance settings.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PointerAppearances {
+    /// Appearance for the dot pointer.
+    pub dot: PointerAppearance,
+    /// Appearance for the crosshair pointer.
+    pub crosshair: PointerAppearance,
+    /// Appearance for the arrow pointer.
+    pub arrow: PointerAppearance,
+}
+
+impl PointerAppearances {
+    /// Return the appearance for a pointer style.
+    pub fn for_style(&self, style: PointerStyle) -> PointerAppearance {
+        match style {
+            PointerStyle::Dot => self.dot,
+            PointerStyle::Crosshair => self.crosshair,
+            PointerStyle::Arrow => self.arrow,
+        }
+    }
+}
+
+impl Default for PointerAppearances {
+    fn default() -> Self {
+        let default = PointerAppearance::default();
+        Self { dot: default, crosshair: default, arrow: default }
+    }
 }
 
 /// A single ink stroke drawn on a slide.

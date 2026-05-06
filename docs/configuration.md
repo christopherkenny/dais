@@ -33,8 +33,8 @@ mode = "elapsed"               # "countdown" or "elapsed"
 overrun_color = true           # Red when past duration
 
 [laser]
-color = "#FF0000"
-size = 12.0                    # Pixels at 1x scale
+color = "#FF0000"              # Default for all pointer styles
+size = 12.0                    # Default pixels at 1x scale
 style = "dot"                  # "dot", "crosshair", or "arrow"
 
 [spotlight]
@@ -97,6 +97,26 @@ Detected monitors are logged at startup with ids and names, so you can see which
 
 - **Elapsed mode:** Starts at 0:00 and counts up. This is the default. If `duration_minutes` is omitted, no limit is shown.
 - **Countdown mode:** Starts at `duration_minutes` and counts down. If you use countdown mode, you should set `duration_minutes`.
+
+## Laser Pointer
+
+`[laser]` controls the active pointer style and the default appearance used by every pointer style.
+Add `[laser.dot]`, `[laser.crosshair]`, or `[laser.arrow]` only when you want to override one style.
+
+Example:
+
+```toml
+[laser]
+color = "#FFFFFF"
+size = 12.0
+style = "dot"
+
+[laser.crosshair]
+color = "#00FF00"
+size = 24.0
+```
+
+In this example, the dot and arrow stay white at size 12. Only the crosshair changes to green at size 24.
 
 ## Text Boxes
 

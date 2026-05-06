@@ -6,7 +6,8 @@ use dais_core::commands::Command;
 use dais_core::config::Config;
 use dais_core::slide_group::SlideGroup;
 use dais_core::state::{
-    ActivePen, InkStroke, PointerStyle, PresentationState, TextBox, TimerState, ZoomRegion,
+    ActivePen, InkStroke, PointerAppearance, PointerAppearances, PointerStyle, PresentationState,
+    TextBox, TimerState, ZoomRegion,
 };
 use dais_sidecar::types::{InkStrokeMeta, PresentationMetadata, TextBoxMeta};
 
@@ -81,9 +82,8 @@ impl PresentationEngine {
         };
         state.notes_font_size = config.notes.font_size;
         state.notes_font_size_step = config.notes.font_size_step;
-        state.pointer_color = parse_hex_color(&config.laser.color).unwrap_or([255, 0, 0, 255]);
-        state.pointer_size = config.laser.size.clamp(2.0, 96.0);
         state.pointer_style = parse_pointer_style(&config.laser.style);
+        state.pointer_appearances = pointer_appearances_from_config(config);
         if config.display.mode == "single" {
             state.laser_active = false;
         }
@@ -910,6 +910,23 @@ fn parse_pointer_style(style: &str) -> PointerStyle {
     }
 }
 
+fn pointer_appearances_from_config(config: &Config) -> PointerAppearances {
+    PointerAppearances {
+        dot: pointer_appearance_from_config(&config.laser.dot),
+        crosshair: pointer_appearance_from_config(&config.laser.crosshair),
+        arrow: pointer_appearance_from_config(&config.laser.arrow),
+    }
+}
+
+fn pointer_appearance_from_config(
+    config: &dais_core::config::PointerStyleConfig,
+) -> PointerAppearance {
+    PointerAppearance {
+        color: parse_hex_color(&config.color).unwrap_or([255, 0, 0, 255]),
+        size: config.size.clamp(2.0, 96.0),
+    }
+}
+
 /// Hydrate runtime annotation state from sidecar metadata.
 fn load_annotations_into_state(state: &mut PresentationState, metadata: &PresentationMetadata) {
     for (page, strokes) in &metadata.slide_annotations {
@@ -1041,19 +1058,42 @@ mod tests {
     #[test]
     fn presentation_aid_config_populates_state() {
         let mut config = Config::default();
-        config.laser.color = "#33CC66AA".to_string();
-        config.laser.size = 24.0;
         config.laser.style = "crosshair".to_string();
+        config.laser.crosshair.color = "#33CC66AA".to_string();
+        config.laser.crosshair.size = 24.0;
         config.spotlight.radius = 220.0;
         config.spotlight.dim_opacity = 0.35;
 
         let (engine, _, _) = make_engine_with_config(3, &PresentationMetadata::default(), &config);
 
-        assert_eq!(engine.state().pointer_color, [0x33, 0xCC, 0x66, 0xAA]);
-        assert!((engine.state().pointer_size - 24.0).abs() < f32::EPSILON);
+        let pointer = engine.state().current_pointer_appearance();
+        assert_eq!(pointer.color, [0x33, 0xCC, 0x66, 0xAA]);
+        assert!((pointer.size - 24.0).abs() < f32::EPSILON);
         assert_eq!(engine.state().pointer_style, PointerStyle::Crosshair);
         assert!((engine.state().spotlight_radius - 220.0).abs() < f32::EPSILON);
         assert!((engine.state().spotlight_dim_opacity - 0.35).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn per_style_pointer_config_populates_state() {
+        let mut config = Config::default();
+        config.laser.style = "crosshair".to_string();
+        config.laser.dot.color = "#FFFFFF".to_string();
+        config.laser.dot.size = 10.0;
+        config.laser.crosshair.color = "#00FF00".to_string();
+        config.laser.crosshair.size = 28.0;
+        config.laser.arrow.color = "#3355FF80".to_string();
+        config.laser.arrow.size = 18.0;
+
+        let (engine, _, _) = make_engine_with_config(3, &PresentationMetadata::default(), &config);
+
+        assert_eq!(engine.state().pointer_appearances.dot.color, [255, 255, 255, 255]);
+        assert!((engine.state().pointer_appearances.dot.size - 10.0).abs() < f32::EPSILON);
+        assert_eq!(engine.state().pointer_appearances.crosshair.color, [0, 255, 0, 255]);
+        assert!((engine.state().pointer_appearances.crosshair.size - 28.0).abs() < f32::EPSILON);
+        assert_eq!(engine.state().pointer_appearances.arrow.color, [0x33, 0x55, 0xFF, 0x80]);
+        assert!((engine.state().pointer_appearances.arrow.size - 18.0).abs() < f32::EPSILON);
+        assert_eq!(engine.state().current_pointer_appearance().color, [0, 255, 0, 255]);
     }
 
     // ---- build_slide_groups ----
