@@ -22,6 +22,12 @@ const INK_COLOR_FALLBACKS: &[[u8; 4]] = &[
 /// Built-in pen width presets cycled by `CycleInkWidth` (logical pixels).
 const INK_WIDTH_PRESETS: &[f32] = &[1.0, 2.0, 4.0, 8.0, 16.0];
 
+#[derive(Debug, Clone, Copy)]
+enum SidecarKind {
+    Dais,
+    Pdfpc,
+}
+
 /// The presentation engine — processes commands and owns the authoritative state.
 ///
 /// Called once per frame via `tick()`. All state mutations happen here.
@@ -40,8 +46,8 @@ pub struct PresentationEngine {
     text_box_default_background: Option<[u8; 4]>,
     /// Path to the PDF file (used for sidecar save).
     pdf_path: std::path::PathBuf,
-    /// Sidecar save format: `"dais"` or `"pdfpc"`.
-    sidecar_format: String,
+    /// Which sidecar format to write on save.
+    sidecar_kind: SidecarKind,
     /// Original metadata loaded for this presentation.
     metadata: PresentationMetadata,
 }
@@ -125,7 +131,11 @@ impl PresentationEngine {
                 text_box_default_color,
                 text_box_default_background,
                 pdf_path,
-                sidecar_format: config.normalized_sidecar_format().to_string(),
+                sidecar_kind: if config.normalized_sidecar_format() == "dais" {
+                    SidecarKind::Dais
+                } else {
+                    SidecarKind::Pdfpc
+                },
                 metadata: metadata.clone(),
             },
             shared_state,
@@ -136,45 +146,45 @@ impl PresentationEngine {
     ///
     /// Returns `true` if the application should quit.
     pub fn tick(&mut self) -> bool {
-        // Update timers
-        self.update_timers();
+        // Update timers. Returns true when timer state is actively changing.
+        let timers_ticking = self.update_timers();
 
         // Drain and process all pending commands
         let commands = self.receiver.drain();
         let mut should_quit = false;
-        let mut state_changed = !commands.is_empty();
+        let content_changed = !commands.is_empty();
 
         for cmd in &commands {
             if matches!(cmd, Command::Quit) {
                 if self.state.presentation_mode {
-                    // Escape exits presentation mode instead of quitting
                     self.state.presentation_mode = false;
                 } else if self.state.overview_visible {
-                    // Escape closes overview instead of quitting
                     self.state.overview_visible = false;
                 } else if self.state.quit_requested {
-                    // Second quit confirms — actually quit
                     self.save_sidecar();
                     should_quit = true;
                 } else {
-                    // First quit shows confirmation
                     self.state.quit_requested = true;
                 }
             } else {
-                // Any non-quit command cancels the quit confirmation
                 self.state.quit_requested = false;
             }
             self.process_command(cmd);
         }
 
-        // Timer state changes continuously while the main or per-slide timer is active.
-        if self.state.timer.running || self.state.slide_elapsed > std::time::Duration::ZERO {
-            state_changed = true;
-        }
-
-        // Broadcast updated state to UI
-        if state_changed && let Ok(mut shared) = self.shared_state.write() {
-            *shared = self.state.clone();
+        // Broadcast updated state to UI.
+        // When commands were processed, the full state may have changed — clone everything.
+        // When only timers ticked, write just the two timer fields to avoid cloning the entire
+        // state (which contains Vecs and HashMaps) at 60 fps.
+        if content_changed {
+            if let Ok(mut shared) = self.shared_state.write() {
+                *shared = self.state.clone();
+            }
+        } else if timers_ticking {
+            if let Ok(mut shared) = self.shared_state.write() {
+                shared.timer.elapsed = self.state.timer.elapsed;
+                shared.slide_elapsed = self.state.slide_elapsed;
+            }
         }
 
         should_quit
@@ -185,7 +195,9 @@ impl PresentationEngine {
         &self.state
     }
 
-    fn update_timers(&mut self) {
+    /// Update timer state each frame. Returns `true` when timer fields are actively changing
+    /// and the UI needs a (partial) state update.
+    fn update_timers(&mut self) -> bool {
         let current = self.state.current_logical_slide;
         let elapsed = self.slide_start.elapsed();
         if let Some(total) = self.state.slide_elapsed_by_logical.get_mut(current) {
@@ -200,6 +212,8 @@ impl PresentationEngine {
         {
             self.state.timer.elapsed = start.elapsed();
         }
+
+        self.state.timer.running || self.state.slide_elapsed > std::time::Duration::ZERO
     }
 
     fn process_command(&mut self, cmd: &Command) {
@@ -726,13 +740,12 @@ impl PresentationEngine {
             })
             .collect();
 
-        let (format, sidecar_path): (Box<dyn SidecarFormat>, _) = match self.sidecar_format.as_str()
-        {
-            "dais" => (
+        let (format, sidecar_path): (Box<dyn SidecarFormat>, _) = match self.sidecar_kind {
+            SidecarKind::Dais => (
                 Box::new(dais_sidecar::dais_format::DaisFormat),
                 self.pdf_path.with_extension("dais"),
             ),
-            _ => {
+            SidecarKind::Pdfpc => {
                 (Box::new(dais_sidecar::pdfpc::PdfpcFormat), self.pdf_path.with_extension("pdfpc"))
             }
         };
@@ -857,6 +870,9 @@ impl PresentationEngine {
 }
 
 /// Build slide groups from metadata, falling back to 1:1 if no grouping info.
+///
+/// Walks pages in order so that uncovered pages are interleaved at their natural position
+/// rather than appended after all declared groups.
 fn build_slide_groups(total_pages: usize, metadata: &PresentationMetadata) -> Vec<SlideGroup> {
     if metadata.groups.is_empty() {
         // 1:1 page-to-slide mapping, but still attach notes from metadata
@@ -869,29 +885,32 @@ fn build_slide_groups(total_pages: usize, metadata: &PresentationMetadata) -> Ve
         return groups;
     }
 
-    let mut groups = Vec::new();
-    for (i, gm) in metadata.groups.iter().enumerate() {
-        let pages: Vec<usize> = (gm.start_page..=gm.end_page.min(total_pages - 1)).collect();
-        let notes = metadata.notes.get(&gm.start_page).cloned();
-        if !pages.is_empty() {
-            groups.push(SlideGroup { logical_index: i, pages, notes });
-        }
-    }
+    // Index declared groups by their start page. Groups whose start page is out of range
+    // are dropped; overlapping groups are resolved by whichever is encountered first in the
+    // page walk (earlier group consumes its range and the walk skips past).
+    let mut group_by_start: std::collections::HashMap<usize, &dais_sidecar::types::SlideGroupMeta> =
+        metadata
+            .groups
+            .iter()
+            .filter(|gm| gm.start_page < total_pages)
+            .map(|gm| (gm.start_page, gm))
+            .collect();
 
-    // If groups don't cover all pages, add remaining as individual slides
-    let covered: std::collections::HashSet<usize> =
-        groups.iter().flat_map(|g| g.pages.iter().copied()).collect();
-    let base_index = groups.len();
-    for page in 0..total_pages {
-        if !covered.contains(&page) {
+    let mut groups: Vec<SlideGroup> = Vec::new();
+    let mut page = 0usize;
+    while page < total_pages {
+        let logical_index = groups.len();
+        if let Some(gm) = group_by_start.remove(&page) {
+            let end = gm.end_page.min(total_pages - 1);
+            let pages: Vec<usize> = (page..=end).collect();
             let notes = metadata.notes.get(&page).cloned();
-            groups.push(SlideGroup { logical_index: base_index + page, pages: vec![page], notes });
+            groups.push(SlideGroup { logical_index, pages, notes });
+            page = end + 1;
+        } else {
+            let notes = metadata.notes.get(&page).cloned();
+            groups.push(SlideGroup { logical_index, pages: vec![page], notes });
+            page += 1;
         }
-    }
-
-    // Re-index logical indices
-    for (i, group) in groups.iter_mut().enumerate() {
-        group.logical_index = i;
     }
 
     groups
