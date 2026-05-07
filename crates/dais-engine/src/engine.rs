@@ -180,11 +180,9 @@ impl PresentationEngine {
             if let Ok(mut shared) = self.shared_state.write() {
                 *shared = self.state.clone();
             }
-        } else if timers_ticking {
-            if let Ok(mut shared) = self.shared_state.write() {
-                shared.timer.elapsed = self.state.timer.elapsed;
-                shared.slide_elapsed = self.state.slide_elapsed;
-            }
+        } else if timers_ticking && let Ok(mut shared) = self.shared_state.write() {
+            shared.timer.elapsed = self.state.timer.elapsed;
+            shared.slide_elapsed = self.state.slide_elapsed;
         }
 
         should_quit
