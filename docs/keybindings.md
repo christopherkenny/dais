@@ -17,7 +17,7 @@ All keybindings are remappable via the `[keybindings]` section in `config.toml`.
 | `toggle_blackout` | B, . (period) | Black out audience display |
 | `toggle_whiteboard` | W | Toggle whiteboard (white drawing canvas) |
 | `toggle_laser` | L | Toggle laser pointer |
-| `cycle_laser_style` | Ctrl+L | Cycle laser style: dot, crosshair, arrow |
+| `cycle_laser_style` | Ctrl+L | Cycle laser style: dot, crosshair, arrow, ring, bullseye, highlight |
 | `toggle_ink` | D | Toggle freehand drawing |
 | `clear_ink` | C | Clear all ink on current slide |
 | `cycle_ink_color` | Ctrl+D | Cycle pen color |

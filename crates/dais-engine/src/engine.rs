@@ -341,7 +341,10 @@ impl PresentationEngine {
                 self.state.pointer_style = match self.state.pointer_style {
                     PointerStyle::Dot => PointerStyle::Crosshair,
                     PointerStyle::Crosshair => PointerStyle::Arrow,
-                    PointerStyle::Arrow => PointerStyle::Dot,
+                    PointerStyle::Arrow => PointerStyle::Ring,
+                    PointerStyle::Ring => PointerStyle::Bullseye,
+                    PointerStyle::Bullseye => PointerStyle::Highlight,
+                    PointerStyle::Highlight => PointerStyle::Dot,
                 };
             }
             Command::SetPointerPosition(x, y) => {
@@ -906,6 +909,9 @@ fn parse_pointer_style(style: &str) -> PointerStyle {
     match style.trim().to_ascii_lowercase().as_str() {
         "crosshair" => PointerStyle::Crosshair,
         "arrow" => PointerStyle::Arrow,
+        "ring" => PointerStyle::Ring,
+        "bullseye" => PointerStyle::Bullseye,
+        "highlight" => PointerStyle::Highlight,
         _ => PointerStyle::Dot,
     }
 }
@@ -915,6 +921,9 @@ fn pointer_appearances_from_config(config: &Config) -> PointerAppearances {
         dot: pointer_appearance_from_config(&config.laser.dot),
         crosshair: pointer_appearance_from_config(&config.laser.crosshair),
         arrow: pointer_appearance_from_config(&config.laser.arrow),
+        ring: pointer_appearance_from_config(&config.laser.ring),
+        bullseye: pointer_appearance_from_config(&config.laser.bullseye),
+        highlight: pointer_appearance_from_config(&config.laser.highlight),
     }
 }
 
@@ -1052,6 +1061,9 @@ mod tests {
         assert_eq!(parse_pointer_style("dot"), PointerStyle::Dot);
         assert_eq!(parse_pointer_style("crosshair"), PointerStyle::Crosshair);
         assert_eq!(parse_pointer_style("arrow"), PointerStyle::Arrow);
+        assert_eq!(parse_pointer_style("ring"), PointerStyle::Ring);
+        assert_eq!(parse_pointer_style("bullseye"), PointerStyle::Bullseye);
+        assert_eq!(parse_pointer_style("highlight"), PointerStyle::Highlight);
         assert_eq!(parse_pointer_style("unknown"), PointerStyle::Dot);
     }
 
@@ -1084,6 +1096,12 @@ mod tests {
         config.laser.crosshair.size = 28.0;
         config.laser.arrow.color = "#3355FF80".to_string();
         config.laser.arrow.size = 18.0;
+        config.laser.ring.color = "#FFAA00".to_string();
+        config.laser.ring.size = 30.0;
+        config.laser.bullseye.color = "#AA00FF".to_string();
+        config.laser.bullseye.size = 26.0;
+        config.laser.highlight.color = "#FFFF0080".to_string();
+        config.laser.highlight.size = 36.0;
 
         let (engine, _, _) = make_engine_with_config(3, &PresentationMetadata::default(), &config);
 
@@ -1093,6 +1111,12 @@ mod tests {
         assert!((engine.state().pointer_appearances.crosshair.size - 28.0).abs() < f32::EPSILON);
         assert_eq!(engine.state().pointer_appearances.arrow.color, [0x33, 0x55, 0xFF, 0x80]);
         assert!((engine.state().pointer_appearances.arrow.size - 18.0).abs() < f32::EPSILON);
+        assert_eq!(engine.state().pointer_appearances.ring.color, [0xFF, 0xAA, 0, 255]);
+        assert!((engine.state().pointer_appearances.ring.size - 30.0).abs() < f32::EPSILON);
+        assert_eq!(engine.state().pointer_appearances.bullseye.color, [0xAA, 0, 0xFF, 255]);
+        assert!((engine.state().pointer_appearances.bullseye.size - 26.0).abs() < f32::EPSILON);
+        assert_eq!(engine.state().pointer_appearances.highlight.color, [0xFF, 0xFF, 0, 0x80]);
+        assert!((engine.state().pointer_appearances.highlight.size - 36.0).abs() < f32::EPSILON);
         assert_eq!(engine.state().current_pointer_appearance().color, [0, 255, 0, 255]);
     }
 
@@ -1462,6 +1486,18 @@ mod tests {
         sender.send(Command::CycleLaserStyle).unwrap();
         engine.tick();
         assert_eq!(engine.state().pointer_style, PointerStyle::Arrow);
+
+        sender.send(Command::CycleLaserStyle).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().pointer_style, PointerStyle::Ring);
+
+        sender.send(Command::CycleLaserStyle).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().pointer_style, PointerStyle::Bullseye);
+
+        sender.send(Command::CycleLaserStyle).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().pointer_style, PointerStyle::Highlight);
 
         sender.send(Command::CycleLaserStyle).unwrap();
         engine.tick();

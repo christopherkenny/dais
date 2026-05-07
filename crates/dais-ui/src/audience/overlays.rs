@@ -103,6 +103,31 @@ pub fn draw_laser_overlay(
             painter.circle_filled(pos, (size * 0.95).max(4.0), glow);
             painter.circle_filled(pos, (size * 0.45).max(2.0), color);
         }
+        PointerStyle::Ring => {
+            let stroke = egui::Stroke::new((size * 0.14).max(1.8), color);
+            painter.circle_filled(pos, (size * 0.85).max(5.0), glow);
+            painter.circle_stroke(pos, (size * 0.55).max(4.0), stroke);
+        }
+        PointerStyle::Bullseye => {
+            let stroke = egui::Stroke::new((size * 0.13).max(1.6), color);
+            painter.circle_filled(pos, (size * 0.9).max(5.0), glow);
+            painter.circle_stroke(pos, (size * 0.6).max(4.0), stroke);
+            painter.circle_filled(pos, (size * 0.13).max(1.4), color);
+        }
+        PointerStyle::Highlight => {
+            let fill = egui::Color32::from_rgba_unmultiplied(
+                color.r(),
+                color.g(),
+                color.b(),
+                color.a().min(96),
+            );
+            let stroke = egui::Stroke::new(
+                (size * 0.08).max(1.2),
+                egui::Color32::from_rgba_unmultiplied(color.r(), color.g(), color.b(), 180),
+            );
+            painter.circle_filled(pos, (size * 0.75).max(5.0), fill);
+            painter.circle_stroke(pos, (size * 0.75).max(5.0), stroke);
+        }
         PointerStyle::Crosshair => {
             let arm = (size * 1.2).max(8.0);
             let gap = (size * 0.35).max(3.0);

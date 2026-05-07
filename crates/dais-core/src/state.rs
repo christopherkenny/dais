@@ -205,6 +205,12 @@ pub enum PointerStyle {
     Crosshair,
     /// Arrow-style marker.
     Arrow,
+    /// Hollow circle pointer.
+    Ring,
+    /// Ring with a center dot.
+    Bullseye,
+    /// Translucent filled highlight circle.
+    Highlight,
 }
 
 /// Color and size for one pointer visual style.
@@ -231,6 +237,12 @@ pub struct PointerAppearances {
     pub crosshair: PointerAppearance,
     /// Appearance for the arrow pointer.
     pub arrow: PointerAppearance,
+    /// Appearance for the ring pointer.
+    pub ring: PointerAppearance,
+    /// Appearance for the bullseye pointer.
+    pub bullseye: PointerAppearance,
+    /// Appearance for the highlight pointer.
+    pub highlight: PointerAppearance,
 }
 
 impl PointerAppearances {
@@ -240,6 +252,9 @@ impl PointerAppearances {
             PointerStyle::Dot => self.dot,
             PointerStyle::Crosshair => self.crosshair,
             PointerStyle::Arrow => self.arrow,
+            PointerStyle::Ring => self.ring,
+            PointerStyle::Bullseye => self.bullseye,
+            PointerStyle::Highlight => self.highlight,
         }
     }
 }
@@ -247,7 +262,14 @@ impl PointerAppearances {
 impl Default for PointerAppearances {
     fn default() -> Self {
         let default = PointerAppearance::default();
-        Self { dot: default, crosshair: default, arrow: default }
+        Self {
+            dot: default,
+            crosshair: default,
+            arrow: default,
+            ring: default,
+            bullseye: default,
+            highlight: default,
+        }
     }
 }
 
