@@ -121,8 +121,6 @@ pub enum Command {
     // -- System --
     /// Quit the application.
     Quit,
-    /// Reload configuration from disk.
-    ReloadConfig,
     /// Save the current sidecar data to disk.
     SaveSidecar,
 }

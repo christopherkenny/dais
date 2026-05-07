@@ -122,7 +122,6 @@ fn main() -> anyhow::Result<()> {
     tracing::info!("Dais v{} starting", env!("CARGO_PKG_VERSION"));
 
     // Create and run the eframe application
-    // Create and run the eframe application
     let doc_arc: std::sync::Arc<dyn dais_document::source::DocumentSource> =
         std::sync::Arc::new(doc);
 

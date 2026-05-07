@@ -278,9 +278,6 @@ impl PresentationEngine {
             | Command::DecrementNotesFontSize => self.handle_ui_panel(cmd),
 
             Command::Quit => {} // handled in tick()
-            Command::ReloadConfig => {
-                tracing::info!("ReloadConfig received — not yet implemented");
-            }
             Command::SaveSidecar => {
                 self.save_sidecar();
             }
@@ -470,12 +467,14 @@ impl PresentationEngine {
             Command::CycleInkColor => {}
             Command::CycleInkWidth => {
                 let current = self.state.active_pen.width;
-                let idx = INK_WIDTH_PRESETS
+                // Find the first preset strictly greater than the current width, wrapping to
+                // the smallest. This handles non-preset widths (e.g. from SetInkWidth or
+                // config) by snapping forward to the next larger preset rather than resetting.
+                self.state.active_pen.width = INK_WIDTH_PRESETS
                     .iter()
-                    .position(|w| (w - current).abs() < f32::EPSILON)
-                    .unwrap_or(0);
-                self.state.active_pen.width =
-                    INK_WIDTH_PRESETS[(idx + 1) % INK_WIDTH_PRESETS.len()];
+                    .find(|&&w| w > current)
+                    .copied()
+                    .unwrap_or(INK_WIDTH_PRESETS[0]);
             }
             _ => {}
         }
