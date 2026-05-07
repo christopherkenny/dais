@@ -108,10 +108,11 @@ impl PresentationEngine {
             parse_hex_color(&config.text_boxes.color).unwrap_or([0, 0, 0, 255]);
         let text_box_default_background = parse_optional_hex_color(&config.text_boxes.background);
 
-        let shared_state = Arc::new(RwLock::new(state.clone()));
-
-        // Hydrate runtime annotation state from metadata
+        // Hydrate runtime annotation state from metadata before publishing shared state,
+        // so the UI never sees a state with annotations missing on the first frame.
         load_annotations_into_state(&mut state, metadata);
+
+        let shared_state = Arc::new(RwLock::new(state.clone()));
 
         (
             Self {
@@ -745,11 +746,29 @@ impl PresentationEngine {
     // -- Navigation helpers --
 
     fn next_slide(&mut self) {
-        self.advance_step();
+        if self.state.blacked_out || self.state.slide_groups.is_empty() {
+            return;
+        }
+        let current = self.state.current_logical_slide;
+        if current + 1 < self.state.total_logical_slides {
+            self.go_to_group(current + 1);
+        } else {
+            self.state.blacked_out = true;
+        }
     }
 
     fn previous_slide(&mut self) {
-        self.rewind_step();
+        if self.state.slide_groups.is_empty() {
+            return;
+        }
+        if self.state.blacked_out {
+            self.state.blacked_out = false;
+            return;
+        }
+        let current = self.state.current_logical_slide;
+        if current > 0 {
+            self.go_to_group(current - 1);
+        }
     }
 
     fn next_overlay(&mut self) {
@@ -1202,7 +1221,7 @@ mod tests {
     }
 
     #[test]
-    fn next_slide_advances_within_group_before_next_logical_slide() {
+    fn next_slide_jumps_to_first_page_of_next_group() {
         let meta = PresentationMetadata {
             groups: vec![
                 SlideGroupMeta { start_page: 0, end_page: 2 },
@@ -1212,18 +1231,7 @@ mod tests {
         };
         let (mut engine, _, sender) = make_engine_with_metadata(5, &meta);
 
-        sender.send(Command::NextSlide).unwrap();
-        engine.tick();
-        assert_eq!(engine.state().current_logical_slide, 0);
-        assert_eq!(engine.state().current_overlay_within_group, 1);
-        assert_eq!(engine.state().current_page, 1);
-
-        sender.send(Command::NextSlide).unwrap();
-        engine.tick();
-        assert_eq!(engine.state().current_logical_slide, 0);
-        assert_eq!(engine.state().current_overlay_within_group, 2);
-        assert_eq!(engine.state().current_page, 2);
-
+        // NextSlide skips any remaining overlays in the current group.
         sender.send(Command::NextSlide).unwrap();
         engine.tick();
         assert_eq!(engine.state().current_logical_slide, 1);
@@ -1251,7 +1259,7 @@ mod tests {
     }
 
     #[test]
-    fn previous_slide_rewinds_within_group_before_prev_logical_slide() {
+    fn previous_slide_jumps_to_first_page_of_prev_group() {
         let meta = PresentationMetadata {
             groups: vec![
                 SlideGroupMeta { start_page: 0, end_page: 2 },
@@ -1265,16 +1273,12 @@ mod tests {
         engine.tick();
         assert_eq!(engine.state().current_page, 3);
 
+        // PreviousSlide jumps to the first page of the previous group, not the last overlay.
         sender.send(Command::PreviousSlide).unwrap();
         engine.tick();
         assert_eq!(engine.state().current_logical_slide, 0);
-        assert_eq!(engine.state().current_overlay_within_group, 2);
-        assert_eq!(engine.state().current_page, 2);
-
-        sender.send(Command::PreviousSlide).unwrap();
-        engine.tick();
-        assert_eq!(engine.state().current_overlay_within_group, 1);
-        assert_eq!(engine.state().current_page, 1);
+        assert_eq!(engine.state().current_overlay_within_group, 0);
+        assert_eq!(engine.state().current_page, 0);
     }
 
     #[test]
