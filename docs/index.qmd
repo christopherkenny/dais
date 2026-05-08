@@ -43,13 +43,15 @@ dais <file.pdf>                  # Present with auto-detected display mode
 dais --single <file.pdf>         # Single-monitor mode (no audience window)
 dais --screen-share <file.pdf>   # Screen-share mode (audience as normal window)
 dais --edit <file.pdf>           # Open the slide grouping editor
+dais --config <path> <file.pdf>  # Use a specific config file
+dais --test-input                # Diagnostic mode for clicker/remote setup
 ```
 
 ## Display Modes
 
 - **Dual**: presenter console on the primary monitor, audience fullscreen on a secondary monitor.
 - **Single**: one-window mode. Press `F5` to switch between the presenter console and the configured single-monitor presentation surface.
-- **Screen-share**: both windows are visible; the audience view is a normal resizable window for Zoom/Teams sharing.
+- **Screen-share**: the audience view is a normal resizable window for Zoom/Teams sharing.
 
 With one monitor, Dais automatically falls back to single mode.
 

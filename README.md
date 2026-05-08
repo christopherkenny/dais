@@ -39,13 +39,15 @@ dais <file.pdf>                  # Present with auto-detected display mode
 dais --single <file.pdf>         # Single-monitor mode (no audience window)
 dais --screen-share <file.pdf>   # Screen-share mode (audience as normal window)
 dais --edit <file.pdf>           # Open the slide grouping editor
+dais --config <path> <file.pdf>  # Use a specific config file
+dais --test-input                # Diagnostic mode for clicker/remote setup
 ```
 
 ### Display Modes
 
 - **Dual** (default with 2+ monitors): Presenter console on primary, audience fullscreen on secondary.
 - **Single** (`--single`): Single-window mode. Press `F5` to switch between the presenter console and the presentation HUD.
-- **Screen-share** (`--screen-share`): Both windows visible; audience is a normal resizable window for Zoom/Teams sharing.
+- **Screen-share** (`--screen-share`): Audience is a normal resizable window for Zoom/Teams sharing.
 
 With one monitor, Dais automatically falls back to single mode.
 
@@ -115,7 +117,7 @@ Key architectural decisions:
 
 - **Command bus**: All user actions flow through a `Command` enum dispatched via `crossbeam-channel`. New input sources (REST API, remote control) just get another sender.
 - **State broadcast**: The engine owns the authoritative `PresentationState`. UI reads via `Arc<RwLock<>>` and never mutates state directly.
-- **`DocumentSource` trait**: PDF rendering is isolated behind a document-source abstraction; the default backend is `hayro`.
+- **`DocumentSource` trait**: PDF rendering is isolated behind a document-source abstraction. The default backend is `hayro`.
 - **`SidecarFormat` trait**: Pluggable sidecar formats for `.pdfpc` compatibility and Dais-native metadata.
 
 ## Contributing

@@ -122,6 +122,28 @@ size = 36.0
 
 In this example, dot, arrow, ring, and bullseye stay white at size 12. Crosshair changes to green at size 24, and highlight changes to translucent yellow at size 36.
 
+## Freeze
+
+Press **F** to freeze the audience display on the current slide. While frozen, the presenter console continues to show navigation controls normally. You can advance slides, change tools, and check notes. The audience stays locked on the page that was visible when freeze was toggled. Press **F** again to unfreeze.
+
+## Blackout
+
+Press **B** or **.** (period) to black out the audience display. Navigation is blocked while blacked out. Press **B** again to restore the audience view.
+
+At the end of a presentation, advancing past the last slide automatically blacks out the audience. Press **B** again to return.
+
+Blackout and whiteboard are mutually exclusive. Activating one deactivates the other.
+
+## Whiteboard
+
+Press **W** to show a blank white canvas on the audience display. Ink mode activates automatically. Whiteboard strokes are shared across all slides. They persist regardless of navigation and are saved to the sidecar with **Ctrl+S**. Press **C** to clear the whiteboard. Press **W** again to return to the slide view.
+
+Activating the whiteboard deactivates blackout and the laser pointer. Whiteboard ink uses the same `[ink]` settings as slide annotations.
+
+## Zoom
+
+Press **Z** to toggle zoom mode on the audience display. While zoom is active, click and drag on the audience view to set the zoom region. The zoom factor is clamped between 1× and 10×. Press **Z** again to exit.
+
 ## Text Boxes
 
 `[text_boxes]` controls the default style for newly created text boxes.
@@ -179,7 +201,7 @@ If a configured audience monitor is missing at launch, Dais now:
 - Falls back gracefully to another display or single-monitor mode
 - Shows a startup dialog in the presenter window so you can reassign the audience output for the current session
 
-The reassignment dialog does not rewrite `dais.toml`; if you want the new monitor choice to persist, update `display.audience_monitor` in config afterward.
+The reassignment dialog does not rewrite `dais.toml`. To persist the new monitor choice, update `display.audience_monitor` in config afterward.
 
 ## DPI and Scaling
 
