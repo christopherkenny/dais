@@ -18,7 +18,7 @@ authors = ["Christopher T. Kenny"]
 license = "MIT"
 repository = "https://github.com/christopherkenny/dais"
 homepage = "https://github.com/christopherkenny/dais"
-documentation = "https://docs.rs/dais"
+documentation = "https://christophertkenny.com/dais/"
 keywords = ["pdf", "presentation", "slides"]
 categories = ["command-line-utilities", "multimedia"]
 
