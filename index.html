@@ -204,14 +204,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>                  <span class="co"># Present with auto-detected display mode</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--single</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>         <span class="co"># Single-monitor mode (no audience window)</span></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--screen-share</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>   <span class="co"># Screen-share mode (audience as normal window)</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--edit</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>           <span class="co"># Open the slide grouping editor</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--edit</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>           <span class="co"># Open the slide grouping editor</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--config</span> <span class="op">&lt;</span>path<span class="op">&gt;</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>  <span class="co"># Use a specific config file</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--test-input</span>                <span class="co"># Diagnostic mode for clicker/remote setup</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="display-modes" class="level2">
 <h2 class="anchored" data-anchor-id="display-modes">Display Modes</h2>
 <ul>
 <li><strong>Dual</strong>: presenter console on the primary monitor, audience fullscreen on a secondary monitor.</li>
 <li><strong>Single</strong>: one-window mode. Press <code>F5</code> to switch between the presenter console and the configured single-monitor presentation surface.</li>
-<li><strong>Screen-share</strong>: both windows are visible; the audience view is a normal resizable window for Zoom/Teams sharing.</li>
+<li><strong>Screen-share</strong>: the audience view is a normal resizable window for Zoom/Teams sharing.</li>
 </ul>
 <p>With one monitor, Dais automatically falls back to single mode.</p>
 </section>

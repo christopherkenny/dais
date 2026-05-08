@@ -291,6 +291,25 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="dt">size</span> <span class="op">=</span> <span class="fl">36.0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>In this example, dot, arrow, ring, and bullseye stay white at size 12. Crosshair changes to green at size 24, and highlight changes to translucent yellow at size 36.</p>
 </section>
+<section id="freeze" class="level2">
+<h2 class="anchored" data-anchor-id="freeze">Freeze</h2>
+<p>Press <strong>F</strong> to freeze the audience display on the current slide. While frozen, the presenter console continues to show navigation controls normally. You can advance slides, change tools, and check notes. The audience stays locked on the page that was visible when freeze was toggled. Press <strong>F</strong> again to unfreeze.</p>
+</section>
+<section id="blackout" class="level2">
+<h2 class="anchored" data-anchor-id="blackout">Blackout</h2>
+<p>Press <strong>B</strong> or <strong>.</strong> (period) to black out the audience display. Navigation is blocked while blacked out. Press <strong>B</strong> again to restore the audience view.</p>
+<p>At the end of a presentation, advancing past the last slide automatically blacks out the audience. Press <strong>B</strong> again to return.</p>
+<p>Blackout and whiteboard are mutually exclusive. Activating one deactivates the other.</p>
+</section>
+<section id="whiteboard" class="level2">
+<h2 class="anchored" data-anchor-id="whiteboard">Whiteboard</h2>
+<p>Press <strong>W</strong> to show a blank white canvas on the audience display. Ink mode activates automatically. Whiteboard strokes are shared across all slides. They persist regardless of navigation and are saved to the sidecar with <strong>Ctrl+S</strong>. Press <strong>C</strong> to clear the whiteboard. Press <strong>W</strong> again to return to the slide view.</p>
+<p>Activating the whiteboard deactivates blackout and the laser pointer. Whiteboard ink uses the same <code>[ink]</code> settings as slide annotations.</p>
+</section>
+<section id="zoom" class="level2">
+<h2 class="anchored" data-anchor-id="zoom">Zoom</h2>
+<p>Press <strong>Z</strong> to toggle zoom mode on the audience display. While zoom is active, click and drag on the audience view to set the zoom region. The zoom factor is clamped between 1× and 10×. Press <strong>Z</strong> again to exit.</p>
+</section>
 <section id="text-boxes" class="level2">
 <h2 class="anchored" data-anchor-id="text-boxes">Text Boxes</h2>
 <p><code>[text_boxes]</code> controls the default style for newly created text boxes.</p>
@@ -359,7 +378,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>Falls back gracefully to another display or single-monitor mode</li>
 <li>Shows a startup dialog in the presenter window so you can reassign the audience output for the current session</li>
 </ul>
-<p>The reassignment dialog does not rewrite <code>dais.toml</code>; if you want the new monitor choice to persist, update <code>display.audience_monitor</code> in config afterward.</p>
+<p>The reassignment dialog does not rewrite <code>dais.toml</code>. To persist the new monitor choice, update <code>display.audience_monitor</code> in config afterward.</p>
 </section>
 <section id="dpi-and-scaling" class="level2">
 <h2 class="anchored" data-anchor-id="dpi-and-scaling">DPI and Scaling</h2>
