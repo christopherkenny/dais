@@ -4,8 +4,8 @@ use crate::types::PresentationMetadata;
 
 /// Abstraction for sidecar file formats.
 ///
-/// In v1, the only implementation is `.pdfpc`. Future formats (e.g., `.dais`)
-/// implement this same trait and slot in without changing downstream code.
+/// Implementations read and write Dais presentation metadata using a concrete
+/// file format such as `.pdfpc` or the Dais-native sidecar format.
 pub trait SidecarFormat {
     /// Read metadata from a sidecar file.
     fn read(&self, path: &Path) -> Result<PresentationMetadata, SidecarError>;

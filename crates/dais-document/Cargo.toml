@@ -16,7 +16,6 @@ readme = "README.md"
 [features]
 default = ["hayro"]
 hayro = ["dep:hayro"]
-mupdf = []
 
 [dependencies]
 dais-core = { workspace = true }

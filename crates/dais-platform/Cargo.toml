@@ -16,7 +16,6 @@ readme = "README.md"
 [features]
 default = []
 x11 = ["dep:x11rb"]
-wayland = []
 
 [dependencies]
 dais-core = { workspace = true }

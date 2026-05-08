@@ -2,9 +2,8 @@ use crate::page::{PageDimensions, RenderSize, RenderedPage};
 
 /// Abstraction over document sources.
 ///
-/// In v1, the only implementation is a PDF loader (hayro or mupdf-rs).
-/// This trait is the extension point for native Typst source support —
-/// a live-compiled Typst document becomes another `DocumentSource` implementation.
+/// Implementations provide page geometry, rendering, embedded metadata, and
+/// outline data without exposing renderer-specific details to the engine or UI.
 pub trait DocumentSource: Send + Sync {
     /// Total number of pages in the document.
     fn page_count(&self) -> usize;

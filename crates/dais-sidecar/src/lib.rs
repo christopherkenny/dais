@@ -2,8 +2,8 @@
 //!
 //! This crate defines Dais's internal presentation metadata types and provides
 //! a trait-based abstraction for reading/writing sidecar formats. The `.pdfpc`
-//! format is the v1 implementation; a future `.dais` format slots in as an
-//! additional implementation.
+//! format provides compatibility with existing presenter workflows, while the
+//! Dais-native format stores richer application metadata.
 
 pub mod dais_format;
 pub mod format;

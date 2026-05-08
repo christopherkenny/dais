@@ -15,9 +15,6 @@ pub mod macos;
 #[cfg(all(target_os = "linux", feature = "x11"))]
 pub mod linux_x11;
 
-#[cfg(all(target_os = "linux", feature = "wayland"))]
-pub mod linux_wayland;
-
 /// Create a platform-appropriate [`MonitorManager`] implementation.
 #[cfg(target_os = "windows")]
 pub fn create_monitor_manager() -> impl MonitorManager {

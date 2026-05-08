@@ -2,9 +2,8 @@ use std::collections::HashMap;
 
 /// Dais's internal presentation metadata — the authoritative representation.
 ///
-/// This is NOT tied to any specific file format. `.pdfpc` is one serialization;
-/// a future `.dais` format will be another. The engine and UI work with these
-/// types exclusively.
+/// This is not tied to any specific file format. `.pdfpc` compatibility and
+/// Dais-native sidecar files are serializations of these shared types.
 #[derive(Debug, Clone, Default)]
 pub struct PresentationMetadata {
     /// Presentation title, if known.

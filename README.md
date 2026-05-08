@@ -105,8 +105,8 @@ Key architectural decisions:
 
 - **Command bus**: All user actions flow through a `Command` enum dispatched via `crossbeam-channel`. New input sources (REST API, remote control) just get another sender.
 - **State broadcast**: The engine owns the authoritative `PresentationState`. UI reads via `Arc<RwLock<>>` and never mutates state directly.
-- **`DocumentSource` trait**: Feature-flagged PDF backends. `hayro` (pure Rust) is default; `mupdf` is a future fallback.
-- **`SidecarFormat` trait**: Pluggable sidecar formats with `.pdfpc` today and `.dais` in the future.
+- **`DocumentSource` trait**: PDF rendering is isolated behind a document-source abstraction; the default backend is `hayro`.
+- **`SidecarFormat` trait**: Pluggable sidecar formats for `.pdfpc` compatibility and Dais-native metadata.
 
 ## Contributing
 

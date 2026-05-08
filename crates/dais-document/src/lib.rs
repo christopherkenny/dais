@@ -1,8 +1,7 @@
 //! Document source abstraction and PDF rendering for Dais.
 //!
-//! Defines the [`source::DocumentSource`] trait that abstracts over PDF rendering backends.
-//! In v1, the implementation is hayro-backed (or mupdf-rs as fallback).
-//! A future native Typst source implementation would be another `DocumentSource`.
+//! Defines the [`source::DocumentSource`] trait used by the Hayro-backed PDF renderer
+//! and related render pipeline components.
 
 pub mod cache;
 pub mod page;
@@ -12,6 +11,3 @@ pub mod typst_renderer;
 
 #[cfg(feature = "hayro")]
 pub mod pdf_hayro;
-
-#[cfg(feature = "mupdf")]
-pub mod pdf_mupdf;
