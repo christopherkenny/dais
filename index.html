@@ -142,10 +142,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="nav-link" href="./clicker-setup.html"> 
 <span class="menu-text">Clickers</span></a>
   </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="./interactive-testing-checklist.html"> 
-<span class="menu-text">Testing</span></a>
-  </li>  
 </ul>
           </div> <!-- /navcollapse -->
             <div class="quarto-navbar-tools">
@@ -180,7 +176,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p><a href="https://github.com/christopherkenny/dais/actions/workflows/ci.yml"><img src="https://github.com/christopherkenny/dais/actions/workflows/ci.yml/badge.svg" class="img-fluid" alt="CI"></a> <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" class="img-fluid" alt="License: MIT"></a></p>
+<p><a href="https://github.com/christopherkenny/dais/actions/workflows/ci.yml"><img src="https://github.com/christopherkenny/dais/actions/workflows/ci.yml/badge.svg" class="img-fluid" alt="CI"></a> <a href="https://crates.io/crates/dais"><img src="https://img.shields.io/crates/v/dais.svg" class="img-fluid" alt="Crates.io"></a> <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" class="img-fluid" alt="License: MIT"></a></p>
 <p>Dais is a cross-platform PDF presentation console written in Rust for researchers and academics who build slides in LaTeX/Beamer, Typst, PowerPoint, or Keynote. Dais is designed for straightforward installation, reliable operation in real presentation setups, and compatibility with existing slide workflows.</p>
 <section id="features" class="level2">
 <h2 class="anchored" data-anchor-id="features">Features</h2>
@@ -193,17 +189,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>Single-binary distribution with no runtime dependencies or installers.</li>
 </ul>
 </section>
+<section id="installation" class="level2">
+<h2 class="anchored" data-anchor-id="installation">Installation</h2>
+<p>Install from <a href="https://crates.io/crates/dais">crates.io</a> with Cargo (requires Rust 1.92+):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> install dais</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Or download a pre-built binary from <a href="https://github.com/christopherkenny/dais/releases">GitHub Releases</a>.</p>
+</section>
 <section id="quick-start" class="level2">
 <h2 class="anchored" data-anchor-id="quick-start">Quick Start</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Download the latest release for your platform from GitHub Releases, then run:</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> presentation.pdf</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> presentation.pdf</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="usage" class="level2">
 <h2 class="anchored" data-anchor-id="usage">Usage</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>                  <span class="co"># Present with auto-detected display mode</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--single</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>         <span class="co"># Single-monitor mode (no audience window)</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--screen-share</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>   <span class="co"># Screen-share mode (audience as normal window)</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--edit</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>           <span class="co"># Open the slide grouping editor</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>                  <span class="co"># Present with auto-detected display mode</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--single</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>         <span class="co"># Single-monitor mode (no audience window)</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--screen-share</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>   <span class="co"># Screen-share mode (audience as normal window)</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--edit</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>           <span class="co"># Open the slide grouping editor</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="display-modes" class="level2">
 <h2 class="anchored" data-anchor-id="display-modes">Display Modes</h2>
@@ -217,13 +218,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="grouping-editor" class="level2">
 <h2 class="anchored" data-anchor-id="grouping-editor">Grouping Editor</h2>
 <p>For PDFs without embedded overlay metadata, such as PowerPoint exports, use the built-in editor:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--edit</span> slides.pdf</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--edit</span> slides.pdf</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Click between thumbnails to set group boundaries. Save writes the configured sidecar format. When loading, Dais checks <code>.dais</code> before <code>.pdfpc</code>.</p>
 </section>
 <section id="building-from-source" class="level2">
 <h2 class="anchored" data-anchor-id="building-from-source">Building From Source</h2>
 <p>Requires Rust 1.92+.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> install <span class="at">--git</span> https://github.com/christopherkenny/dais.git <span class="at">--package</span> dais <span class="at">--bin</span> dais</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>To install from the git repository without cloning:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> install <span class="at">--git</span> https://github.com/christopherkenny/dais.git <span class="at">--package</span> dais <span class="at">--bin</span> dais</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>The binary will be at <code>target/release/dais</code>, or <code>dais.exe</code> on Windows.</p>
 </section>
 <section id="documentation" class="level2">
@@ -232,7 +234,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><a href="./configuration.html">Configuration</a></li>
 <li><a href="./keybindings.html">Keybindings</a></li>
 <li><a href="./clicker-setup.html">Clicker &amp; Remote Setup</a></li>
-<li><a href="./interactive-testing-checklist.html">Interactive Testing Checklist</a></li>
 </ul>
 </section>
 <section id="architecture" class="level2">

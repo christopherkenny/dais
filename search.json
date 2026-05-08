@@ -98,11 +98,18 @@
     "text": "Features\n\nMulti-monitor presenter view with an audience display and a presenter console with notes, timer, and navigation.\nOverlay and build-step support for pdfpc metadata, Beamer \\pdfpc, and manual grouping.\nPresentation tools including a laser pointer, freehand ink, spotlight, and zoom.\n.pdfpc compatibility and a native .dais sidecar format.\nFully remappable keybindings with presenter-console defaults.\nSingle-binary distribution with no runtime dependencies or installers."
   },
   {
+    "objectID": "index.html#installation",
+    "href": "index.html#installation",
+    "title": "Dais: A Native PDF Presenter Console",
+    "section": "Installation",
+    "text": "Installation\nInstall from crates.io with Cargo (requires Rust 1.92+):\ncargo install dais\nOr download a pre-built binary from GitHub Releases."
+  },
+  {
     "objectID": "index.html#quick-start",
     "href": "index.html#quick-start",
     "title": "Dais: A Native PDF Presenter Console",
     "section": "Quick Start",
-    "text": "Quick Start\n# Download the latest release for your platform from GitHub Releases, then run:\ndais presentation.pdf"
+    "text": "Quick Start\ndais presentation.pdf"
   },
   {
     "objectID": "index.html#usage",
@@ -130,14 +137,14 @@
     "href": "index.html#building-from-source",
     "title": "Dais: A Native PDF Presenter Console",
     "section": "Building From Source",
-    "text": "Building From Source\nRequires Rust 1.92+.\ncargo install --git https://github.com/christopherkenny/dais.git --package dais --bin dais\nThe binary will be at target/release/dais, or dais.exe on Windows."
+    "text": "Building From Source\nRequires Rust 1.92+.\nTo install from the git repository without cloning:\ncargo install --git https://github.com/christopherkenny/dais.git --package dais --bin dais\nThe binary will be at target/release/dais, or dais.exe on Windows."
   },
   {
     "objectID": "index.html#documentation",
     "href": "index.html#documentation",
     "title": "Dais: A Native PDF Presenter Console",
     "section": "Documentation",
-    "text": "Documentation\n\nConfiguration\nKeybindings\nClicker & Remote Setup\nInteractive Testing Checklist"
+    "text": "Documentation\n\nConfiguration\nKeybindings\nClicker & Remote Setup"
   },
   {
     "objectID": "index.html#architecture",
