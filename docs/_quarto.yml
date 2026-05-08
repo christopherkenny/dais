@@ -19,6 +19,9 @@ website:
         href: keybindings.md
       - text: Clickers
         href: clicker-setup.md
+    right:
+      - icon: github
+        href: https://github.com/christopherkenny/dais
   page-footer:
     left: |
       Dais documentation.
