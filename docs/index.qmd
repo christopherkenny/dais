@@ -3,6 +3,7 @@ title: "Dais: A Native PDF Presenter Console"
 ---
 
 [![CI](https://github.com/christopherkenny/dais/actions/workflows/ci.yml/badge.svg)](https://github.com/christopherkenny/dais/actions/workflows/ci.yml)
+[![Crates.io](https://img.shields.io/crates/v/dais.svg)](https://crates.io/crates/dais)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Dais is a cross-platform PDF presentation console written in Rust for researchers
@@ -19,10 +20,19 @@ presentation setups, and compatibility with existing slide workflows.
 - Fully remappable keybindings with presenter-console defaults.
 - Single-binary distribution with no runtime dependencies or installers.
 
+## Installation
+
+Install from [crates.io](https://crates.io/crates/dais) with Cargo (requires Rust 1.92+):
+
+```bash
+cargo install dais
+```
+
+Or download a pre-built binary from [GitHub Releases](https://github.com/christopherkenny/dais/releases).
+
 ## Quick Start
 
 ```bash
-# Download the latest release for your platform from GitHub Releases, then run:
 dais presentation.pdf
 ```
 
@@ -59,6 +69,8 @@ sidecar format. When loading, Dais checks `.dais` before `.pdfpc`.
 
 Requires Rust 1.92+.
 
+To install from the git repository without cloning:
+
 ```bash
 cargo install --git https://github.com/christopherkenny/dais.git --package dais --bin dais
 ```
@@ -70,7 +82,6 @@ The binary will be at `target/release/dais`, or `dais.exe` on Windows.
 - [Configuration](configuration.md)
 - [Keybindings](keybindings.md)
 - [Clicker & Remote Setup](clicker-setup.md)
-- [Interactive Testing Checklist](interactive-testing-checklist.md)
 
 ## Architecture
 

@@ -19,8 +19,6 @@ website:
         href: keybindings.md
       - text: Clickers
         href: clicker-setup.md
-      - text: Testing
-        href: interactive-testing-checklist.md
   page-footer:
     left: |
       Dais documentation.

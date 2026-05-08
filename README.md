@@ -1,6 +1,7 @@
 # Dais: A Native PDF Presenter Console <img src='assets/dais.png' align="right" height="150" />
 
 [![CI](https://github.com/christopherkenny/dais/actions/workflows/ci.yml/badge.svg)](https://github.com/christopherkenny/dais/actions/workflows/ci.yml)
+[![Crates.io](https://img.shields.io/crates/v/dais.svg)](https://crates.io/crates/dais)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Dais is a cross-platform PDF presentation console written in Rust for researchers and academics who build slides in LaTeX/Beamer, Typst, PowerPoint, or Keynote.
@@ -15,10 +16,19 @@ Dais is designed for straightforward installation, reliable operation in real pr
 - Fully remappable keybindings with presenter-console defaults.
 - Single-binary distribution with no runtime dependencies or installers.
 
+## Installation
+
+Install from [crates.io](https://crates.io/crates/dais) with Cargo (requires Rust 1.92+):
+
+```bash
+cargo install dais
+```
+
+Or download a pre-built binary from [GitHub Releases](https://github.com/christopherkenny/dais/releases).
+
 ## Quick Start
 
 ```bash
-# Download the latest release for your platform from GitHub Releases, then run:
 dais presentation.pdf
 ```
 
@@ -58,7 +68,7 @@ For a local version, simply run:
 cargo install --path crates/dais
 ```
 
-To install without cloning from GitHub:
+To install from the git repository without cloning:
 
 ```bash
 cargo install --git https://github.com/christopherkenny/dais.git --package dais --bin dais
