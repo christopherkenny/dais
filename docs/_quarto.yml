@@ -4,6 +4,7 @@ project:
 
 website:
   title: Dais
+  favicon: ../assets/dais.ico
   site-url: https://christopherkenny.github.io/dais
   repo-url: https://github.com/christopherkenny/dais
   repo-actions: [source, issue]
