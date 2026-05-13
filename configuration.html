@@ -220,17 +220,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="kw">[text_boxes]</span></span>
 <span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#000000"</span></span>
 <span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="dt">background</span> <span class="op">=</span> <span class="st">"transparent"</span>    <span class="co"># Hex color or "transparent"</span></span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a><span class="kw">[notes]</span></span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="dt">font_size</span> <span class="op">=</span> <span class="fl">16.0</span></span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="dt">font_size_step</span> <span class="op">=</span> <span class="fl">2.0</span>           <span class="co"># Increment/decrement step</span></span>
-<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a><span class="kw">[keybindings]</span></span>
-<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a><span class="co"># See docs/keybindings.md for the full reference</span></span>
-<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Example overrides:</span></span>
-<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a><span class="co"># next_slide = ["j", "Return"]</span></span>
-<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a><span class="co"># toggle_laser = ["p"]</span></span>
-<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a><span class="co"># cycle_laser_style = ["Ctrl+l"]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a><span class="dt">typst_prelude</span> <span class="op">=</span> <span class="st">""</span>            <span class="co"># Typst setup inserted before newly created text box content</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="kw">[notes]</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="dt">font_size</span> <span class="op">=</span> <span class="fl">16.0</span></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a><span class="dt">font_size_step</span> <span class="op">=</span> <span class="fl">2.0</span>           <span class="co"># Increment/decrement step</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a><span class="kw">[keybindings]</span></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a><span class="co"># See docs/keybindings.md for the full reference</span></span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a><span class="co"># Example overrides:</span></span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a><span class="co"># next_slide = ["j", "Return"]</span></span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a><span class="co"># toggle_laser = ["p"]</span></span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a><span class="co"># cycle_laser_style = ["Ctrl+l"]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="project-local-config" class="level2">
 <h2 class="anchored" data-anchor-id="project-local-config">Project-Local Config</h2>
@@ -328,11 +329,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ul>
 <li><code>color</code> accepts <code>#RRGGBB</code> or <code>#RRGGBBAA</code></li>
 <li><code>background</code> accepts <code>#RRGGBB</code>, <code>#RRGGBBAA</code>, or <code>"transparent"</code></li>
+<li><code>typst_prelude</code> accepts a Typst snippet inserted after Dais’s page/text defaults</li>
 </ul>
 <p>Example:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[text_boxes]</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#111111"</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="dt">background</span> <span class="op">=</span> <span class="st">"#FFF7CCDD"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="dt">background</span> <span class="op">=</span> <span class="st">"#FFF7CCDD"</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="dt">typst_prelude</span> <span class="op">=</span> <span class="st">"#set align(horizon)"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The prelude is copied into newly created text boxes and saved with them in <code>.dais</code> sidecars. Existing boxes keep the prelude they were created with until edited in the sidecar.</p>
 </section>
 <section id="sidecar-formats" class="level2">
 <h2 class="anchored" data-anchor-id="sidecar-formats">Sidecar Formats</h2>
