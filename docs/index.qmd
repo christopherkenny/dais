@@ -64,7 +64,8 @@ built-in editor:
 dais --edit slides.pdf
 ```
 
-Click between thumbnails to set group boundaries. Save writes the configured
+Use the "Split after" buttons beneath each thumbnail to split a group, and the
+"Merge" buttons between groups to combine them. Save writes the configured
 sidecar format. When loading, Dais checks `.dais` before `.pdfpc`.
 
 ## Building From Source

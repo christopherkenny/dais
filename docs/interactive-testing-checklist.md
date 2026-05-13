@@ -166,7 +166,7 @@ Use `tests/fixtures/test.pdf` with the `beamer-example.pdfpc` sidecar for overla
 | # | Test | Action | Expected Behavior | Result | Actual |
 |---|------|--------|-------------------|--------|--------|
 | J1 | Spotlight toggle | Press `s` | Spotlight mode activates. Status bar shows **Spotlight** in light yellow | | |
-| J2 | Spotlight effect | Move mouse over the slide | Area around the cursor is bright; rest of the slide is dimmed with semi-transparent black overlay. A thin white circle border marks the spotlight edge | | |
+| J2 | Spotlight effect | Move mouse over the slide | Area around the cursor is bright; rest of the slide is dimmed with semi-transparent black overlay. A thin white square border marks the spotlight edge | | |
 | J3 | Spotlight on audience | Move mouse on presenter | Audience window shows same spotlight effect at corresponding position | | |
 | J4 | Spotlight off | Press `s` again | Dim overlay removed, full slide visible. Spotlight position clears | | |
 
@@ -257,8 +257,8 @@ Use `tests/fixtures/test.pdf` with the `beamer-example.pdfpc` sidecar for overla
 |---|------|--------|-------------------|--------|--------|
 | Q1 | Editor layout | Run `dais --edit tests/example.pdf` | Window shows: top bar with "Grouping Editor" heading, page/slide count, "💾 Save" and "✕ Close" buttons. Below: horizontal filmstrip of page thumbnails | | |
 | Q2 | Alternating group colors | Observe the filmstrip | Adjacent groups have alternating background colors (darker/lighter gray) to distinguish them visually | | |
-| Q3 | Split a group | Click the small gap between two pages within a group | A boundary is inserted. The group splits into two. Slide count increases by 1. Gap highlights blue on hover | | |
-| Q4 | Merge groups | Click the boundary separator between two groups | Boundary removed. The two groups merge into one. Slide count decreases by 1 | | |
+| Q3 | Split a group | Click the "Split after" button beneath a thumbnail | A boundary is inserted. The group splits into two. Slide count increases by 1. | | |
+| Q4 | Merge groups | Click the "Merge" button between two groups | Boundary removed. The two groups merge into one. Slide count decreases by 1 | | |
 | Q5 | Page 0 immovable | Attempt to toggle boundary on page 0 | Nothing happens — page 0 is always the start of a boundary and cannot be toggled | | |
 | Q6 | Save from editor | Click "💾 Save" | Status message briefly shows "Saved to <path>" in green. Sidecar file written in the configured format | | |
 | Q7 | Close editor | Click "✕ Close" | Editor window closes | | |
