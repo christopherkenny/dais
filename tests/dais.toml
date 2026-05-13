@@ -1,6 +1,5 @@
 [display]
 audience_monitor = "3"
-mode = "single"
 
 [timer]
 mode = "countdown"

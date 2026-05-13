@@ -15,7 +15,7 @@ presentation setups, and compatibility with existing slide workflows.
 
 - Multi-monitor presenter view with an audience display and a presenter console with notes, timer, and navigation.
 - Overlay and build-step support for `pdfpc` metadata, Beamer `\pdfpc`, and manual grouping.
-- Presentation tools including a laser pointer, freehand ink, spotlight, and zoom.
+- Presentation tools including a laser pointer, freehand ink, spotlight, zoom, and a slide overview grid.
 - `.pdfpc` compatibility and a native `.dais` sidecar format.
 - Fully remappable keybindings with presenter-console defaults.
 - Single-binary distribution with no runtime dependencies or installers.

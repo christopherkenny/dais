@@ -94,7 +94,7 @@ Full dual-monitor is the primary mode but Dais must handle these without crashin
 
 - **Laser pointer** — colored dot on the audience screen driven by mouse position on the presenter screen; color and size configurable
 - **Freehand ink** — draw on the current slide for emphasis; single keypress to clear
-- **Spotlight** — dims everything outside a moveable circle to focus audience attention
+- **Spotlight** — dims everything outside a moveable square to focus audience attention
 - **Zoom** — keyboard zoom into a region of the current slide on the audience screen
 
 ### 4. Presenter Console & Notes

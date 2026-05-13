@@ -141,6 +141,10 @@ Press **W** to show a blank white canvas on the audience display. Ink mode activ
 
 Activating the whiteboard deactivates blackout and the laser pointer. Whiteboard ink uses the same `[ink]` settings as slide annotations.
 
+## Slide Overview
+
+Press **O** to open the slide overview grid. All slide thumbnails are displayed in a scrollable grid over the presenter console. Use arrow keys to move the selection highlight, **Enter** to jump to the selected slide, or click any thumbnail directly. Pressing **O** or **Escape** closes the overview without navigating.
+
 ## Zoom
 
 Press **Z** to toggle zoom mode on the audience display. While zoom is active, click and drag on the audience view to set the zoom region. The zoom factor is clamped between 1× and 10×. Press **Z** again to exit.

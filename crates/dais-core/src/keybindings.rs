@@ -152,7 +152,8 @@ impl Action {
             | Self::PreviousOverlay
             | Self::FirstSlide
             | Self::LastSlide
-            | Self::GoToSlide => "Navigation",
+            | Self::GoToSlide
+            | Self::ToggleOverview => "Navigation",
 
             Self::ToggleFreeze
             | Self::ToggleBlackout
@@ -172,8 +173,7 @@ impl Action {
 
             Self::StartPauseTimer | Self::ResetTimer => "Timer",
 
-            Self::ToggleOverview
-            | Self::ToggleNotes
+            Self::ToggleNotes
             | Self::ToggleNotesEdit
             | Self::IncrementNotesFont
             | Self::DecrementNotesFont => "Notes & Panels",
