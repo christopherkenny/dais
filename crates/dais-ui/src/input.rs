@@ -203,13 +203,13 @@ impl InputHandler {
         let events: Vec<egui::Event> = ctx.input(|i| i.events.clone());
 
         for event in &events {
-            if let egui::Event::Key { key, pressed: true, modifiers, .. } = event {
-                self.handle_key(*key, *modifiers);
+            if let egui::Event::Key { key, pressed: true, repeat, modifiers, .. } = event {
+                self.handle_key(*key, *modifiers, *repeat);
             }
         }
     }
 
-    fn handle_key(&mut self, key: egui::Key, modifiers: egui::Modifiers) {
+    fn handle_key(&mut self, key: egui::Key, modifiers: egui::Modifiers, repeat: bool) {
         // In jump-to-slide mode, handle digits/Enter/Escape specially
         if self.mode == InputMode::JumpToSlide {
             if let Some(digit) = key_to_digit(key) {
@@ -237,6 +237,9 @@ impl InputHandler {
 
         let combo = egui_to_key_combo(key, modifiers);
         if let Some(action) = self.keybindings.lookup(&combo) {
+            if repeat && !action_allows_key_repeat(action) {
+                return;
+            }
             self.dispatch_action(action);
         }
     }
@@ -450,6 +453,18 @@ fn key_to_digit(key: egui::Key) -> Option<char> {
     }
 }
 
+fn action_allows_key_repeat(action: Action) -> bool {
+    matches!(
+        action,
+        Action::NextSlide
+            | Action::PreviousSlide
+            | Action::NextOverlay
+            | Action::PreviousOverlay
+            | Action::IncrementNotesFont
+            | Action::DecrementNotesFont
+    )
+}
+
 /// Map an `Action` to a `Command` for simple 1:1 mappings.
 /// Returns `None` for actions that need special handling (`GoToSlide`, `StartPauseTimer`).
 fn action_to_command(action: Action) -> Option<Command> {
@@ -483,5 +498,38 @@ fn action_to_command(action: Action) -> Option<Command> {
         Action::Quit => Some(Command::Quit),
         Action::SaveSidecar => Some(Command::SaveSidecar),
         Action::GoToSlide | Action::StartPauseTimer => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use dais_core::bus::CommandBus;
+
+    use super::*;
+
+    fn make_handler() -> (InputHandler, dais_core::bus::CommandReceiver) {
+        let bus = CommandBus::new();
+        let sender = bus.sender();
+        let receiver = bus.into_receiver();
+        let keybindings = KeybindingMap::from_config(&std::collections::HashMap::new());
+        (InputHandler::new(sender, keybindings), receiver)
+    }
+
+    #[test]
+    fn ctrl_l_dispatches_cycle_laser_style() {
+        let (mut handler, receiver) = make_handler();
+
+        handler.handle_key(egui::Key::L, egui::Modifiers::CTRL, false);
+
+        assert_eq!(receiver.try_recv(), Some(Command::CycleLaserStyle));
+    }
+
+    #[test]
+    fn repeated_ctrl_l_does_not_skip_pointer_styles() {
+        let (mut handler, receiver) = make_handler();
+
+        handler.handle_key(egui::Key::L, egui::Modifiers::CTRL, true);
+
+        assert_eq!(receiver.try_recv(), None);
     }
 }

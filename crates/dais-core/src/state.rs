@@ -201,6 +201,8 @@ pub enum PointerStyle {
     /// Circular laser dot with glow.
     #[default]
     Dot,
+    /// Minimal dot without glow.
+    Minimal,
     /// Crosshair with a small center dot.
     Crosshair,
     /// Arrow-style marker.
@@ -233,6 +235,8 @@ impl Default for PointerAppearance {
 pub struct PointerAppearances {
     /// Appearance for the dot pointer.
     pub dot: PointerAppearance,
+    /// Appearance for the minimal dot pointer.
+    pub minimal: PointerAppearance,
     /// Appearance for the crosshair pointer.
     pub crosshair: PointerAppearance,
     /// Appearance for the arrow pointer.
@@ -250,6 +254,7 @@ impl PointerAppearances {
     pub fn for_style(&self, style: PointerStyle) -> PointerAppearance {
         match style {
             PointerStyle::Dot => self.dot,
+            PointerStyle::Minimal => self.minimal,
             PointerStyle::Crosshair => self.crosshair,
             PointerStyle::Arrow => self.arrow,
             PointerStyle::Ring => self.ring,
@@ -264,6 +269,7 @@ impl Default for PointerAppearances {
         let default = PointerAppearance::default();
         Self {
             dot: default,
+            minimal: default,
             crosshair: default,
             arrow: default,
             ring: default,

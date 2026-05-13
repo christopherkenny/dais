@@ -1,24 +1,24 @@
-# Changelog
+# dais (development version)
 
-All notable changes to this project will be documented in this file.
+## Bug fixes
 
-## [Unreleased]
+- Ctrl+L laser-style cycling now advances one style per keypress and reaches every pointer style.
 
-### Added
+# dais 0.1.0
 
-- Initial release of Dais — a cross-platform native PDF presenter console.
-- Multi-monitor presenter view with audience display and presenter console.
-- Overlay and build-step support via Polylux, touying, and Beamer `\pdfpc` metadata.
-- Presentation aids: laser pointer, freehand ink, spotlight, and zoom.
-- `.pdfpc` sidecar compatibility for notes and overlay grouping.
-- Built-in slide grouping editor (`dais --edit <file.pdf>`).
-- Fully remappable keybindings with pdfpc-compatible defaults.
-- Countdown and elapsed timer with color-coded warning/overrun phases.
-- Display modes: dual, single, and screen-share.
-- Automatic monitor detection with graceful single-monitor fallback.
-- Markdown notes rendering via egui_commonmark.
-- Slide overview grid with keyboard navigation.
-- Freeze and blackout audience display controls.
-- TOML configuration with platform-appropriate paths.
-- Single-binary distribution (no runtime dependencies).
-- CI on Windows, macOS, and Linux.
+## New features
+
+- Initial release of Dais, a native Rust PDF presenter console for PDF slides, such as those made with LaTeX/Beamer or Typst.
+- Presenter console with current slide, next-slide preview, notes, timer, slide thumbnails, and audience display control.
+- Dual-monitor, single-monitor, and screen-share display modes, with automatic monitor detection and graceful single-monitor fallback.
+- Overlay/build-step grouping from Dais sidecars, `.pdfpc` sidecars, and embedded pdfpc metadata produced by tools such as Polylux, touying, and Beamer.
+- Native `.dais` sidecar format for slide grouping, notes, ink annotations, whiteboard strokes, and text boxes, with `.pdfpc` read/write compatibility for notes and overlay grouping.
+- Built-in slide grouping editor (`dais --edit <file.pdf>`) for PDFs without embedded overlay metadata.
+- Presentation tools including configurable laser pointer styles, freehand ink, whiteboard, spotlight, zoom, freeze, and blackout.
+- Typst-rendered text boxes that can be placed, edited, moved, resized, styled, and saved with the presentation.
+- Markdown speaker notes with inline editing, adjustable font size, and sidecar persistence.
+- Slide overview grid with keyboard navigation and direct slide jumping.
+- Elapsed and countdown timers with warning and overrun phases.
+- Fully remappable keyboard actions plus clicker/remote profiles and a `--test-input` diagnostic mode.
+- Layered TOML configuration from platform config paths, project-local `dais.toml`, and explicit `--config` overrides.
+- Single-binary distribution through Cargo or pre-built release artifacts.

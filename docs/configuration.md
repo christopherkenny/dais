@@ -35,7 +35,7 @@ overrun_color = true           # Red when past duration
 [laser]
 color = "#FF0000"              # Default for all pointer styles
 size = 12.0                    # Default pixels at 1x scale
-style = "dot"                  # "dot", "crosshair", "arrow", "ring", "bullseye", or "highlight"
+style = "dot"                  # "dot", "minimal", "crosshair", "arrow", "ring", "bullseye", or "highlight"
 
 [spotlight]
 radius = 80.0                  # Pixels at 1x scale
@@ -101,7 +101,7 @@ Detected monitors are logged at startup with ids and names, so you can see which
 ## Laser Pointer
 
 `[laser]` controls the active pointer style and the default appearance used by every pointer style.
-Add `[laser.dot]`, `[laser.crosshair]`, `[laser.arrow]`, `[laser.ring]`, `[laser.bullseye]`, or `[laser.highlight]` only when you want to override one style.
+Add `[laser.dot]`, `[laser.minimal]`, `[laser.crosshair]`, `[laser.arrow]`, `[laser.ring]`, `[laser.bullseye]`, or `[laser.highlight]` only when you want to override one style.
 
 Example:
 
@@ -120,7 +120,7 @@ color = "#FFFF0080"
 size = 36.0
 ```
 
-In this example, dot, arrow, ring, and bullseye stay white at size 12. Crosshair changes to green at size 24, and highlight changes to translucent yellow at size 36.
+In this example, dot, minimal, arrow, ring, and bullseye stay white at size 12. Crosshair changes to green at size 24, and highlight changes to translucent yellow at size 36.
 
 ## Freeze
 

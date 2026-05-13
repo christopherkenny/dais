@@ -349,7 +349,8 @@ impl PresentationEngine {
             }
             Command::CycleLaserStyle => {
                 self.state.pointer_style = match self.state.pointer_style {
-                    PointerStyle::Dot => PointerStyle::Crosshair,
+                    PointerStyle::Dot => PointerStyle::Minimal,
+                    PointerStyle::Minimal => PointerStyle::Crosshair,
                     PointerStyle::Crosshair => PointerStyle::Arrow,
                     PointerStyle::Arrow => PointerStyle::Ring,
                     PointerStyle::Ring => PointerStyle::Bullseye,
@@ -942,6 +943,7 @@ fn parse_optional_hex_color(color_str: &str) -> Option<[u8; 4]> {
 
 fn parse_pointer_style(style: &str) -> PointerStyle {
     match style.trim().to_ascii_lowercase().as_str() {
+        "minimal" => PointerStyle::Minimal,
         "crosshair" => PointerStyle::Crosshair,
         "arrow" => PointerStyle::Arrow,
         "ring" => PointerStyle::Ring,
@@ -954,6 +956,7 @@ fn parse_pointer_style(style: &str) -> PointerStyle {
 fn pointer_appearances_from_config(config: &Config) -> PointerAppearances {
     PointerAppearances {
         dot: pointer_appearance_from_config(&config.laser.dot),
+        minimal: pointer_appearance_from_config(&config.laser.minimal),
         crosshair: pointer_appearance_from_config(&config.laser.crosshair),
         arrow: pointer_appearance_from_config(&config.laser.arrow),
         ring: pointer_appearance_from_config(&config.laser.ring),
@@ -1094,6 +1097,7 @@ mod tests {
     #[test]
     fn parse_pointer_style_variants() {
         assert_eq!(parse_pointer_style("dot"), PointerStyle::Dot);
+        assert_eq!(parse_pointer_style("minimal"), PointerStyle::Minimal);
         assert_eq!(parse_pointer_style("crosshair"), PointerStyle::Crosshair);
         assert_eq!(parse_pointer_style("arrow"), PointerStyle::Arrow);
         assert_eq!(parse_pointer_style("ring"), PointerStyle::Ring);
@@ -1127,6 +1131,8 @@ mod tests {
         config.laser.style = "crosshair".to_string();
         config.laser.dot.color = "#FFFFFF".to_string();
         config.laser.dot.size = 10.0;
+        config.laser.minimal.color = "#FF00AA".to_string();
+        config.laser.minimal.size = 8.0;
         config.laser.crosshair.color = "#00FF00".to_string();
         config.laser.crosshair.size = 28.0;
         config.laser.arrow.color = "#3355FF80".to_string();
@@ -1142,6 +1148,8 @@ mod tests {
 
         assert_eq!(engine.state().pointer_appearances.dot.color, [255, 255, 255, 255]);
         assert!((engine.state().pointer_appearances.dot.size - 10.0).abs() < f32::EPSILON);
+        assert_eq!(engine.state().pointer_appearances.minimal.color, [0xFF, 0, 0xAA, 255]);
+        assert!((engine.state().pointer_appearances.minimal.size - 8.0).abs() < f32::EPSILON);
         assert_eq!(engine.state().pointer_appearances.crosshair.color, [0, 255, 0, 255]);
         assert!((engine.state().pointer_appearances.crosshair.size - 28.0).abs() < f32::EPSILON);
         assert_eq!(engine.state().pointer_appearances.arrow.color, [0x33, 0x55, 0xFF, 0x80]);
@@ -1498,6 +1506,10 @@ mod tests {
     fn cycle_laser_style_rotates_styles() {
         let (mut engine, _, sender) = make_engine(5);
         assert_eq!(engine.state().pointer_style, PointerStyle::Dot);
+
+        sender.send(Command::CycleLaserStyle).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().pointer_style, PointerStyle::Minimal);
 
         sender.send(Command::CycleLaserStyle).unwrap();
         engine.tick();

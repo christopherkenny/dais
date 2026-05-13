@@ -116,10 +116,12 @@ pub struct LaserConfig {
     pub color: String,
     /// Default size in logical pixels at 1x scale applied to all pointer styles unless overridden.
     pub size: f32,
-    /// Style: "dot", "crosshair", "arrow", "ring", "bullseye", or "highlight".
+    /// Style: "dot", "minimal", "crosshair", "arrow", "ring", "bullseye", or "highlight".
     pub style: String,
     /// Dot pointer appearance.
     pub dot: PointerStyleConfig,
+    /// Minimal dot pointer appearance.
+    pub minimal: PointerStyleConfig,
     /// Crosshair pointer appearance.
     pub crosshair: PointerStyleConfig,
     /// Arrow pointer appearance.
@@ -149,6 +151,7 @@ struct PartialLaserConfig {
     size: Option<f32>,
     style: Option<String>,
     dot: Option<PartialPointerStyleConfig>,
+    minimal: Option<PartialPointerStyleConfig>,
     crosshair: Option<PartialPointerStyleConfig>,
     arrow: Option<PartialPointerStyleConfig>,
     ring: Option<PartialPointerStyleConfig>,
@@ -299,6 +302,7 @@ impl Default for LaserConfig {
             size: pointer.size,
             style: "dot".to_string(),
             dot: pointer.clone(),
+            minimal: pointer.clone(),
             crosshair: pointer.clone(),
             arrow: pointer.clone(),
             ring: pointer.clone(),
@@ -529,6 +533,7 @@ fn apply_laser_config(config: &mut LaserConfig, partial: PartialLaserConfig) {
     if let Some(color) = partial.color {
         config.color = color.clone();
         config.dot.color = color.clone();
+        config.minimal.color = color.clone();
         config.crosshair.color = color.clone();
         config.arrow.color = color.clone();
         config.ring.color = color.clone();
@@ -538,6 +543,7 @@ fn apply_laser_config(config: &mut LaserConfig, partial: PartialLaserConfig) {
     if let Some(size) = partial.size {
         config.size = size;
         config.dot.size = size;
+        config.minimal.size = size;
         config.crosshair.size = size;
         config.arrow.size = size;
         config.ring.size = size;
@@ -549,6 +555,9 @@ fn apply_laser_config(config: &mut LaserConfig, partial: PartialLaserConfig) {
     }
     if let Some(dot) = partial.dot {
         apply_pointer_style_config(&mut config.dot, dot);
+    }
+    if let Some(minimal) = partial.minimal {
+        apply_pointer_style_config(&mut config.minimal, minimal);
     }
     if let Some(crosshair) = partial.crosshair {
         apply_pointer_style_config(&mut config.crosshair, crosshair);
@@ -642,12 +651,14 @@ mod tests {
         apply_partial_config(&mut config, partial);
 
         assert_eq!(config.laser.dot.color, "#FFFFFF");
+        assert_eq!(config.laser.minimal.color, "#FFFFFF");
         assert_eq!(config.laser.crosshair.color, "#FFFFFF");
         assert_eq!(config.laser.arrow.color, "#FFFFFF");
         assert_eq!(config.laser.ring.color, "#FFFFFF");
         assert_eq!(config.laser.bullseye.color, "#FFFFFF");
         assert_eq!(config.laser.highlight.color, "#FFFFFF");
         assert!((config.laser.dot.size - 20.0).abs() < f32::EPSILON);
+        assert!((config.laser.minimal.size - 20.0).abs() < f32::EPSILON);
         assert!((config.laser.crosshair.size - 20.0).abs() < f32::EPSILON);
         assert!((config.laser.arrow.size - 20.0).abs() < f32::EPSILON);
         assert!((config.laser.ring.size - 20.0).abs() < f32::EPSILON);
@@ -668,6 +679,9 @@ mod tests {
             color = "#00FF00"
             size = 30.0
 
+            [laser.minimal]
+            size = 8.0
+
             [laser.highlight]
             color = "#FFFF0080"
             "##,
@@ -680,6 +694,8 @@ mod tests {
         assert_eq!(config.laser.style, "crosshair");
         assert_eq!(config.laser.dot.color, "#FFFFFF");
         assert!((config.laser.dot.size - 14.0).abs() < f32::EPSILON);
+        assert_eq!(config.laser.minimal.color, "#FFFFFF");
+        assert!((config.laser.minimal.size - 8.0).abs() < f32::EPSILON);
         assert_eq!(config.laser.crosshair.color, "#00FF00");
         assert!((config.laser.crosshair.size - 30.0).abs() < f32::EPSILON);
         assert_eq!(config.laser.arrow.color, "#FFFFFF");

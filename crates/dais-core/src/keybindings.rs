@@ -251,7 +251,7 @@ impl KeyCombo {
             }
         }
 
-        key.map(|key| Self { key, shift, ctrl, alt })
+        key.map(|key| Self { key: normalize_key_name(&key), shift, ctrl, alt })
     }
 
     /// Human-readable display string (e.g., "Ctrl+Shift+S").
@@ -272,6 +272,10 @@ impl KeyCombo {
         parts.push(&key_display);
         parts.join("+")
     }
+}
+
+fn normalize_key_name(key: &str) -> String {
+    if key.chars().count() == 1 { key.to_lowercase() } else { key.to_string() }
 }
 
 /// Maps key combinations to actions.
@@ -432,6 +436,15 @@ mod tests {
     }
 
     #[test]
+    fn parse_single_character_keys_case_insensitively() {
+        let lower = KeyCombo::parse("Ctrl+l").unwrap();
+        let upper = KeyCombo::parse("Ctrl+L").unwrap();
+
+        assert_eq!(lower, upper);
+        assert_eq!(upper.key, "l");
+    }
+
+    #[test]
     fn default_bindings_load() {
         let map = KeybindingMap::from_config(&HashMap::new());
         let right = KeyCombo::parse("Right").unwrap();
@@ -490,6 +503,16 @@ mod tests {
         let map = KeybindingMap::from_config(&HashMap::new());
         let bindings = map.action_bindings();
         assert_eq!(bindings.len(), Action::all().len());
+    }
+
+    #[test]
+    fn cycle_laser_style_accepts_uppercase_config_binding() {
+        let mut user = HashMap::new();
+        user.insert("cycle_laser_style".to_string(), vec!["Ctrl+L".to_string()]);
+        let map = KeybindingMap::from_config(&user);
+
+        let live_key = KeyCombo::parse("Ctrl+l").unwrap();
+        assert_eq!(map.lookup(&live_key), Some(Action::CycleLaserStyle));
     }
 
     #[test]

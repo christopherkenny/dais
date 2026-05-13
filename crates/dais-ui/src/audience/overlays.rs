@@ -103,6 +103,9 @@ pub fn draw_laser_overlay(
             painter.circle_filled(pos, (size * 0.95).max(4.0), glow);
             painter.circle_filled(pos, (size * 0.45).max(2.0), color);
         }
+        PointerStyle::Minimal => {
+            painter.circle_filled(pos, (size * 0.195).max(2.1), color);
+        }
         PointerStyle::Ring => {
             let stroke = egui::Stroke::new((size * 0.14).max(1.8), color);
             painter.circle_filled(pos, (size * 0.85).max(5.0), glow);
