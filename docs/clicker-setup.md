@@ -14,8 +14,8 @@ These are the keys mapped by the built-in `default` clicker profile:
 
 | Key | Action | Description |
 |---|---|---|
-| PageDown | `next_slide` | Advance to next slide |
-| PageUp | `previous_slide` | Go back one slide |
+| PageDown | `next_slide` | Advance to next build step or slide |
+| PageUp | `previous_slide` | Go back one build step or slide |
 | F5 | `toggle_presentation_mode` | Toggle fullscreen presentation mode |
 | B | `toggle_blackout` | Black out the audience display |
 | . (period) | `toggle_blackout` | Black out the audience display |

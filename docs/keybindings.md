@@ -6,8 +6,8 @@ All keybindings are remappable via the `[keybindings]` section in `config.toml`.
 
 | Action | Default Key(s) | Description |
 |---|---|---|
-| `next_slide` | Right, Space, Down, PageDown | Advance to next logical slide |
-| `previous_slide` | Left, Up, PageUp | Go back to previous logical slide |
+| `next_slide` | Right, Space, Down, PageDown | Advance to the next build step, or the next logical slide if the current slide is complete |
+| `previous_slide` | Left, Up, PageUp | Go back to the previous build step, or the previous logical slide if already at the start |
 | `next_overlay` | Shift+Right, Shift+Down | Next PDF page (overlay step) |
 | `previous_overlay` | Shift+Left, Shift+Up | Previous PDF page (overlay step) |
 | `first_slide` | Home | Jump to first slide |

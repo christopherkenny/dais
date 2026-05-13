@@ -1,8 +1,9 @@
-# dais (development version)
+# dais 0.1.1
 
 ## Bug fixes
 
 - Ctrl+L laser-style cycling now advances one style per keypress and reaches every pointer style.
+- Normal forward/back navigation now steps through incremental build pages instead of skipping to the next logical slide.
 
 # dais 0.1.0
 

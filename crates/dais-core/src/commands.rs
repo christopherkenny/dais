@@ -9,9 +9,9 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum Command {
     // -- Navigation --
-    /// Advance to the first page of the next logical slide group.
+    /// Advance to the next build step, or to the next logical slide if the current slide is complete.
     NextSlide,
-    /// Go back to the first page of the previous logical slide group.
+    /// Go back to the previous build step, or to the previous logical slide if already at the start.
     PreviousSlide,
     /// Advance one PDF page (next overlay/build step within a group).
     NextOverlay,

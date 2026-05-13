@@ -82,11 +82,11 @@ Use `tests/fixtures/test.pdf` with the `beamer-example.pdfpc` sidecar for overla
 
 | # | Test | Action | Expected Behavior | Result | Actual |
 |---|------|--------|-------------------|--------|--------|
-| E1 | Next slide (Right) | Press `Right` | Jumps to the first page of the **next logical slide group** (skips overlays). Slide counter increments by 1. Current slide panel updates, next preview updates | | |
+| E1 | Next slide (Right) | Press `Right` | Advances to the next build step within the current logical slide before moving to the next logical slide. Slide/step counter, current slide panel, and next preview update | | |
 | E2 | Next slide (Space) | Press `Space` | Same as E1 | | |
 | E3 | Next slide (Down) | Press `Down` | Same as E1 | | |
 | E4 | Next slide (PageDown) | Press `PageDown` | Same as E1 | | |
-| E5 | Previous slide (Left) | Press `Left` | Jumps to the first page of the previous logical slide group. Slide counter decrements | | |
+| E5 | Previous slide (Left) | Press `Left` | Rewinds to the previous build step within the current logical slide before moving to the previous logical slide. Slide/step counter updates | | |
 | E6 | Previous slide (Up/PageUp) | Press `Up` or `PageUp` | Same as E5 | | |
 | E7 | Next overlay (Shift+Right) | Press `Shift+Right` | Advances one raw PDF page within the current group. Status bar shows step counter (e.g., "step 2/3"). If at last overlay, advances to next slide | | |
 | E8 | Previous overlay (Shift+Left) | Press `Shift+Left` | Goes back one raw page within the group. If at first overlay of a group, goes to last overlay of the previous group | | |

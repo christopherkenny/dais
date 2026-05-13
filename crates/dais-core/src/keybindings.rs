@@ -110,8 +110,8 @@ impl Action {
     /// Human-readable description for the help overlay.
     pub fn description(self) -> &'static str {
         match self {
-            Self::NextSlide => "Next slide",
-            Self::PreviousSlide => "Previous slide",
+            Self::NextSlide => "Next slide/build step",
+            Self::PreviousSlide => "Previous slide/build step",
             Self::NextOverlay => "Next overlay step",
             Self::PreviousOverlay => "Previous overlay step",
             Self::FirstSlide => "First slide",

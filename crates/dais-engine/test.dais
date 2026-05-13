@@ -22,5 +22,7 @@ groups: [
 	}
 ]
 slide_timings: {
-	"0": 5.6e-6
+	"0": 8.9e-6
+}
+
 }
