@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Dais: A Native PDF Presenter Console – Dais</title>
+<title>News – Dais</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -22,41 +22,6 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
-}
-/* CSS for syntax highlighting */
-html { -webkit-text-size-adjust: 100%; }
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -128,7 +93,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="./index.html" aria-current="page"> 
+    <a class="nav-link" href="./index.html"> 
 <span class="menu-text">Home</span></a>
   </li>  
   <li class="nav-item">
@@ -144,7 +109,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text">Clickers</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./news.html"> 
+    <a class="nav-link active" href="./news.html" aria-current="page"> 
 <span class="menu-text">News</span></a>
   </li>  
 </ul>
@@ -171,7 +136,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Dais: A Native PDF Presenter Console</h1>
+<h1 class="title">News</h1>
 </div>
 
 
@@ -188,115 +153,38 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p><a href="https://github.com/christopherkenny/dais/actions/workflows/ci.yml"><img src="https://github.com/christopherkenny/dais/actions/workflows/ci.yml/badge.svg" class="img-fluid" alt="CI"></a> <a href="https://crates.io/crates/dais"><img src="https://img.shields.io/crates/v/dais.svg" class="img-fluid" alt="Crates.io"></a> <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" class="img-fluid" alt="License: MIT"></a></p>
-<p>Dais is a cross-platform PDF presentation console written in Rust for researchers and academics who build slides in LaTeX/Beamer, Typst, PowerPoint, or Keynote. Dais is designed for straightforward installation, reliable operation in real presentation setups, and compatibility with existing slide workflows.</p>
-<section id="features" class="level2">
-<h2 class="anchored" data-anchor-id="features">Features</h2>
+<section id="dais-development-version" class="level1">
+<h1>dais (development version)</h1>
+<section id="bug-fixes" class="level2">
+<h2 class="anchored" data-anchor-id="bug-fixes">Bug fixes</h2>
 <ul>
-<li>Multi-monitor presenter view with an audience display and a presenter console with notes, timer, and navigation.</li>
-<li>Overlay and build-step support for <code>pdfpc</code> metadata, Beamer <code>\pdfpc</code>, and manual grouping.</li>
-<li>Presentation tools including a laser pointer, freehand ink, spotlight, and zoom.</li>
-<li><code>.pdfpc</code> compatibility and a native <code>.dais</code> sidecar format.</li>
-<li>Fully remappable keybindings with presenter-console defaults.</li>
-<li>Single-binary distribution with no runtime dependencies or installers.</li>
+<li>Ctrl+L laser-style cycling now advances one style per keypress and reaches every pointer style.</li>
 </ul>
 </section>
-<section id="installation" class="level2">
-<h2 class="anchored" data-anchor-id="installation">Installation</h2>
-<p>Install from <a href="https://crates.io/crates/dais">crates.io</a> with Cargo (requires Rust 1.92+):</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> install dais</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Or download a pre-built binary from <a href="https://github.com/christopherkenny/dais/releases">GitHub Releases</a>.</p>
 </section>
-<section id="quick-start" class="level2">
-<h2 class="anchored" data-anchor-id="quick-start">Quick Start</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> presentation.pdf</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="usage" class="level2">
-<h2 class="anchored" data-anchor-id="usage">Usage</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>                  <span class="co"># Present with auto-detected display mode</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--single</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>         <span class="co"># Single-monitor mode (no audience window)</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--screen-share</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>   <span class="co"># Screen-share mode (audience as normal window)</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--edit</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>           <span class="co"># Open the slide grouping editor</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--config</span> <span class="op">&lt;</span>path<span class="op">&gt;</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>  <span class="co"># Use a specific config file</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--test-input</span>                <span class="co"># Diagnostic mode for clicker/remote setup</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="display-modes" class="level2">
-<h2 class="anchored" data-anchor-id="display-modes">Display Modes</h2>
+<section id="dais-0.1.0" class="level1">
+<h1>dais 0.1.0</h1>
+<section id="new-features" class="level2">
+<h2 class="anchored" data-anchor-id="new-features">New features</h2>
 <ul>
-<li><strong>Dual</strong>: presenter console on the primary monitor, audience fullscreen on a secondary monitor.</li>
-<li><strong>Single</strong>: one-window mode. Press <code>F5</code> to switch between the presenter console and the configured single-monitor presentation surface.</li>
-<li><strong>Screen-share</strong>: the audience view is a normal resizable window for Zoom/Teams sharing.</li>
+<li>Initial release of Dais, a native Rust PDF presenter console for PDF slides, such as those made with LaTeX/Beamer or Typst.</li>
+<li>Presenter console with current slide, next-slide preview, notes, timer, slide thumbnails, and audience display control.</li>
+<li>Dual-monitor, single-monitor, and screen-share display modes, with automatic monitor detection and graceful single-monitor fallback.</li>
+<li>Overlay/build-step grouping from Dais sidecars, <code>.pdfpc</code> sidecars, and embedded pdfpc metadata produced by tools such as Polylux, touying, and Beamer.</li>
+<li>Native <code>.dais</code> sidecar format for slide grouping, notes, ink annotations, whiteboard strokes, and text boxes, with <code>.pdfpc</code> read/write compatibility for notes and overlay grouping.</li>
+<li>Built-in slide grouping editor (<code>dais --edit &lt;file.pdf&gt;</code>) for PDFs without embedded overlay metadata.</li>
+<li>Presentation tools including configurable laser pointer styles, freehand ink, whiteboard, spotlight, zoom, freeze, and blackout.</li>
+<li>Typst-rendered text boxes that can be placed, edited, moved, resized, styled, and saved with the presentation.</li>
+<li>Markdown speaker notes with inline editing, adjustable font size, and sidecar persistence.</li>
+<li>Slide overview grid with keyboard navigation and direct slide jumping.</li>
+<li>Elapsed and countdown timers with warning and overrun phases.</li>
+<li>Fully remappable keyboard actions plus clicker/remote profiles and a <code>--test-input</code> diagnostic mode.</li>
+<li>Layered TOML configuration from platform config paths, project-local <code>dais.toml</code>, and explicit <code>--config</code> overrides.</li>
+<li>Single-binary distribution through Cargo or pre-built release artifacts.</li>
 </ul>
-<p>With one monitor, Dais automatically falls back to single mode.</p>
-</section>
-<section id="grouping-editor" class="level2">
-<h2 class="anchored" data-anchor-id="grouping-editor">Grouping Editor</h2>
-<p>For PDFs without embedded overlay metadata, such as PowerPoint exports, use the built-in editor:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--edit</span> slides.pdf</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Click between thumbnails to set group boundaries. Save writes the configured sidecar format. When loading, Dais checks <code>.dais</code> before <code>.pdfpc</code>.</p>
-</section>
-<section id="building-from-source" class="level2">
-<h2 class="anchored" data-anchor-id="building-from-source">Building From Source</h2>
-<p>Requires Rust 1.92+.</p>
-<p>To install from the git repository without cloning:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> install <span class="at">--git</span> https://github.com/christopherkenny/dais.git <span class="at">--package</span> dais <span class="at">--bin</span> dais</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>The binary will be at <code>target/release/dais</code>, or <code>dais.exe</code> on Windows.</p>
-</section>
-<section id="documentation" class="level2">
-<h2 class="anchored" data-anchor-id="documentation">Documentation</h2>
-<ul>
-<li><a href="./configuration.html">Configuration</a></li>
-<li><a href="./keybindings.html">Keybindings</a></li>
-<li><a href="./clicker-setup.html">Clicker &amp; Remote Setup</a></li>
-</ul>
-</section>
-<section id="architecture" class="level2">
-<h2 class="anchored" data-anchor-id="architecture">Architecture</h2>
-<p>Dais is organized as a 7-crate Cargo workspace:</p>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 50%">
-<col style="width: 50%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Crate</th>
-<th>Role</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><code>dais</code></td>
-<td>Binary for CLI parsing and app launch</td>
-</tr>
-<tr class="even">
-<td><code>dais-core</code></td>
-<td>Commands, state types, command bus, config, keybindings</td>
-</tr>
-<tr class="odd">
-<td><code>dais-engine</code></td>
-<td>Presentation engine that processes commands and owns state</td>
-</tr>
-<tr class="even">
-<td><code>dais-document</code></td>
-<td><code>DocumentSource</code> trait, hayro PDF renderer, and page cache</td>
-</tr>
-<tr class="odd">
-<td><code>dais-sidecar</code></td>
-<td><code>.dais</code> and <code>.pdfpc</code> sidecar formats</td>
-</tr>
-<tr class="even">
-<td><code>dais-platform</code></td>
-<td>Platform-specific monitor enumeration</td>
-</tr>
-<tr class="odd">
-<td><code>dais-ui</code></td>
-<td>egui UI for the presenter console, audience window, and grouping editor</td>
-</tr>
-</tbody>
-</table>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->
@@ -708,7 +596,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>   
     <div class="nav-footer-center">
       &nbsp;
-    <div class="toc-actions"><ul><li><a href="https://github.com/christopherkenny/dais/blob/main/index.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/christopherkenny/dais/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div>
+    <div class="toc-actions"><ul><li><a href="https://github.com/christopherkenny/dais/blob/main/news.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/christopherkenny/dais/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div>
     <div class="nav-footer-right">
 <p>Built with <a href="https://quarto.org/">Quarto</a>.</p>
 </div>

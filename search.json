@@ -378,34 +378,6 @@
     "text": "To test sidecar loading, copy and rename fixtures:\n# For pdfpc testing\ncp tests/fixtures/beamer-example.pdfpc tests/example.pdfpc\n\n# For dais testing (must rename to match PDF)\ncp tests/fixtures/quarto-example.dais tests/example.dais\n\n\n\nSave as test-config.toml:\n[display]\nmode = \"dual\"\n\n[timer]\nmode = \"countdown\"\nduration_minutes = 5\nwarning_minutes = 1\n\n[laser]\ncolor = \"#00FF00\"\nsize = 16.0\n\n[ink]\ncolors = [\"#0000FF\"]\nwidth = 5.0\n\n[spotlight]\nradius = 200.0\n\n[notes]\nfont_size = 18.0\n\nsidecar_format = \"dais\"\nLaunch with: dais --config test-config.toml tests/example.pdf\n\n\n\nTests B1–B8 require physically connecting a second monitor (or using a virtual display adapter). The remaining tests can be verified on a single monitor using --single or --screen-share."
   },
   {
-    "objectID": "keybindings.html",
-    "href": "keybindings.html",
-    "title": "Keybinding Reference",
-    "section": "",
-    "text": "All keybindings are remappable via the [keybindings] section in config.toml. The defaults are designed to feel familiar for presenter-console workflows.\n\n\n\n\n\n\n\n\n\n\nAction\nDefault Key(s)\nDescription\n\n\n\n\nnext_slide\nRight, Space, Down, PageDown\nAdvance to next logical slide\n\n\nprevious_slide\nLeft, Up, PageUp\nGo back to previous logical slide\n\n\nnext_overlay\nShift+Right, Shift+Down\nNext PDF page (overlay step)\n\n\nprevious_overlay\nShift+Left, Shift+Up\nPrevious PDF page (overlay step)\n\n\nfirst_slide\nHome\nJump to first slide\n\n\nlast_slide\nEnd\nJump to last slide\n\n\ngo_to_slide\nG then number then Enter\nJump to slide by number\n\n\ntoggle_freeze\nF\nFreeze/unfreeze audience display\n\n\ntoggle_blackout\nB, . (period)\nBlack out audience display\n\n\ntoggle_whiteboard\nW\nToggle whiteboard (white drawing canvas)\n\n\ntoggle_laser\nL\nToggle laser pointer\n\n\ncycle_laser_style\nCtrl+L\nCycle laser style: dot, minimal, crosshair, arrow, ring, bullseye, highlight\n\n\ntoggle_ink\nD\nToggle freehand drawing\n\n\nclear_ink\nC\nClear all ink on current slide\n\n\ncycle_ink_color\nCtrl+D\nCycle pen color\n\n\ncycle_ink_width\nShift+D\nCycle pen width\n\n\ntoggle_spotlight\nS\nToggle spotlight mode\n\n\ntoggle_zoom\nZ\nToggle zoom mode\n\n\ntoggle_overview\nO\nToggle slide overview grid\n\n\ntoggle_notes\nN\nToggle notes panel visibility\n\n\ntoggle_notes_edit\nCtrl+N\nToggle inline notes editing\n\n\nstart_pause_timer\nT\nStart/pause timer\n\n\nreset_timer\nShift+T\nReset timer\n\n\nincrement_notes_font\n+, Shift+=\nIncrease notes font size\n\n\ndecrement_notes_font\n-\nDecrease notes font size\n\n\ntoggle_screen_share\nShift+S\nToggle screen-share mode\n\n\ntoggle_presentation_mode\nF5\nToggle the active single-monitor presentation surface\n\n\ntoggle_text_box_mode\nX\nToggle text box placement mode\n\n\nquit\nQ, Escape\nQuit presentation (exits HUD first)\n\n\nsave_sidecar\nCtrl+S\nSave sidecar file\n\n\n\n\n\n\nOverride any binding in config.toml:\n[keybindings]\n# Replace the defaults for an action entirely\nnext_slide = [\"j\", \"Return\"]\nprevious_slide = [\"k\"]\n\n# Single key binding\ntoggle_laser = [\"p\"]\n\n# Cycle the active laser style\ncycle_laser_style = [\"Ctrl+l\"]\n\n# Modifier combos\nsave_sidecar = [\"Ctrl+Shift+s\"]\nWhen you define a binding for an action, it replaces all defaults for that action. Unmentioned actions keep their defaults.\n\n\n\n\nShift — Shift key\nCtrl / Control / Cmd / Command — Ctrl on Windows/Linux, Cmd on macOS\nAlt / Option — Alt on Windows/Linux, Option on macOS\n\nCombine with +: Shift+Right, Ctrl+s, Ctrl+Shift+s"
-  },
-  {
-    "objectID": "keybindings.html#default-keybindings",
-    "href": "keybindings.html#default-keybindings",
-    "title": "Keybinding Reference",
-    "section": "",
-    "text": "Action\nDefault Key(s)\nDescription\n\n\n\n\nnext_slide\nRight, Space, Down, PageDown\nAdvance to next logical slide\n\n\nprevious_slide\nLeft, Up, PageUp\nGo back to previous logical slide\n\n\nnext_overlay\nShift+Right, Shift+Down\nNext PDF page (overlay step)\n\n\nprevious_overlay\nShift+Left, Shift+Up\nPrevious PDF page (overlay step)\n\n\nfirst_slide\nHome\nJump to first slide\n\n\nlast_slide\nEnd\nJump to last slide\n\n\ngo_to_slide\nG then number then Enter\nJump to slide by number\n\n\ntoggle_freeze\nF\nFreeze/unfreeze audience display\n\n\ntoggle_blackout\nB, . (period)\nBlack out audience display\n\n\ntoggle_whiteboard\nW\nToggle whiteboard (white drawing canvas)\n\n\ntoggle_laser\nL\nToggle laser pointer\n\n\ncycle_laser_style\nCtrl+L\nCycle laser style: dot, minimal, crosshair, arrow, ring, bullseye, highlight\n\n\ntoggle_ink\nD\nToggle freehand drawing\n\n\nclear_ink\nC\nClear all ink on current slide\n\n\ncycle_ink_color\nCtrl+D\nCycle pen color\n\n\ncycle_ink_width\nShift+D\nCycle pen width\n\n\ntoggle_spotlight\nS\nToggle spotlight mode\n\n\ntoggle_zoom\nZ\nToggle zoom mode\n\n\ntoggle_overview\nO\nToggle slide overview grid\n\n\ntoggle_notes\nN\nToggle notes panel visibility\n\n\ntoggle_notes_edit\nCtrl+N\nToggle inline notes editing\n\n\nstart_pause_timer\nT\nStart/pause timer\n\n\nreset_timer\nShift+T\nReset timer\n\n\nincrement_notes_font\n+, Shift+=\nIncrease notes font size\n\n\ndecrement_notes_font\n-\nDecrease notes font size\n\n\ntoggle_screen_share\nShift+S\nToggle screen-share mode\n\n\ntoggle_presentation_mode\nF5\nToggle the active single-monitor presentation surface\n\n\ntoggle_text_box_mode\nX\nToggle text box placement mode\n\n\nquit\nQ, Escape\nQuit presentation (exits HUD first)\n\n\nsave_sidecar\nCtrl+S\nSave sidecar file"
-  },
-  {
-    "objectID": "keybindings.html#custom-keybindings",
-    "href": "keybindings.html#custom-keybindings",
-    "title": "Keybinding Reference",
-    "section": "",
-    "text": "Override any binding in config.toml:\n[keybindings]\n# Replace the defaults for an action entirely\nnext_slide = [\"j\", \"Return\"]\nprevious_slide = [\"k\"]\n\n# Single key binding\ntoggle_laser = [\"p\"]\n\n# Cycle the active laser style\ncycle_laser_style = [\"Ctrl+l\"]\n\n# Modifier combos\nsave_sidecar = [\"Ctrl+Shift+s\"]\nWhen you define a binding for an action, it replaces all defaults for that action. Unmentioned actions keep their defaults."
-  },
-  {
-    "objectID": "keybindings.html#modifier-keys",
-    "href": "keybindings.html#modifier-keys",
-    "title": "Keybinding Reference",
-    "section": "",
-    "text": "Shift — Shift key\nCtrl / Control / Cmd / Command — Ctrl on Windows/Linux, Cmd on macOS\nAlt / Option — Alt on Windows/Linux, Option on macOS\n\nCombine with +: Shift+Right, Ctrl+s, Ctrl+Shift+s"
-  },
-  {
     "objectID": "clicker-setup.html",
     "href": "clicker-setup.html",
     "title": "Clicker & Remote Setup",
@@ -453,6 +425,55 @@
     "title": "Clicker & Remote Setup",
     "section": "",
     "text": "Clicker buttons do nothing: Run --test-input to verify that Dais receives the key events. Some clickers need their USB receiver connected before launch.\nWrong action fires: Check the key name with --test-input, then remap it in a custom clicker profile or in [keybindings].\nClicker works in other apps but not Dais: Some clickers send mouse clicks or custom HID events instead of keyboard events. Dais only responds to keyboard events.\nBluetooth clickers disconnect: This is usually an OS-level pairing issue. Some Bluetooth presenters work more reliably through their bundled USB receiver than through native Bluetooth."
+  },
+  {
+    "objectID": "keybindings.html",
+    "href": "keybindings.html",
+    "title": "Keybinding Reference",
+    "section": "",
+    "text": "All keybindings are remappable via the [keybindings] section in config.toml. The defaults are designed to feel familiar for presenter-console workflows.\n\n\n\n\n\n\n\n\n\n\nAction\nDefault Key(s)\nDescription\n\n\n\n\nnext_slide\nRight, Space, Down, PageDown\nAdvance to next logical slide\n\n\nprevious_slide\nLeft, Up, PageUp\nGo back to previous logical slide\n\n\nnext_overlay\nShift+Right, Shift+Down\nNext PDF page (overlay step)\n\n\nprevious_overlay\nShift+Left, Shift+Up\nPrevious PDF page (overlay step)\n\n\nfirst_slide\nHome\nJump to first slide\n\n\nlast_slide\nEnd\nJump to last slide\n\n\ngo_to_slide\nG then number then Enter\nJump to slide by number\n\n\ntoggle_freeze\nF\nFreeze/unfreeze audience display\n\n\ntoggle_blackout\nB, . (period)\nBlack out audience display\n\n\ntoggle_whiteboard\nW\nToggle whiteboard (white drawing canvas)\n\n\ntoggle_laser\nL\nToggle laser pointer\n\n\ncycle_laser_style\nCtrl+L\nCycle laser style: dot, minimal, crosshair, arrow, ring, bullseye, highlight\n\n\ntoggle_ink\nD\nToggle freehand drawing\n\n\nclear_ink\nC\nClear all ink on current slide\n\n\ncycle_ink_color\nCtrl+D\nCycle pen color\n\n\ncycle_ink_width\nShift+D\nCycle pen width\n\n\ntoggle_spotlight\nS\nToggle spotlight mode\n\n\ntoggle_zoom\nZ\nToggle zoom mode\n\n\ntoggle_overview\nO\nToggle slide overview grid\n\n\ntoggle_notes\nN\nToggle notes panel visibility\n\n\ntoggle_notes_edit\nCtrl+N\nToggle inline notes editing\n\n\nstart_pause_timer\nT\nStart/pause timer\n\n\nreset_timer\nShift+T\nReset timer\n\n\nincrement_notes_font\n+, Shift+=\nIncrease notes font size\n\n\ndecrement_notes_font\n-\nDecrease notes font size\n\n\ntoggle_screen_share\nShift+S\nToggle screen-share mode\n\n\ntoggle_presentation_mode\nF5\nToggle the active single-monitor presentation surface\n\n\ntoggle_text_box_mode\nX\nToggle text box placement mode\n\n\nquit\nQ, Escape\nQuit presentation (exits HUD first)\n\n\nsave_sidecar\nCtrl+S\nSave sidecar file\n\n\n\n\n\n\nOverride any binding in config.toml:\n[keybindings]\n# Replace the defaults for an action entirely\nnext_slide = [\"j\", \"Return\"]\nprevious_slide = [\"k\"]\n\n# Single key binding\ntoggle_laser = [\"p\"]\n\n# Cycle the active laser style\ncycle_laser_style = [\"Ctrl+l\"]\n\n# Modifier combos\nsave_sidecar = [\"Ctrl+Shift+s\"]\nWhen you define a binding for an action, it replaces all defaults for that action. Unmentioned actions keep their defaults.\n\n\n\n\nShift — Shift key\nCtrl / Control / Cmd / Command — Ctrl on Windows/Linux, Cmd on macOS\nAlt / Option — Alt on Windows/Linux, Option on macOS\n\nCombine with +: Shift+Right, Ctrl+s, Ctrl+Shift+s"
+  },
+  {
+    "objectID": "keybindings.html#default-keybindings",
+    "href": "keybindings.html#default-keybindings",
+    "title": "Keybinding Reference",
+    "section": "",
+    "text": "Action\nDefault Key(s)\nDescription\n\n\n\n\nnext_slide\nRight, Space, Down, PageDown\nAdvance to next logical slide\n\n\nprevious_slide\nLeft, Up, PageUp\nGo back to previous logical slide\n\n\nnext_overlay\nShift+Right, Shift+Down\nNext PDF page (overlay step)\n\n\nprevious_overlay\nShift+Left, Shift+Up\nPrevious PDF page (overlay step)\n\n\nfirst_slide\nHome\nJump to first slide\n\n\nlast_slide\nEnd\nJump to last slide\n\n\ngo_to_slide\nG then number then Enter\nJump to slide by number\n\n\ntoggle_freeze\nF\nFreeze/unfreeze audience display\n\n\ntoggle_blackout\nB, . (period)\nBlack out audience display\n\n\ntoggle_whiteboard\nW\nToggle whiteboard (white drawing canvas)\n\n\ntoggle_laser\nL\nToggle laser pointer\n\n\ncycle_laser_style\nCtrl+L\nCycle laser style: dot, minimal, crosshair, arrow, ring, bullseye, highlight\n\n\ntoggle_ink\nD\nToggle freehand drawing\n\n\nclear_ink\nC\nClear all ink on current slide\n\n\ncycle_ink_color\nCtrl+D\nCycle pen color\n\n\ncycle_ink_width\nShift+D\nCycle pen width\n\n\ntoggle_spotlight\nS\nToggle spotlight mode\n\n\ntoggle_zoom\nZ\nToggle zoom mode\n\n\ntoggle_overview\nO\nToggle slide overview grid\n\n\ntoggle_notes\nN\nToggle notes panel visibility\n\n\ntoggle_notes_edit\nCtrl+N\nToggle inline notes editing\n\n\nstart_pause_timer\nT\nStart/pause timer\n\n\nreset_timer\nShift+T\nReset timer\n\n\nincrement_notes_font\n+, Shift+=\nIncrease notes font size\n\n\ndecrement_notes_font\n-\nDecrease notes font size\n\n\ntoggle_screen_share\nShift+S\nToggle screen-share mode\n\n\ntoggle_presentation_mode\nF5\nToggle the active single-monitor presentation surface\n\n\ntoggle_text_box_mode\nX\nToggle text box placement mode\n\n\nquit\nQ, Escape\nQuit presentation (exits HUD first)\n\n\nsave_sidecar\nCtrl+S\nSave sidecar file"
+  },
+  {
+    "objectID": "keybindings.html#custom-keybindings",
+    "href": "keybindings.html#custom-keybindings",
+    "title": "Keybinding Reference",
+    "section": "",
+    "text": "Override any binding in config.toml:\n[keybindings]\n# Replace the defaults for an action entirely\nnext_slide = [\"j\", \"Return\"]\nprevious_slide = [\"k\"]\n\n# Single key binding\ntoggle_laser = [\"p\"]\n\n# Cycle the active laser style\ncycle_laser_style = [\"Ctrl+l\"]\n\n# Modifier combos\nsave_sidecar = [\"Ctrl+Shift+s\"]\nWhen you define a binding for an action, it replaces all defaults for that action. Unmentioned actions keep their defaults."
+  },
+  {
+    "objectID": "keybindings.html#modifier-keys",
+    "href": "keybindings.html#modifier-keys",
+    "title": "Keybinding Reference",
+    "section": "",
+    "text": "Shift — Shift key\nCtrl / Control / Cmd / Command — Ctrl on Windows/Linux, Cmd on macOS\nAlt / Option — Alt on Windows/Linux, Option on macOS\n\nCombine with +: Shift+Right, Ctrl+s, Ctrl+Shift+s"
+  },
+  {
+    "objectID": "news.html",
+    "href": "news.html",
+    "title": "News",
+    "section": "",
+    "text": "Ctrl+L laser-style cycling now advances one style per keypress and reaches every pointer style."
+  },
+  {
+    "objectID": "news.html#bug-fixes",
+    "href": "news.html#bug-fixes",
+    "title": "News",
+    "section": "",
+    "text": "Ctrl+L laser-style cycling now advances one style per keypress and reaches every pointer style."
+  },
+  {
+    "objectID": "news.html#new-features",
+    "href": "news.html#new-features",
+    "title": "News",
+    "section": "New features",
+    "text": "New features\n\nInitial release of Dais, a native Rust PDF presenter console for PDF slides, such as those made with LaTeX/Beamer or Typst.\nPresenter console with current slide, next-slide preview, notes, timer, slide thumbnails, and audience display control.\nDual-monitor, single-monitor, and screen-share display modes, with automatic monitor detection and graceful single-monitor fallback.\nOverlay/build-step grouping from Dais sidecars, .pdfpc sidecars, and embedded pdfpc metadata produced by tools such as Polylux, touying, and Beamer.\nNative .dais sidecar format for slide grouping, notes, ink annotations, whiteboard strokes, and text boxes, with .pdfpc read/write compatibility for notes and overlay grouping.\nBuilt-in slide grouping editor (dais --edit &lt;file.pdf&gt;) for PDFs without embedded overlay metadata.\nPresentation tools including configurable laser pointer styles, freehand ink, whiteboard, spotlight, zoom, freeze, and blackout.\nTypst-rendered text boxes that can be placed, edited, moved, resized, styled, and saved with the presentation.\nMarkdown speaker notes with inline editing, adjustable font size, and sidecar persistence.\nSlide overview grid with keyboard navigation and direct slide jumping.\nElapsed and countdown timers with warning and overrun phases.\nFully remappable keyboard actions plus clicker/remote profiles and a --test-input diagnostic mode.\nLayered TOML configuration from platform config paths, project-local dais.toml, and explicit --config overrides.\nSingle-binary distribution through Cargo or pre-built release artifacts."
   },
   {
     "objectID": "text-box-feature.html",
