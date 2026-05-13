@@ -68,8 +68,7 @@ impl AudienceWindow {
                 let image_rect = self.display.show(ui, zoom_region);
                 overlays::draw_overlays(
                     ui,
-                    viewport_rect,
-                    image_rect,
+                    overlays::OverlayGeometry { viewport_rect, image_rect, zoom_region },
                     &state,
                     &mut self.tb_cache,
                     &mut self.tb_texture_cache,

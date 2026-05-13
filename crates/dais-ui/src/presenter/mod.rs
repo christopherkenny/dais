@@ -176,21 +176,23 @@ impl PresenterConsole {
                     }
                 }
 
-                // Draw text boxes on presenter view (interactive in text box mode)
-                let editing_id =
-                    if state.text_box_editing { state.selected_text_box } else { None };
-                let tb_cmds = crate::widgets::draw_text_boxes(
-                    ui,
-                    state.current_page_text_boxes(),
-                    state.selected_text_box,
-                    editing_id,
-                    state.text_box_mode,
-                    image_rect,
-                    &mut self.tb_cache,
-                    &mut self.tb_texture_cache,
-                );
-                for cmd in tb_cmds {
-                    let _ = sender.send(cmd);
+                if !state.whiteboard_active {
+                    // Draw text boxes on presenter view (interactive in text box mode)
+                    let editing_id =
+                        if state.text_box_editing { state.selected_text_box } else { None };
+                    let tb_cmds = crate::widgets::draw_text_boxes(
+                        ui,
+                        state.current_page_text_boxes(),
+                        state.selected_text_box,
+                        editing_id,
+                        state.text_box_mode,
+                        image_rect,
+                        &mut self.tb_cache,
+                        &mut self.tb_texture_cache,
+                    );
+                    for cmd in tb_cmds {
+                        let _ = sender.send(cmd);
+                    }
                 }
 
                 // Draw laser dot on presenter view
@@ -401,25 +403,36 @@ impl PresenterConsole {
                     },
                     state.zoom_region.as_ref().map(|r| r.factor),
                 );
-                let editing_id =
-                    if state.text_box_editing { state.selected_text_box } else { None };
-                let tb_cmds = crate::widgets::draw_text_boxes(
-                    &mut left_ui,
-                    state.current_page_text_boxes(),
-                    state.selected_text_box,
-                    editing_id,
-                    state.text_box_mode,
-                    aud_rect,
-                    &mut self.tb_cache,
-                    &mut self.tb_texture_cache,
-                );
-                for cmd in tb_cmds {
-                    let _ = sender.send(cmd);
+                if !state.whiteboard_active {
+                    let editing_id =
+                        if state.text_box_editing { state.selected_text_box } else { None };
+                    let text_box_rect = zoom_region.map_or(aud_rect, |(center, factor)| {
+                        crate::audience::overlays::zoomed_overlay_rect(aud_rect, center, factor)
+                    });
+                    let mut text_box_ui =
+                        left_ui.new_child(egui::UiBuilder::new().max_rect(left_rect));
+                    text_box_ui.set_clip_rect(aud_rect);
+                    let tb_cmds = crate::widgets::draw_text_boxes(
+                        &mut text_box_ui,
+                        state.current_page_text_boxes(),
+                        state.selected_text_box,
+                        editing_id,
+                        state.text_box_mode,
+                        text_box_rect,
+                        &mut self.tb_cache,
+                        &mut self.tb_texture_cache,
+                    );
+                    for cmd in tb_cmds {
+                        let _ = sender.send(cmd);
+                    }
                 }
                 crate::audience::overlays::draw_overlays(
                     &mut left_ui,
-                    left_rect,
-                    aud_rect,
+                    crate::audience::overlays::OverlayGeometry {
+                        viewport_rect: left_rect,
+                        image_rect: aud_rect,
+                        zoom_region,
+                    },
                     state,
                     &mut self.tb_cache,
                     &mut self.tb_texture_cache,

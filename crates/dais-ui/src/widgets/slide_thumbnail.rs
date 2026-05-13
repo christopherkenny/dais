@@ -39,10 +39,17 @@ impl SlideThumbnail {
     /// preserving aspect ratio. Returns the response for the image area.
     #[allow(clippy::cast_precision_loss)]
     pub fn show(&self, ui: &mut Ui, desired_size: Vec2) -> Response {
+        self.show_with_image_rect(ui, desired_size).0
+    }
+
+    /// Display the thumbnail and return both the allocated response and the
+    /// actual screen-space rect where the page image was painted.
+    #[allow(clippy::cast_precision_loss)]
+    pub fn show_with_image_rect(&self, ui: &mut Ui, desired_size: Vec2) -> (Response, egui::Rect) {
         let Some(tex) = &self.texture else {
             let (rect, response) = ui.allocate_exact_size(desired_size, egui::Sense::hover());
             ui.painter().rect_filled(rect, 0.0, egui::Color32::from_gray(40));
-            return response;
+            return (response, rect);
         };
 
         let tex_aspect = self.width as f32 / self.height.max(1) as f32;
@@ -68,7 +75,7 @@ impl SlideThumbnail {
             egui::Color32::WHITE,
         );
 
-        response
+        (response, image_rect)
     }
 
     /// Like `show`, but makes the thumbnail clickable and returns both the
@@ -132,10 +139,22 @@ impl SlideThumbnail {
         center: (f32, f32),
         factor: f32,
     ) -> Response {
+        self.show_zoomed_with_image_rect(ui, desired_size, center, factor).0
+    }
+
+    /// Display a zoomed thumbnail and return the actual painted page rect.
+    #[allow(clippy::cast_precision_loss)]
+    pub fn show_zoomed_with_image_rect(
+        &self,
+        ui: &mut Ui,
+        desired_size: Vec2,
+        center: (f32, f32),
+        factor: f32,
+    ) -> (Response, egui::Rect) {
         let Some(tex) = &self.texture else {
             let (rect, response) = ui.allocate_exact_size(desired_size, egui::Sense::hover());
             ui.painter().rect_filled(rect, 0.0, egui::Color32::from_gray(40));
-            return response;
+            return (response, rect);
         };
 
         let tex_aspect = self.width as f32 / self.height.max(1) as f32;
@@ -166,7 +185,7 @@ impl SlideThumbnail {
 
         ui.painter().image(tex.id(), image_rect, uv, egui::Color32::WHITE);
 
-        response
+        (response, image_rect)
     }
 }
 

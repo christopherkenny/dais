@@ -7,32 +7,53 @@ use dais_document::typst_renderer::TextBoxRenderCache;
 
 use crate::widgets::TextBoxTextureCache;
 
+#[derive(Clone, Copy)]
+pub struct OverlayGeometry {
+    pub viewport_rect: egui::Rect,
+    pub image_rect: egui::Rect,
+    pub zoom_region: Option<((f32, f32), f32)>,
+}
+
 /// Draw all active overlays on the audience window.
 pub fn draw_overlays(
     ui: &mut egui::Ui,
-    viewport_rect: egui::Rect,
-    image_rect: egui::Rect,
+    geometry: OverlayGeometry,
     state: &PresentationState,
     tb_cache: &mut TextBoxRenderCache,
     texture_cache: &mut TextBoxTextureCache,
     draw_text_boxes: bool,
 ) {
+    let overlay_rect = geometry.zoom_region.map_or(geometry.image_rect, |(center, factor)| {
+        zoomed_overlay_rect(geometry.image_rect, center, factor)
+    });
+    let mut overlay_ui = ui.new_child(egui::UiBuilder::new().max_rect(geometry.viewport_rect));
+    overlay_ui.set_clip_rect(geometry.image_rect);
+
+    // Whiteboard is a separate persistent context, not an overlay on the active slide.
+    if state.whiteboard_active {
+        ui.painter().rect_filled(geometry.viewport_rect, 0.0, egui::Color32::WHITE);
+        if !state.whiteboard_strokes.is_empty() {
+            crate::widgets::draw_ink_strokes(ui, geometry.image_rect, &state.whiteboard_strokes);
+        }
+        return;
+    }
+
     // Ink strokes
     let page_ink = state.current_page_ink();
     if !page_ink.is_empty() {
-        crate::widgets::draw_ink_strokes(ui, image_rect, page_ink);
+        crate::widgets::draw_ink_strokes(&mut overlay_ui, overlay_rect, page_ink);
     }
 
     // Text boxes (non-interactive on audience display)
     let page_text_boxes = state.current_page_text_boxes();
     if draw_text_boxes && !page_text_boxes.is_empty() {
         let _ = crate::widgets::draw_text_boxes(
-            ui,
+            &mut overlay_ui,
             page_text_boxes,
             None,
             None,
             false,
-            image_rect,
+            overlay_rect,
             tb_cache,
             texture_cache,
         );
@@ -44,8 +65,8 @@ pub fn draw_overlays(
     {
         let appearance = state.current_pointer_appearance();
         draw_laser_overlay(
-            ui,
-            image_rect,
+            &mut overlay_ui,
+            overlay_rect,
             px,
             py,
             appearance.color,
@@ -59,8 +80,8 @@ pub fn draw_overlays(
         && let Some((sx, sy)) = state.spotlight_position
     {
         draw_spotlight_overlay(
-            ui,
-            image_rect,
+            &mut overlay_ui,
+            overlay_rect,
             sx,
             sy,
             state.spotlight_radius,
@@ -70,16 +91,25 @@ pub fn draw_overlays(
 
     // Blackout
     if state.blacked_out {
-        ui.painter().rect_filled(viewport_rect, 0.0, egui::Color32::BLACK);
+        ui.painter().rect_filled(geometry.viewport_rect, 0.0, egui::Color32::BLACK);
     }
+}
 
-    // Whiteboard — white canvas with dedicated strokes
-    if state.whiteboard_active {
-        ui.painter().rect_filled(viewport_rect, 0.0, egui::Color32::WHITE);
-        if !state.whiteboard_strokes.is_empty() {
-            crate::widgets::draw_ink_strokes(ui, image_rect, &state.whiteboard_strokes);
-        }
-    }
+/// Return the screen-space rect that maps full-slide normalized coordinates onto
+/// the currently displayed zoom crop.
+pub fn zoomed_overlay_rect(image_rect: egui::Rect, center: (f32, f32), factor: f32) -> egui::Rect {
+    let factor = factor.max(1.0);
+    let half_u = 1.0 / (factor * 2.0);
+    let half_v = 1.0 / (factor * 2.0);
+    let u_center = center.0.clamp(half_u, 1.0 - half_u);
+    let v_center = center.1.clamp(half_v, 1.0 - half_v);
+    let uv_min = egui::pos2(u_center - half_u, v_center - half_v);
+    let uv_size = egui::vec2(half_u * 2.0, half_v * 2.0);
+    let overlay_size = egui::vec2(image_rect.width() / uv_size.x, image_rect.height() / uv_size.y);
+    let overlay_min =
+        image_rect.min - egui::vec2(uv_min.x * overlay_size.x, uv_min.y * overlay_size.y);
+
+    egui::Rect::from_min_size(overlay_min, overlay_size)
 }
 
 /// Draw the configured pointer overlay at normalized position.
@@ -288,4 +318,32 @@ pub fn draw_zoom_indicator(
 /// Convert normalized (0..1) coordinates to screen-space within the image rect.
 fn denormalize(rect: egui::Rect, nx: f32, ny: f32) -> egui::Pos2 {
     egui::pos2(rect.min.x + nx * rect.width(), rect.min.y + ny * rect.height())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::zoomed_overlay_rect;
+
+    #[test]
+    fn zoomed_overlay_rect_maps_zoom_center_to_image_center() {
+        let image_rect =
+            egui::Rect::from_min_size(egui::pos2(10.0, 20.0), egui::vec2(400.0, 300.0));
+        let overlay_rect = zoomed_overlay_rect(image_rect, (0.25, 0.5), 2.0);
+        let mapped_center = egui::pos2(
+            overlay_rect.left() + 0.25 * overlay_rect.width(),
+            overlay_rect.top() + 0.5 * overlay_rect.height(),
+        );
+
+        assert!((mapped_center.x - image_rect.center().x).abs() < f32::EPSILON);
+        assert!((mapped_center.y - image_rect.center().y).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn zoomed_overlay_rect_scales_by_zoom_factor() {
+        let image_rect = egui::Rect::from_min_size(egui::pos2(0.0, 0.0), egui::vec2(400.0, 300.0));
+        let overlay_rect = zoomed_overlay_rect(image_rect, (0.5, 0.5), 2.5);
+
+        assert!((overlay_rect.width() - 1000.0).abs() < f32::EPSILON);
+        assert!((overlay_rect.height() - 750.0).abs() < f32::EPSILON);
+    }
 }

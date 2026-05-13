@@ -1,9 +1,14 @@
 # dais 0.1.1
 
+## New features
+
+- Text boxes can use a configured Typst prelude from `[text_boxes].typst_prelude` in `dais.toml`.
+
 ## Bug fixes
 
 - Ctrl+L laser-style cycling now advances one style per keypress and reaches every pointer style.
 - Normal forward/back navigation now steps through incremental build pages instead of skipping to the next logical slide.
+- Text boxes and other slide overlays now stay aligned with the slide while zoom is active.
 
 # dais 0.1.0
 

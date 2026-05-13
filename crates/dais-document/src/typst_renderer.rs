@@ -82,19 +82,28 @@ impl typst_library::World for MinimalWorld {
 /// Returns `None` if compilation or rasterization fails.
 pub fn render_text_box(
     content: &str,
+    typst_prelude: &str,
     px_width: u32,
     px_height: u32,
     font_size: f32,
     color: [u8; 4],
     background: Option<[u8; 4]>,
 ) -> Option<RenderedTextBox> {
-    let markup = build_markup(content, px_width, px_height, font_size, color, background);
+    let markup =
+        build_markup(content, typst_prelude, px_width, px_height, font_size, color, background);
     if let Some(rendered) = compile_markup(&markup) {
         return Some(rendered);
     }
 
-    let fallback_markup =
-        build_plain_text_fallback(content, px_width, px_height, font_size, color, background);
+    let fallback_markup = build_plain_text_fallback(
+        content,
+        typst_prelude,
+        px_width,
+        px_height,
+        font_size,
+        color,
+        background,
+    );
     let fallback = compile_markup(&fallback_markup);
     if fallback.is_some() {
         warn!("Typst text box render failed; fell back to plain-text rendering");
@@ -106,6 +115,7 @@ pub fn render_text_box(
 
 fn build_markup(
     content: &str,
+    typst_prelude: &str,
     px_width: u32,
     px_height: u32,
     font_size: f32,
@@ -114,18 +124,24 @@ fn build_markup(
 ) -> String {
     let bg = match background {
         Some([r, g, b, a]) => format!("rgb({r}, {g}, {b}, {a})"),
-        None => "none".to_string(),
+        None => "rgb(0, 0, 0, 0)".to_string(),
     };
     let [r, g, b, a] = color;
+    let x_margin = (font_size * 0.2).clamp(1.0, 4.0);
+    let top_margin = (font_size * 0.35).max(2.0);
+    let prelude =
+        if typst_prelude.trim().is_empty() { String::new() } else { format!("{typst_prelude}\n") };
     format!(
-        "#set page(width: {px_width}pt, height: {px_height}pt, margin: 4pt, fill: {bg})\n\
+        "#set page(width: {px_width}pt, height: {px_height}pt, margin: (x: {x_margin}pt, y: 4pt, top: {top_margin}pt), fill: {bg})\n\
          #set text(size: {font_size}pt, fill: rgb({r}, {g}, {b}, {a}))\n\
+         {prelude}\
          {content}"
     )
 }
 
 fn build_plain_text_fallback(
     content: &str,
+    typst_prelude: &str,
     px_width: u32,
     px_height: u32,
     font_size: f32,
@@ -133,7 +149,11 @@ fn build_plain_text_fallback(
     background: Option<[u8; 4]>,
 ) -> String {
     let escaped = escape_typst_string(content);
-    format!("{}\n#{}", build_markup("", px_width, px_height, font_size, color, background), escaped)
+    format!(
+        "{}\n#{}",
+        build_markup("", typst_prelude, px_width, px_height, font_size, color, background),
+        escaped
+    )
 }
 
 fn escape_typst_string(s: &str) -> String {
@@ -190,6 +210,7 @@ fn unpremultiply_channel(channel: u8, alpha: u8) -> u8 {
 #[derive(PartialEq, Eq, Hash, Clone)]
 struct CacheKey {
     content_hash: u64,
+    prelude_hash: u64,
     width: u32,
     height: u32,
     font_size_bits: u32,
@@ -208,6 +229,18 @@ pub struct TextBoxRenderCache {
     entries: HashMap<CacheKey, RenderedTextBox>,
 }
 
+/// Inputs for rendering and caching one text box.
+#[derive(Clone, Copy)]
+pub struct TextBoxRenderRequest<'a> {
+    pub content: &'a str,
+    pub typst_prelude: &'a str,
+    pub px_width: u32,
+    pub px_height: u32,
+    pub font_size: f32,
+    pub color: [u8; 4],
+    pub background: Option<[u8; 4]>,
+}
+
 impl Default for TextBoxRenderCache {
     fn default() -> Self {
         Self::new()
@@ -220,26 +253,26 @@ impl TextBoxRenderCache {
     }
 
     /// Get or render a text box bitmap.
-    pub fn get_or_render(
-        &mut self,
-        content: &str,
-        px_width: u32,
-        px_height: u32,
-        font_size: f32,
-        color: [u8; 4],
-        background: Option<[u8; 4]>,
-    ) -> Option<&RenderedTextBox> {
+    pub fn get_or_render(&mut self, request: TextBoxRenderRequest<'_>) -> Option<&RenderedTextBox> {
         let key = CacheKey {
-            content_hash: hash_str(content),
-            width: px_width,
-            height: px_height,
-            font_size_bits: font_size.to_bits(),
-            color,
-            background,
+            content_hash: hash_str(request.content),
+            prelude_hash: hash_str(request.typst_prelude),
+            width: request.px_width,
+            height: request.px_height,
+            font_size_bits: request.font_size.to_bits(),
+            color: request.color,
+            background: request.background,
         };
         if !self.entries.contains_key(&key)
-            && let Some(rendered) =
-                render_text_box(content, px_width, px_height, font_size, color, background)
+            && let Some(rendered) = render_text_box(
+                request.content,
+                request.typst_prelude,
+                request.px_width,
+                request.px_height,
+                request.font_size,
+                request.color,
+                request.background,
+            )
         {
             self.entries.insert(key.clone(), rendered);
         }
@@ -257,19 +290,65 @@ impl TextBoxRenderCache {
 mod tests {
     use super::render_text_box;
 
+    fn top_row_has_visible_pixels(rendered: &super::RenderedTextBox) -> bool {
+        rendered.data[..rendered.width as usize * 4].chunks_exact(4).any(|pixel| pixel[3] > 0)
+    }
+
+    fn first_visible_pixel(rendered: &super::RenderedTextBox) -> Option<[u8; 4]> {
+        rendered
+            .data
+            .chunks_exact(4)
+            .find(|pixel| pixel[3] > 0)
+            .map(|pixel| <[u8; 4]>::try_from(pixel).expect("chunk size is exactly four bytes"))
+    }
+
     #[test]
     fn renders_valid_typst_markup() {
         let rendered =
-            render_text_box("Hello, *Typst*!", 240, 80, 20.0, [255, 255, 255, 255], None);
+            render_text_box("Hello, *Typst*!", "", 240, 80, 20.0, [255, 255, 255, 255], None);
         assert!(rendered.is_some());
     }
 
     #[test]
     fn falls_back_for_invalid_typst_markup() {
-        let rendered = render_text_box("#let x = ", 240, 80, 20.0, [255, 255, 255, 255], None)
+        let rendered = render_text_box("#let x = ", "", 240, 80, 20.0, [255, 255, 255, 255], None)
             .expect("fallback should still produce a bitmap");
         assert_eq!(rendered.width, 240);
         assert_eq!(rendered.height, 80);
         assert_eq!(rendered.data.len(), 240 * 80 * 4);
+    }
+
+    #[test]
+    fn transparent_background_renders_without_white_matte() {
+        let rendered = render_text_box("$pi r^2$", "", 240, 80, 24.0, [0, 0, 0, 255], None)
+            .expect("formula should render");
+
+        assert_eq!(&rendered.data[..4], &[0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn first_line_superscript_has_top_padding() {
+        let rendered = render_text_box("$pi r^2$", "", 240, 80, 24.0, [0, 0, 0, 255], None)
+            .expect("formula should render");
+
+        assert!(!top_row_has_visible_pixels(&rendered));
+    }
+
+    #[test]
+    fn typst_prelude_can_override_default_text_settings() {
+        let rendered = render_text_box(
+            "Override",
+            "#set text(fill: rgb(255, 0, 0))",
+            240,
+            80,
+            20.0,
+            [0, 0, 0, 255],
+            None,
+        )
+        .expect("prelude should render");
+
+        let pixel = first_visible_pixel(&rendered).expect("text should have visible pixels");
+        assert!(pixel[0] > pixel[1]);
+        assert!(pixel[0] > pixel[2]);
     }
 }

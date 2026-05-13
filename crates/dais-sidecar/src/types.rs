@@ -61,4 +61,6 @@ pub struct TextBoxMeta {
     pub color: [u8; 4],
     /// Optional background fill as RGBA.
     pub background: Option<[u8; 4]>,
+    /// Additional Typst setup inserted after Dais defaults and before content.
+    pub typst_prelude: String,
 }

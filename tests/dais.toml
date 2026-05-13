@@ -1,5 +1,6 @@
 [display]
-audience_monitor = "2"
+audience_monitor = "3"
+mode = "single"
 
 [timer]
 mode = "countdown"
@@ -10,10 +11,16 @@ color = "#F58025"
 width = 1.0
 
 [laser]
-color = "#33CC66"
+color = "#B31B1B"
 size = 20.0
-style = "arrow"
+style = "minimal"
 
 [spotlight]
 radius = 60.0
 dim_opacity = 0.45
+
+[text_boxes]
+typst_prelude = """
+#set align(horizon + center)
+#set text(font: "Spectral")
+"""

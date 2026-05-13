@@ -123,8 +123,7 @@ impl HudOverlay {
                 // Audience overlays (ink, laser, spotlight, zoom, blackout)
                 overlays::draw_overlays(
                     ui,
-                    viewport_rect,
-                    image_rect,
+                    overlays::OverlayGeometry { viewport_rect, image_rect, zoom_region },
                     state,
                     &mut self.tb_cache,
                     &mut self.tb_texture_cache,

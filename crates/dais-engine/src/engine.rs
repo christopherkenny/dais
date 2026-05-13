@@ -44,6 +44,8 @@ pub struct PresentationEngine {
     text_box_default_color: [u8; 4],
     /// Default background fill for newly placed text boxes.
     text_box_default_background: Option<[u8; 4]>,
+    /// Default Typst setup for newly placed text boxes.
+    text_box_default_typst_prelude: String,
     /// Path to the PDF file (used for sidecar save).
     pdf_path: std::path::PathBuf,
     /// Which sidecar format to write on save.
@@ -113,6 +115,7 @@ impl PresentationEngine {
         let text_box_default_color =
             parse_hex_color(&config.text_boxes.color).unwrap_or([0, 0, 0, 255]);
         let text_box_default_background = parse_optional_hex_color(&config.text_boxes.background);
+        let text_box_default_typst_prelude = config.text_boxes.typst_prelude.clone();
 
         // Hydrate runtime annotation state from metadata before publishing shared state,
         // so the UI never sees a state with annotations missing on the first frame.
@@ -130,6 +133,7 @@ impl PresentationEngine {
                 ink_color_presets,
                 text_box_default_color,
                 text_box_default_background,
+                text_box_default_typst_prelude,
                 pdf_path,
                 sidecar_kind: if config.normalized_sidecar_format() == "dais" {
                     SidecarKind::Dais
@@ -322,7 +326,9 @@ impl PresentationEngine {
                     // Auto-activate ink so the user can draw immediately
                     self.state.ink_active = true;
                     self.state.laser_active = false;
+                    self.state.text_box_mode = false;
                     self.state.pointer_position = None;
+                    self.reset_text_box_selection();
                 }
             }
             Command::ToggleScreenShareMode => {
@@ -504,9 +510,10 @@ impl PresentationEngine {
             id,
             rect: (x, y, w, h),
             content: String::new(),
-            font_size: 20.0,
+            font_size: 30.0,
             color: self.text_box_default_color,
             background: self.text_box_default_background,
+            typst_prelude: self.text_box_default_typst_prelude.clone(),
         };
         self.state
             .slide_text_boxes_by_page
@@ -732,6 +739,7 @@ impl PresentationEngine {
                             font_size: tb.font_size,
                             color: tb.color,
                             background: tb.background,
+                            typst_prelude: tb.typst_prelude.clone(),
                         })
                         .collect(),
                 )
@@ -999,6 +1007,7 @@ fn load_annotations_into_state(state: &mut PresentationState, metadata: &Present
                     font_size: tb.font_size,
                     color: tb.color,
                     background: tb.background,
+                    typst_prelude: tb.typst_prelude.clone(),
                 }
             })
             .collect();
@@ -1936,6 +1945,21 @@ mod tests {
         assert_eq!(engine.state().slide_groups[0].notes, None);
     }
 
+    #[test]
+    fn new_text_boxes_use_configured_typst_prelude() {
+        let mut config = Config::default();
+        config.text_boxes.typst_prelude = "#set align(horizon)".to_string();
+        let (mut engine, _, sender) =
+            make_engine_with_config(1, &PresentationMetadata::default(), &config);
+
+        sender.send(Command::PlaceTextBox { x: 0.1, y: 0.1, w: 0.3, h: 0.2 }).unwrap();
+        engine.tick();
+
+        let boxes = engine.state().current_page_text_boxes();
+        assert_eq!(boxes.len(), 1);
+        assert_eq!(boxes[0].typst_prelude, "#set align(horizon)");
+    }
+
     // ---- Whiteboard ----
 
     #[test]
@@ -1952,6 +1976,25 @@ mod tests {
         sender.send(Command::ToggleWhiteboard).unwrap();
         engine.tick();
         assert!(!engine.state().whiteboard_active);
+    }
+
+    #[test]
+    fn whiteboard_exits_text_box_context() {
+        let (mut engine, _, sender) = make_engine(1);
+
+        sender.send(Command::ToggleTextBoxMode).unwrap();
+        sender.send(Command::PlaceTextBox { x: 0.1, y: 0.1, w: 0.2, h: 0.2 }).unwrap();
+        engine.tick();
+        assert!(engine.state().text_box_mode);
+        assert!(engine.state().selected_text_box.is_some());
+
+        sender.send(Command::ToggleWhiteboard).unwrap();
+        engine.tick();
+
+        assert!(engine.state().whiteboard_active);
+        assert!(!engine.state().text_box_mode);
+        assert!(engine.state().selected_text_box.is_none());
+        assert!(!engine.state().text_box_editing);
     }
 
     #[test]

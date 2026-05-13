@@ -212,6 +212,8 @@ pub struct TextBoxConfig {
     pub color: String,
     /// Background fill as a hex string (RGB or RGBA), or `"transparent"`.
     pub background: String,
+    /// Typst setup inserted after Dais defaults and before newly created text box content.
+    pub typst_prelude: String,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -219,6 +221,7 @@ pub struct TextBoxConfig {
 struct PartialTextBoxConfig {
     color: Option<String>,
     background: Option<String>,
+    typst_prelude: Option<String>,
 }
 
 /// Clicker/remote hardware configuration.
@@ -332,7 +335,11 @@ impl Default for InkConfig {
 
 impl Default for TextBoxConfig {
     fn default() -> Self {
-        Self { color: "#000000".to_string(), background: "transparent".to_string() }
+        Self {
+            color: "#000000".to_string(),
+            background: "transparent".to_string(),
+            typst_prelude: String::new(),
+        }
     }
 }
 
@@ -500,6 +507,9 @@ fn apply_partial_config(config: &mut Config, partial: PartialConfig) {
         if let Some(background) = text_boxes.background {
             config.text_boxes.background = background;
         }
+        if let Some(typst_prelude) = text_boxes.typst_prelude {
+            config.text_boxes.typst_prelude = typst_prelude;
+        }
     }
 
     if let Some(notes) = partial.notes {
@@ -626,6 +636,7 @@ mod tests {
             text_boxes: Some(PartialTextBoxConfig {
                 color: Some("#112233".to_string()),
                 background: Some("#445566AA".to_string()),
+                typst_prelude: Some("#set align(horizon)".to_string()),
             }),
             ..Default::default()
         };
@@ -634,6 +645,7 @@ mod tests {
 
         assert_eq!(config.text_boxes.color, "#112233");
         assert_eq!(config.text_boxes.background, "#445566AA");
+        assert_eq!(config.text_boxes.typst_prelude, "#set align(horizon)");
     }
 
     #[test]

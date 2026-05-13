@@ -195,6 +195,8 @@ impl Action {
             Self::ToggleFreeze,
             Self::ToggleBlackout,
             Self::ToggleWhiteboard,
+            Self::ToggleScreenShare,
+            Self::TogglePresentationMode,
             Self::ToggleLaser,
             Self::CycleLaserStyle,
             Self::ToggleInk,
@@ -203,16 +205,14 @@ impl Action {
             Self::CycleInkWidth,
             Self::ToggleSpotlight,
             Self::ToggleZoom,
+            Self::ToggleTextBoxMode,
             Self::ToggleOverview,
             Self::ToggleNotes,
             Self::ToggleNotesEdit,
-            Self::StartPauseTimer,
-            Self::ResetTimer,
             Self::IncrementNotesFont,
             Self::DecrementNotesFont,
-            Self::ToggleScreenShare,
-            Self::TogglePresentationMode,
-            Self::ToggleTextBoxMode,
+            Self::StartPauseTimer,
+            Self::ResetTimer,
             Self::Quit,
             Self::SaveSidecar,
         ]
@@ -384,6 +384,8 @@ fn default_keybindings() -> Vec<(Action, Vec<String>)> {
         (Action::ToggleFreeze, vec!["f".into()]),
         (Action::ToggleBlackout, vec!["b".into(), ".".into()]),
         (Action::ToggleWhiteboard, vec!["w".into()]),
+        (Action::ToggleScreenShare, vec!["Shift+s".into()]),
+        (Action::TogglePresentationMode, vec!["F5".into()]),
         (Action::ToggleLaser, vec!["l".into()]),
         (Action::CycleLaserStyle, vec!["Ctrl+l".into()]),
         (Action::ToggleInk, vec!["d".into()]),
@@ -392,16 +394,14 @@ fn default_keybindings() -> Vec<(Action, Vec<String>)> {
         (Action::CycleInkWidth, vec!["Shift+d".into()]),
         (Action::ToggleSpotlight, vec!["s".into()]),
         (Action::ToggleZoom, vec!["z".into()]),
+        (Action::ToggleTextBoxMode, vec!["x".into()]),
         (Action::ToggleOverview, vec!["o".into()]),
         (Action::ToggleNotes, vec!["n".into()]),
         (Action::ToggleNotesEdit, vec!["Ctrl+n".into()]),
-        (Action::StartPauseTimer, vec!["t".into()]),
-        (Action::ResetTimer, vec!["Shift+t".into()]),
         (Action::IncrementNotesFont, vec!["+".into(), "Shift+=".into()]),
         (Action::DecrementNotesFont, vec!["-".into()]),
-        (Action::ToggleScreenShare, vec!["Shift+s".into()]),
-        (Action::TogglePresentationMode, vec!["F5".into()]),
-        (Action::ToggleTextBoxMode, vec!["x".into()]),
+        (Action::StartPauseTimer, vec!["t".into()]),
+        (Action::ResetTimer, vec!["Shift+t".into()]),
         (Action::Quit, vec!["q".into(), "Escape".into()]),
         (Action::SaveSidecar, vec!["Ctrl+s".into()]),
     ]
@@ -525,6 +525,21 @@ mod tests {
         let quit_keys: Vec<String> =
             bindings.iter().find(|(a, _)| *a == Action::Quit).unwrap().1.clone();
         assert_eq!(quit_keys, vec!["X"]);
+    }
+
+    #[test]
+    fn action_order_keeps_groups_contiguous() {
+        let mut seen_groups = Vec::new();
+        let mut previous_group = "";
+
+        for action in Action::all() {
+            let group = action.group();
+            if group != previous_group {
+                assert!(!seen_groups.contains(&group), "{group} appears in multiple help sections");
+                seen_groups.push(group);
+                previous_group = group;
+            }
+        }
     }
 
     #[test]

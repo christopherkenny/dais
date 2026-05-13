@@ -30,12 +30,12 @@ impl AudienceDisplay {
         zoom_region: Option<((f32, f32), f32)>,
     ) -> egui::Rect {
         let available = ui.available_size();
-        let response = if let Some((center, factor)) = zoom_region {
-            self.thumbnail.show_zoomed(ui, available, center, factor)
+        let (_, image_rect) = if let Some((center, factor)) = zoom_region {
+            self.thumbnail.show_zoomed_with_image_rect(ui, available, center, factor)
         } else {
-            self.thumbnail.show(ui, available)
+            self.thumbnail.show_with_image_rect(ui, available)
         };
-        self.last_image_rect = response.rect;
+        self.last_image_rect = image_rect;
 
         self.last_image_rect
     }

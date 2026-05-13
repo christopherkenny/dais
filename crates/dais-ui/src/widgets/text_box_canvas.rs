@@ -5,13 +5,13 @@
 
 use dais_core::commands::Command;
 use dais_core::state::TextBox;
-use dais_document::typst_renderer::TextBoxRenderCache;
+use dais_document::render_pipeline::FALLBACK_RENDER_SIZE;
+use dais_document::typst_renderer::{TextBoxRenderCache, TextBoxRenderRequest};
 use egui::{Color32, ColorImage, Id, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, vec2};
 use std::collections::HashMap;
 
 const HANDLE_RADIUS: f32 = 5.0;
 const HANDLE_COLOR: Color32 = Color32::WHITE;
-const BOX_BORDER_WIDTH: f32 = 1.0;
 const SELECTED_BORDER: Color32 = Color32::from_rgb(100, 160, 255);
 const SELECTED_BORDER_WIDTH: f32 = 2.0;
 const MIN_PLACE_SIZE: f32 = 0.04;
@@ -22,6 +22,7 @@ struct TextureKey {
     width: u32,
     height: u32,
     content_hash: u64,
+    prelude_hash: u64,
     font_size_bits: u32,
     color: [u8; 4],
     background: Option<[u8; 4]>,
@@ -47,6 +48,7 @@ impl TextBoxTextureCache {
             width,
             height,
             content_hash: content_hash(&tb.content),
+            prelude_hash: content_hash(&tb.typst_prelude),
             font_size_bits: font_size.to_bits(),
             color: tb.color,
             background: tb.background,
@@ -65,13 +67,16 @@ impl TextBoxTextureCache {
     }
 
     pub fn retain_for_boxes(&mut self, boxes: &[TextBox], slide_rect: Rect) {
+        let font_scale = slide_font_scale(slide_rect);
         self.textures.retain(|key, _| {
             boxes.iter().any(|tb| {
+                let font_size = scaled_font_size(tb.font_size, font_scale);
                 tb.id == key.id
                     && key.content_hash == content_hash(&tb.content)
+                    && key.prelude_hash == content_hash(&tb.typst_prelude)
                     && key.color == tb.color
                     && key.background == tb.background
-                    && key.font_size_bits == tb.font_size.clamp(8.0, 72.0).to_bits()
+                    && key.font_size_bits == font_size.to_bits()
                     && key.width == texture_dimension(screen_rect(slide_rect, tb.rect).width())
                     && key.height == texture_dimension(screen_rect(slide_rect, tb.rect).height())
             })
@@ -102,6 +107,7 @@ pub fn draw_text_boxes(
     texture_cache: &mut TextBoxTextureCache,
 ) -> Vec<Command> {
     let mut commands = Vec::new();
+    let font_scale = slide_font_scale(slide_rect);
     texture_cache.retain_for_boxes(boxes, slide_rect);
 
     // --- Drag-to-place new box ---
@@ -184,14 +190,6 @@ pub fn draw_text_boxes(
             );
         }
 
-        // Always draw a subtle outline so empty boxes remain visible while testing.
-        ui.painter_at(slide_rect).rect_stroke(
-            box_rect,
-            2.0,
-            Stroke::new(BOX_BORDER_WIDTH, Color32::from_rgba_unmultiplied(255, 255, 255, 140)),
-            egui::StrokeKind::Outside,
-        );
-
         if is_editing {
             // Inline TextEdit overlay
             let edit_buf_id = Id::new(("tb_edit_buf", tb.id));
@@ -207,7 +205,7 @@ pub fn draw_text_boxes(
                 tb.color[2],
                 tb.color[3],
             ));
-            let font_size = tb.font_size.clamp(8.0, 72.0);
+            let font_size = scaled_font_size(tb.font_size, font_scale);
             child.style_mut().override_font_id = Some(egui::FontId::proportional(font_size));
 
             let edit_resp = child.add_sized(
@@ -248,10 +246,16 @@ pub fn draw_text_boxes(
             // Typst-rendered texture
             let px_w = texture_dimension(box_rect.width());
             let px_h = texture_dimension(box_rect.height());
-            let font_size = tb.font_size.clamp(8.0, 72.0);
-            if let Some(rendered) =
-                tb_cache.get_or_render(&tb.content, px_w, px_h, font_size, tb.color, tb.background)
-            {
+            let font_size = scaled_font_size(tb.font_size, font_scale);
+            if let Some(rendered) = tb_cache.get_or_render(TextBoxRenderRequest {
+                content: &tb.content,
+                typst_prelude: &tb.typst_prelude,
+                px_width: px_w,
+                px_height: px_h,
+                font_size,
+                color: tb.color,
+                background: tb.background,
+            }) {
                 let tex = texture_cache.get_or_load(ui, tb, rendered, px_w, px_h, font_size);
                 ui.painter_at(slide_rect).image(
                     tex.id(),
@@ -358,6 +362,17 @@ pub fn draw_text_boxes(
     commands
 }
 
+#[allow(clippy::cast_precision_loss)]
+fn slide_font_scale(slide_rect: Rect) -> f32 {
+    let width_scale = slide_rect.width() / FALLBACK_RENDER_SIZE.width as f32;
+    let height_scale = slide_rect.height() / FALLBACK_RENDER_SIZE.height as f32;
+    width_scale.min(height_scale).max(0.05)
+}
+
+fn scaled_font_size(font_size: f32, scale: f32) -> f32 {
+    (font_size.clamp(8.0, 72.0) * scale).max(1.0)
+}
+
 /// Convert a normalized (x, y, w, h) rect to screen-space using the slide rect.
 fn screen_rect(slide_rect: Rect, (nx, ny, nw, nh): (f32, f32, f32, f32)) -> Rect {
     Rect::from_min_size(
@@ -389,4 +404,22 @@ fn content_hash(content: &str) -> u64 {
     let mut hasher = DefaultHasher::new();
     content.hash(&mut hasher);
     hasher.finish()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{scaled_font_size, slide_font_scale};
+
+    #[test]
+    fn text_box_font_scales_with_slide_rect() {
+        let full_slide =
+            egui::Rect::from_min_size(egui::pos2(0.0, 0.0), egui::vec2(1920.0, 1080.0));
+        let small_slide = egui::Rect::from_min_size(egui::pos2(0.0, 0.0), egui::vec2(960.0, 540.0));
+
+        assert!((slide_font_scale(full_slide) - 1.0).abs() < f32::EPSILON);
+        assert!((slide_font_scale(small_slide) - 0.5).abs() < f32::EPSILON);
+        assert!(
+            (scaled_font_size(20.0, slide_font_scale(small_slide)) - 10.0).abs() < f32::EPSILON
+        );
+    }
 }

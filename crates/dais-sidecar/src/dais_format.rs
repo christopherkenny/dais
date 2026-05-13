@@ -54,6 +54,8 @@ struct DaisTextBox {
     color: [u8; 4],
     #[serde(skip_serializing_if = "Option::is_none")]
     background: Option<[u8; 4]>,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    typst_prelude: String,
 }
 
 impl DaisFile {
@@ -107,6 +109,7 @@ impl DaisFile {
                                 font_size: tb.font_size,
                                 color: tb.color,
                                 background: tb.background,
+                                typst_prelude: tb.typst_prelude.clone(),
                             })
                             .collect(),
                     )
@@ -173,6 +176,7 @@ impl DaisFile {
                                     font_size: tb.font_size,
                                     color: tb.color,
                                     background: tb.background,
+                                    typst_prelude: tb.typst_prelude,
                                 })
                                 .collect(),
                         )
@@ -470,6 +474,68 @@ mod tests {
         assert_eq!(loaded.title.as_deref(), Some("No annotations"));
         assert!(loaded.slide_annotations.is_empty());
         assert!(loaded.whiteboard_annotations.is_empty());
+
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn text_box_typst_prelude_roundtrips() {
+        let dir = test_dir();
+        let path = dir.join("text_box_prelude.dais");
+        let format = DaisFormat;
+
+        let mut slide_text_boxes = HashMap::new();
+        slide_text_boxes.insert(
+            0,
+            vec![TextBoxMeta {
+                id: 7,
+                rect: (0.1, 0.2, 0.3, 0.4),
+                content: "$pi r^2$".to_string(),
+                font_size: 24.0,
+                color: [0, 0, 0, 255],
+                background: None,
+                typst_prelude: "#set align(horizon)".to_string(),
+            }],
+        );
+        let original = PresentationMetadata { slide_text_boxes, ..Default::default() };
+
+        format.write(&path, &original).unwrap();
+        let content = std::fs::read_to_string(&path).unwrap();
+        assert!(content.contains("typst_prelude"));
+
+        let loaded = format.read(&path).unwrap();
+        assert_eq!(loaded.slide_text_boxes[&0][0].typst_prelude, "#set align(horizon)");
+
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn text_box_without_typst_prelude_parses_as_empty() {
+        let dir = test_dir();
+        let path = dir.join("text_box_no_prelude.dais");
+        let format = DaisFormat;
+
+        let mut slide_text_boxes = HashMap::new();
+        slide_text_boxes.insert(
+            0,
+            vec![TextBoxMeta {
+                id: 1,
+                rect: (0.1, 0.2, 0.3, 0.4),
+                content: "Hello".to_string(),
+                font_size: 20.0,
+                color: [0, 0, 0, 255],
+                background: None,
+                typst_prelude: String::new(),
+            }],
+        );
+        let original = PresentationMetadata { slide_text_boxes, ..Default::default() };
+        format.write(&path, &original).unwrap();
+
+        let content = std::fs::read_to_string(&path).unwrap();
+        assert!(!content.contains("typst_prelude"));
+
+        let loaded = format.read(&path).unwrap();
+        assert_eq!(loaded.slide_text_boxes[&0][0].typst_prelude, "");
 
         let _ = std::fs::remove_file(&path);
     }

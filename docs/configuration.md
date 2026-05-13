@@ -48,6 +48,7 @@ width = 3.0
 [text_boxes]
 color = "#000000"
 background = "transparent"    # Hex color or "transparent"
+typst_prelude = ""            # Typst setup inserted before newly created text box content
 
 [notes]
 font_size = 16.0
@@ -150,6 +151,7 @@ Press **Z** to toggle zoom mode on the audience display. While zoom is active, c
 
 - `color` accepts `#RRGGBB` or `#RRGGBBAA`
 - `background` accepts `#RRGGBB`, `#RRGGBBAA`, or `"transparent"`
+- `typst_prelude` accepts a Typst snippet inserted after Dais's page/text defaults
 
 Example:
 
@@ -157,7 +159,12 @@ Example:
 [text_boxes]
 color = "#111111"
 background = "#FFF7CCDD"
+typst_prelude = "#set align(horizon)"
 ```
+
+The prelude is copied into newly created text boxes and saved with them in `.dais`
+sidecars. Existing boxes keep the prelude they were created with until edited in
+the sidecar.
 
 ## Sidecar Formats
 

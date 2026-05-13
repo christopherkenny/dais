@@ -6,9 +6,11 @@
 
 use dais_core::keybindings::{Action, KeybindingMap};
 
-const OVERLAY_BG: egui::Color32 = egui::Color32::BLACK;
-const HEADER_COLOR: egui::Color32 = egui::Color32::from_rgb(124, 178, 255);
-const TEXT_COLOR: egui::Color32 = egui::Color32::WHITE;
+const OVERLAY_BG: egui::Color32 = egui::Color32::from_rgb(248, 250, 252);
+const OVERLAY_STROKE: egui::Color32 = egui::Color32::from_rgb(150, 160, 174);
+const HEADER_COLOR: egui::Color32 = egui::Color32::from_rgb(24, 82, 151);
+const TEXT_COLOR: egui::Color32 = egui::Color32::from_rgb(20, 24, 31);
+const MUTED_TEXT_COLOR: egui::Color32 = egui::Color32::from_rgb(58, 65, 77);
 const WINDOW_WIDTH: f32 = 560.0;
 const MAX_HEIGHT_FRACTION: f32 = 0.80;
 const SCROLLBAR_GUTTER: f32 = 22.0;
@@ -60,18 +62,6 @@ impl HelpOverlay {
         let screen = ctx.content_rect();
         let max_h = screen.height() * MAX_HEIGHT_FRACTION;
 
-        egui::Area::new(egui::Id::new("help_overlay_bg"))
-            .order(egui::Order::Foreground)
-            .fixed_pos(screen.min)
-            .interactable(false)
-            .show(ctx, |ui| {
-                ui.painter().rect_filled(
-                    screen,
-                    0.0,
-                    egui::Color32::from_rgba_unmultiplied(0, 0, 0, 140),
-                );
-            });
-
         let mut still_open = true;
         egui::Window::new("help_overlay")
             .open(&mut still_open)
@@ -87,6 +77,7 @@ impl HelpOverlay {
             .frame(
                 egui::Frame::window(&ctx.style())
                     .fill(OVERLAY_BG)
+                    .stroke(egui::Stroke::new(1.0, OVERLAY_STROKE))
                     .corner_radius(10.0)
                     .inner_margin(16.0),
             )
@@ -98,15 +89,16 @@ impl HelpOverlay {
                 visuals.widgets.hovered.fg_stroke.color = TEXT_COLOR;
                 visuals.widgets.active.fg_stroke.color = TEXT_COLOR;
                 visuals.widgets.open.fg_stroke.color = TEXT_COLOR;
-                visuals.widgets.inactive.bg_fill = egui::Color32::BLACK;
-                visuals.widgets.hovered.bg_fill = egui::Color32::from_gray(20);
-                visuals.widgets.active.bg_fill = egui::Color32::from_gray(28);
-                visuals.widgets.noninteractive.bg_fill = egui::Color32::BLACK;
-                visuals.widgets.noninteractive.weak_bg_fill = egui::Color32::BLACK;
-                visuals.widgets.inactive.weak_bg_fill = egui::Color32::BLACK;
-                visuals.widgets.hovered.weak_bg_fill = egui::Color32::BLACK;
-                visuals.widgets.active.weak_bg_fill = egui::Color32::BLACK;
-                visuals.widgets.open.weak_bg_fill = egui::Color32::BLACK;
+                visuals.widgets.inactive.bg_fill = OVERLAY_BG;
+                visuals.widgets.hovered.bg_fill = egui::Color32::from_rgb(232, 238, 247);
+                visuals.widgets.active.bg_fill = egui::Color32::from_rgb(218, 229, 244);
+                visuals.widgets.noninteractive.bg_fill = OVERLAY_BG;
+                visuals.widgets.noninteractive.weak_bg_fill =
+                    egui::Color32::from_rgb(238, 242, 248);
+                visuals.widgets.inactive.weak_bg_fill = egui::Color32::from_rgb(238, 242, 248);
+                visuals.widgets.hovered.weak_bg_fill = egui::Color32::from_rgb(232, 238, 247);
+                visuals.widgets.active.weak_bg_fill = egui::Color32::from_rgb(218, 229, 244);
+                visuals.widgets.open.weak_bg_fill = egui::Color32::from_rgb(238, 242, 248);
 
                 Self::render_header(ui, &mut self.visible);
                 ui.add_space(8.0);
@@ -228,7 +220,7 @@ impl HelpOverlay {
                             egui::RichText::new(key_text)
                                 .size(12.5)
                                 .strong()
-                                .color(TEXT_COLOR)
+                                .color(MUTED_TEXT_COLOR)
                                 .family(egui::FontFamily::Monospace),
                         )
                         .sense(egui::Sense::hover()),
