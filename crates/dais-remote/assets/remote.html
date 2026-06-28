@@ -19,16 +19,23 @@ main{display:grid;grid-template-columns:1fr;gap:12px;padding:12px;max-width:1080
 .timer{font-variant-numeric:tabular-nums;font-size:42px;font-weight:720;line-height:1;color:#f2c14e}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .split{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 button{appearance:none;border:1px solid #3a4650;background:#252d35;color:#f5f7f8;border-radius:7px;padding:12px 13px;font:inherit;font-weight:650;min-height:48px}
 button:active{transform:translateY(1px);background:#33404a}
 button.primary{background:#2764d8;border-color:#3e7df0}
 button.warn{background:#4d2630;border-color:#824250}
 button.good{background:#244836;border-color:#3b7556}
+.view[hidden]{display:none}
+.overview{display:grid;grid-template-columns:repeat(auto-fill,minmax(124px,1fr));gap:10px}
+.thumb{position:relative;display:block;padding:0;border-color:#3a4650;background:#11161b;min-height:0;overflow:hidden;text-align:left}
+.thumb img{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#080a0d}
+.thumb span{display:block;padding:7px 8px;color:#c7d0d8;font-size:13px}
+.thumb.current{border-color:#f2c14e;box-shadow:0 0 0 2px rgba(242,193,78,.35)}
 .nav button{font-size:22px;min-height:66px}
 .notes{white-space:pre-wrap;min-height:90px;color:#d8dee4}
 .meta{color:#a7b0b8;font-size:13px}
 input{background:#11161b;border:1px solid #3a4650;border-radius:7px;color:#edf2f4;padding:11px;font:inherit;width:92px}
-@media (max-width:720px){.slides{grid-template-columns:1fr}.split{grid-template-columns:1fr}.timer{font-size:36px}}
+@media (max-width:720px){.slides{grid-template-columns:1fr}.split{grid-template-columns:1fr}.timer{font-size:36px}.overview{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}}
 </style>
 </head>
 <body>
@@ -46,39 +53,50 @@ input{background:#11161b;border:1px solid #3a4650;border-radius:7px;color:#edf2f
       </div>
     </div>
   </section>
-  <section class="slides">
-    <div class="slide band">
-      <div class="label"><span>Current</span><span id="mode"></span></div>
-      <img id="currentImg" alt="Current slide">
+  <section class="band tabs">
+    <button class="primary" id="showControl">Control</button>
+    <button id="showOverview">Overview</button>
+  </section>
+  <div class="view" id="controlView">
+    <section class="slides">
+      <div class="slide band">
+        <div class="label"><span>Current</span><span id="mode"></span></div>
+        <img id="currentImg" alt="Current slide">
+      </div>
+      <div class="slide band">
+        <div class="label"><span>Next</span></div>
+        <img id="nextImg" alt="Next slide">
+      </div>
+    </section>
+    <section class="band nav split">
+      <button id="prev">Prev</button>
+      <button class="primary" id="next">Next</button>
+    </section>
+    <section class="band">
+      <div class="row">
+        <button id="blackout" class="warn">Blackout</button>
+        <button id="freeze">Freeze</button>
+        <button id="whiteboard">Whiteboard</button>
+        <button id="laser">Laser</button>
+      </div>
+    </section>
+    <section class="band">
+      <div class="row">
+        <input id="gotoSlide" type="number" min="1" placeholder="Slide">
+        <button id="gotoBtn">Go</button>
+        <span class="meta" id="last"></span>
+      </div>
+    </section>
+    <section class="band">
+      <div class="meta">Notes</div>
+      <div class="notes" id="notes"></div>
+    </section>
+  </div>
+  <div class="view" id="overviewView" hidden>
+    <div class="band">
+      <div class="overview" id="overview"></div>
     </div>
-    <div class="slide band">
-      <div class="label"><span>Next</span></div>
-      <img id="nextImg" alt="Next slide">
-    </div>
-  </section>
-  <section class="band nav split">
-    <button id="prev">Prev</button>
-    <button class="primary" id="next">Next</button>
-  </section>
-  <section class="band">
-    <div class="row">
-      <button id="blackout" class="warn">Blackout</button>
-      <button id="freeze">Freeze</button>
-      <button id="whiteboard">Whiteboard</button>
-      <button id="laser">Laser</button>
-    </div>
-  </section>
-  <section class="band">
-    <div class="row">
-      <input id="gotoSlide" type="number" min="1" placeholder="Slide">
-      <button id="gotoBtn">Go</button>
-      <span class="meta" id="last"></span>
-    </div>
-  </section>
-  <section class="band">
-    <div class="meta">Notes</div>
-    <div class="notes" id="notes"></div>
-  </section>
+  </div>
 </main>
 <script>
 const params=new URLSearchParams(location.search);
@@ -88,11 +106,28 @@ const auth=token?{'Authorization':'Bearer '+token}:{};
 const qs=token?'?token='+encodeURIComponent(token):'';
 function withCache(path){return path+(qs||'?')+(qs?'&':'')+'v='+Date.now();}
 const $=id=>document.getElementById(id);
-let state=null,lastPage=-1,nextPage=-1,pollTimer=null;
+let state=null,lastPage=-1,nextPage=-1,pollTimer=null,overviewCount=0,activeView='control';
 function mmss(seconds){seconds=Math.max(0,seconds|0);const m=Math.floor(seconds/60),s=seconds%60;return m+':'+String(s).padStart(2,'0');}
 async function api(path,opts={}){const r=await fetch(path,{...opts,headers:{...(opts.headers||{}),...auth}});if(!r.ok)throw new Error(await r.text());return r.headers.get('content-type')?.includes('json')?r.json():r.text();}
 async function action(name){await api('/api/v1/actions/'+name,{method:'POST'});$('last').textContent=name;}
 async function timer(actionName){await api('/api/v1/commands/timer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:actionName})});$('last').textContent='timer '+actionName;}
+async function gotoSlide(slide){await api('/api/v1/commands/goto',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slide})});$('last').textContent='goto '+slide;refresh();}
+function showView(name){activeView=name;$('controlView').hidden=name!=='control';$('overviewView').hidden=name!=='overview';$('showControl').classList.toggle('primary',name==='control');$('showOverview').classList.toggle('primary',name==='overview');}
+function syncOverview(){
+ if(!state)return;
+ if(overviewCount!==state.total_logical_slides){
+  overviewCount=state.total_logical_slides;
+  $('overview').replaceChildren();
+  for(let i=1;i<=overviewCount;i++){
+   const b=document.createElement('button');b.className='thumb';b.type='button';b.dataset.slide=i;b.onclick=()=>gotoSlide(i);
+   const img=document.createElement('img');img.loading='lazy';img.alt='Slide '+i;img.src=withCache('/api/v1/slides/'+i+'/thumbnail.png');
+   const label=document.createElement('span');label.textContent='Slide '+i;
+   b.append(img,label);$('overview').appendChild(b);
+  }
+ }
+ const current=String(state.current_logical_slide+1);
+ document.querySelectorAll('.thumb').forEach(b=>b.classList.toggle('current',b.dataset.slide===current));
+}
 function renderState(nextState){
   state=nextState;
   $('conn').textContent='connected';$('conn').style.color='#8fbf9f';
@@ -108,6 +143,7 @@ function renderState(nextState){
   if(state.current_page!==lastPage){lastPage=state.current_page;$('currentImg').src=withCache('/api/v1/slides/current.png');}
   const np=Math.min(state.current_logical_slide+2,state.total_logical_slides);
   if(np!==nextPage){nextPage=np;$('nextImg').src=withCache('/api/v1/slides/next.png');}
+  syncOverview();
 }
 async function refresh(){
  try{
@@ -129,7 +165,9 @@ $('whiteboard').onclick=()=>action('toggle_whiteboard').then(refresh);
 $('laser').onclick=()=>action('toggle_laser').then(refresh);
 $('timerToggle').onclick=()=>timer('toggle').then(refresh);
 $('timerReset').onclick=()=>timer('reset').then(refresh);
-$('gotoBtn').onclick=async()=>{const slide=+$('gotoSlide').value;if(slide>0){await api('/api/v1/commands/goto',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slide})});$('last').textContent='goto '+slide;refresh();}};
+$('gotoBtn').onclick=()=>{const slide=+$('gotoSlide').value;if(slide>0)gotoSlide(slide);};
+$('showControl').onclick=()=>showView('control');
+$('showOverview').onclick=()=>showView('overview');
 refresh();startEvents();
 </script>
 </body>
