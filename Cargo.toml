@@ -57,6 +57,7 @@ thiserror = "2"
 image = "0.25"
 winresource = "0.1"
 fastrand = "2"
+qrcode = "0.14"
 
 # Platform-specific (conditional)
 [workspace.dependencies.windows]

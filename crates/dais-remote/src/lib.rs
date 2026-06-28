@@ -3,7 +3,7 @@ use std::fmt::Write as _;
 use std::io::{Read, Write};
 use std::net::{IpAddr, SocketAddr, TcpListener, TcpStream};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
@@ -101,6 +101,10 @@ impl RemoteServer {
 
     pub fn status(&self) -> RemoteStatus {
         self.status.snapshot()
+    }
+
+    pub fn status_handle(&self) -> RemoteStatusHandle {
+        self.status.clone()
     }
 }
 
@@ -212,15 +216,16 @@ struct HandlerContext {
     doc: Arc<dyn DocumentSource>,
     shutdown: Arc<AtomicBool>,
     status: RemoteStatusHandle,
+    png_cache: Arc<Mutex<HashMap<usize, Vec<u8>>>>,
 }
 
 #[derive(Debug, Clone, Default)]
-struct RemoteStatusHandle {
+pub struct RemoteStatusHandle {
     inner: Arc<RwLock<RemoteStatus>>,
 }
 
 impl RemoteStatusHandle {
-    fn snapshot(&self) -> RemoteStatus {
+    pub fn snapshot(&self) -> RemoteStatus {
         self.inner.read().map_or_else(|_| RemoteStatus::default(), |status| status.clone())
     }
 
@@ -262,6 +267,7 @@ pub fn start_server(
     let allow_unauthenticated_loopback = server_settings_allow_loopback(&settings);
     let urls = remote_urls(addr);
     let status = RemoteStatusHandle::default();
+    let png_cache = Arc::new(Mutex::new(HashMap::new()));
     let server_settings = Arc::new(settings);
     let thread_settings = Arc::clone(&server_settings);
     let thread_status = status.clone();
@@ -277,6 +283,7 @@ pub fn start_server(
                         doc: Arc::clone(&doc),
                         shutdown: Arc::clone(&thread_shutdown),
                         status: thread_status.clone(),
+                        png_cache: Arc::clone(&png_cache),
                     };
                     thread::spawn(move || {
                         if let Err(error) = handle_stream(stream, peer, &context) {
@@ -462,16 +469,19 @@ fn route_request(request: &HttpRequest, context: &HandlerContext) -> HttpRespons
     match (request.method.as_str(), request.path.as_str()) {
         ("GET", "/remote" | "/") => html_response(remote_html()),
         ("GET", "/api/v1/state") => match context.shared_state.read() {
-            Ok(state) => json_response(200, "OK", &remote_state(&state)),
+            Ok(state) => {
+                preload_remote_pages(context, &state);
+                json_response(200, "OK", &remote_state(&state))
+            }
             Err(_) => text_response(500, "Internal Server Error", "state lock poisoned"),
         },
         ("GET", "/api/v1/remote-status") => json_response(200, "OK", &context.status.snapshot()),
         ("GET", "/api/v1/slides/current.png") => match current_page(&context.shared_state) {
-            Ok(page) => png_response(&context.doc, page),
+            Ok(page) => png_response(context, page),
             Err(error) => text_response(500, "Internal Server Error", &error.to_string()),
         },
         ("GET", "/api/v1/slides/next.png") => match next_page(&context.shared_state) {
-            Ok(page) => png_response(&context.doc, page),
+            Ok(page) => png_response(context, page),
             Err(error) => text_response(500, "Internal Server Error", &error.to_string()),
         },
         ("GET", path)
@@ -484,7 +494,7 @@ fn route_request(request: &HttpRequest, context: &HandlerContext) -> HttpRespons
             {
                 Ok(slide) if slide > 0 => {
                     match logical_slide_page(&context.shared_state, slide - 1) {
-                        Ok(page) => png_response(&context.doc, page),
+                        Ok(page) => png_response(context, page),
                         Err(error) => text_response(400, "Bad Request", &error.to_string()),
                     }
                 }
@@ -496,6 +506,7 @@ fn route_request(request: &HttpRequest, context: &HandlerContext) -> HttpRespons
             match send_remote_action(&context.sender, action) {
                 Ok(()) => {
                     context.status.set_last_command(action);
+                    preload_from_shared_state(context);
                     json_response(200, "OK", &ok_response("action dispatched"))
                 }
                 Err(error) => text_response(400, "Bad Request", &error.to_string()),
@@ -510,6 +521,7 @@ fn route_request(request: &HttpRequest, context: &HandlerContext) -> HttpRespons
                 .send(Command::GoToSlide(body.slide - 1))
                 .map_err(|_| anyhow!("presentation engine is not accepting commands"))?;
             context.status.set_last_command(format!("goto {}", body.slide));
+            preload_from_shared_state(context);
             Ok(ok_response("goto dispatched"))
         }),
         ("POST", "/api/v1/commands/pointer") => handle_json(request, |body: PointerRequest| {
@@ -518,6 +530,7 @@ fn route_request(request: &HttpRequest, context: &HandlerContext) -> HttpRespons
                 .send(Command::SetPointerPosition(body.x, body.y))
                 .map_err(|_| anyhow!("presentation engine is not accepting commands"))?;
             context.status.set_last_command("pointer");
+            preload_from_shared_state(context);
             Ok(ok_response("pointer dispatched"))
         }),
         ("POST", "/api/v1/commands/timer") => handle_json(request, |body: TimerRequest| {
@@ -532,6 +545,7 @@ fn route_request(request: &HttpRequest, context: &HandlerContext) -> HttpRespons
                 .send(command)
                 .map_err(|_| anyhow!("presentation engine is not accepting commands"))?;
             context.status.set_last_command(format!("timer {:?}", body.action));
+            preload_from_shared_state(context);
             Ok(ok_response("timer command dispatched"))
         }),
         _ => text_response(404, "Not Found", "unknown remote API endpoint"),
@@ -832,10 +846,49 @@ fn logical_slide_page(
         .ok_or_else(|| anyhow!("logical slide out of range"))
 }
 
-fn png_response(doc: &Arc<dyn DocumentSource>, page_index: usize) -> HttpResponse {
-    match render_png(doc, page_index) {
+fn png_response(context: &HandlerContext, page_index: usize) -> HttpResponse {
+    match cached_png(context, page_index) {
         Ok(body) => HttpResponse { status: 200, reason: "OK", content_type: "image/png", body },
         Err(error) => text_response(500, "Internal Server Error", &error.to_string()),
+    }
+}
+
+fn cached_png(context: &HandlerContext, page_index: usize) -> Result<Vec<u8>> {
+    if let Ok(cache) = context.png_cache.lock()
+        && let Some(png) = cache.get(&page_index)
+    {
+        return Ok(png.clone());
+    }
+
+    let png = render_png(&context.doc, page_index)?;
+    if let Ok(mut cache) = context.png_cache.lock() {
+        cache.insert(page_index, png.clone());
+        if cache.len() > 12
+            && let Some(oldest) = cache.keys().copied().next()
+        {
+            cache.remove(&oldest);
+        }
+    }
+    Ok(png)
+}
+
+fn preload_from_shared_state(context: &HandlerContext) {
+    if let Ok(state) = context.shared_state.read() {
+        preload_remote_pages(context, &state);
+    }
+}
+
+fn preload_remote_pages(context: &HandlerContext, state: &PresentationState) {
+    let pages = [
+        Some(state.current_page),
+        state
+            .slide_groups
+            .get(state.current_logical_slide.saturating_add(1))
+            .and_then(|group| group.pages.first())
+            .copied(),
+    ];
+    for page in pages.into_iter().flatten() {
+        let _ = cached_png(context, page);
     }
 }
 
@@ -990,6 +1043,7 @@ mod tests {
             doc: test_doc(),
             shutdown: Arc::new(AtomicBool::new(false)),
             status: RemoteStatusHandle::default(),
+            png_cache: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 

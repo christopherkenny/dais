@@ -15,6 +15,7 @@ use dais_document::page::RenderSize;
 use dais_document::render_pipeline::{FALLBACK_RENDER_SIZE, RenderPipeline};
 use dais_document::source::DocumentSource;
 use dais_engine::engine::PresentationEngine;
+use dais_remote::RemoteStatusHandle;
 
 use crate::audience::AudienceWindow;
 use crate::display_mode::{self, AudienceReassignmentPrompt, DisplayMode, SingleMonitorView};
@@ -37,9 +38,18 @@ pub struct DaisApp {
     single_monitor_view: SingleMonitorView,
     audience_reassignment: Option<AudienceReassignmentPrompt>,
     toast_manager: ToastManager,
+    remote: Option<RemoteUiInfo>,
 }
 
 const MAX_ZOOM_RENDER_DIMENSION: u32 = 4320;
+
+#[derive(Clone)]
+pub struct RemoteUiInfo {
+    pub urls: Vec<String>,
+    pub token: String,
+    pub requires_token: bool,
+    pub status: RemoteStatusHandle,
+}
 
 impl DaisApp {
     /// Create a new Dais application.
@@ -73,6 +83,7 @@ impl DaisApp {
             ),
             audience_reassignment: None,
             toast_manager: ToastManager::new(),
+            remote: None,
         }
     }
 
@@ -82,6 +93,10 @@ impl DaisApp {
 
     pub fn set_audience_reassignment(&mut self, prompt: Option<AudienceReassignmentPrompt>) {
         self.audience_reassignment = prompt;
+    }
+
+    pub fn set_remote_info(&mut self, remote: Option<RemoteUiInfo>) {
+        self.remote = remote;
     }
 }
 
@@ -162,6 +177,7 @@ impl eframe::App for DaisApp {
                         &mut self.cache,
                         &self.sender,
                         render_size,
+                        self.remote.as_ref(),
                     );
                 }
             }
@@ -174,7 +190,7 @@ impl eframe::App for DaisApp {
         let is_runtime_screen_share = state.screen_share_mode;
 
         // Render the presenter console in the main viewport
-        self.presenter.show(ctx, &state, &mut self.cache, &self.sender);
+        self.presenter.show(ctx, &state, &mut self.cache, &self.sender, self.remote.as_ref());
 
         // Choose audience viewport builder
         let viewport_builder = if is_runtime_screen_share {

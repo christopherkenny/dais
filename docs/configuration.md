@@ -132,6 +132,10 @@ When token authentication is required, append the token shown in the Dais log:
 http://192.168.1.24:4317/remote?token=<token>
 ```
 
+When remote mode is enabled, the presenter console shows a `Remote` status item
+in the bottom bar. Click it to view pairing URLs and QR codes. The status text
+also shows active remote event clients and the last remote command received.
+
 REST endpoints use `/api/v1`:
 
 ```powershell
@@ -153,6 +157,10 @@ Slide image endpoints are rendered on demand for the remote:
 | `/api/v1/slides/current.png` | Current presenter page |
 | `/api/v1/slides/next.png` | First page of the next logical slide, or current page at the end |
 | `/api/v1/slides/<n>/thumbnail.png` | First page of 1-based logical slide `n` |
+
+Remote slide PNGs are cached in-memory during the session. State and command
+requests opportunistically warm the current and next slide images so the web
+remote stays responsive during navigation.
 
 ## Display Modes
 

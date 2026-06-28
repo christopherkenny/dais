@@ -104,7 +104,6 @@ fn main() -> anyhow::Result<()> {
         return run_remote_cli(remote);
     }
 
-    // --- Test-input diagnostic mode (no PDF required) ---
     if cli.test_input {
         return run_test_input(&cli);
     }
@@ -116,28 +115,19 @@ fn main() -> anyhow::Result<()> {
     let pdf_path = cli.pdf_path.as_deref().unwrap();
     tracing::info!("Opening: {pdf_path}");
 
-    // Load config
     let explicit_config = cli.config.as_deref().map(Path::new);
     let config = dais_core::config::load_config_for(Path::new(&pdf_path), explicit_config);
     tracing::debug!("Config loaded: {config:?}");
 
-    // Open document
     let doc = dais_document::pdf_hayro::HayroDocument::open(Path::new(&pdf_path))?;
 
-    let page_count = {
-        use dais_document::source::DocumentSource;
-        doc.page_count()
-    };
+    let page_count = page_count(&doc);
     tracing::info!("Document has {page_count} pages");
 
-    // --- Grouping editor mode ---
     if cli.edit {
         return run_grouping_editor(doc, pdf_path, config.normalized_sidecar_format());
     }
 
-    // --- Presentation mode ---
-
-    // Load sidecar metadata
     let embedded_pdfpc = {
         use dais_document::source::DocumentSource;
         doc.embedded_metadata().and_then(|m| m.pdfpc_data)
@@ -188,6 +178,7 @@ fn main() -> anyhow::Result<()> {
     let remote_server =
         start_remote_server_if_enabled(&cli, &config, &sender, &shared_state, doc_arc.clone())?;
     let remote_toasts = remote_toasts(remote_server.as_ref());
+    let remote_info = remote_ui_info(remote_server.as_ref());
 
     tracing::info!("Dais v{} starting", env!("CARGO_PKG_VERSION"));
 
@@ -223,6 +214,7 @@ fn main() -> anyhow::Result<()> {
                 app.toast_manager_mut()
                     .push(dais_ui::widgets::toast::ToastLevel::Info, message.clone());
             }
+            app.set_remote_info(remote_info.clone());
             Ok(Box::new(app))
         }),
     )
@@ -237,6 +229,22 @@ fn remote_toasts(server: Option<&dais_remote::RemoteServer>) -> Vec<String> {
             server.urls().iter().map(|url| format!("Remote control: {url}")).collect::<Vec<_>>()
         })
         .unwrap_or_default()
+}
+
+fn page_count(doc: &dais_document::pdf_hayro::HayroDocument) -> usize {
+    use dais_document::source::DocumentSource;
+    doc.page_count()
+}
+
+fn remote_ui_info(
+    server: Option<&dais_remote::RemoteServer>,
+) -> Option<dais_ui::app::RemoteUiInfo> {
+    server.map(|server| dais_ui::app::RemoteUiInfo {
+        urls: server.urls().to_vec(),
+        token: server.token().to_string(),
+        requires_token: server.requires_token_for_non_loopback(),
+        status: server.status_handle(),
+    })
 }
 
 fn init_logging() {
