@@ -60,6 +60,13 @@ font_size_step = 2.0           # Increment/decrement step
 # next_slide = ["j", "Return"]
 # toggle_laser = ["p"]
 # cycle_laser_style = ["Ctrl+l"]
+
+[remote]
+enabled = false                 # Start the local HTTP remote-control API
+host = "127.0.0.1"              # Loopback by default; set explicitly for LAN use
+port = 4317                     # Use 0 to ask the OS for a free port
+token = ""                      # Empty = generate a token per launch
+allow_unauthenticated_loopback = true
 ```
 
 ## Project-Local Config
@@ -77,6 +84,53 @@ mode = "dual"
 [timer]
 mode = "elapsed"
 ```
+
+## Remote Control API
+
+Dais can expose a local HTTP API for scripts, Stream Deck tools, phone/tablet web
+controls, and experimental input adapters.
+
+Start a presentation with the remote API enabled:
+
+```powershell
+dais --remote slides.pdf
+dais --remote --remote-port 4317 slides.pdf
+```
+
+By default, the server binds to `127.0.0.1:4317`. Loopback requests are allowed
+without a token unless `allow_unauthenticated_loopback = false`. Binding to a LAN
+address is an explicit advanced choice and should use a token:
+
+```toml
+[remote]
+enabled = true
+host = "0.0.0.0"
+port = 4317
+token = "choose-a-long-random-token"
+allow_unauthenticated_loopback = false
+```
+
+The same `dais` binary can send remote commands:
+
+```powershell
+dais remote state
+dais remote action next_slide
+dais remote goto 12
+dais remote pointer 0.5 0.5
+dais remote timer toggle
+```
+
+REST endpoints use `/api/v1`:
+
+```powershell
+curl http://127.0.0.1:4317/api/v1/state
+curl -X POST http://127.0.0.1:4317/api/v1/actions/next_slide
+curl -X POST http://127.0.0.1:4317/api/v1/commands/goto -H "Content-Type: application/json" -d "{\"slide\":12}"
+curl http://127.0.0.1:4317/api/v1/events
+```
+
+For token-protected sessions, send `Authorization: Bearer <token>` or
+`X-Dais-Token: <token>`.
 
 ## Display Modes
 

@@ -66,3 +66,26 @@ When you define a binding for an action, it **replaces all defaults** for that a
 - `Alt` / `Option` — Alt on Windows/Linux, Option on macOS
 
 Combine with `+`: `Shift+Right`, `Ctrl+s`, `Ctrl+Shift+s`
+
+## Remote Actions
+
+The remote API uses the same action names as this keybinding reference for simple
+commands. For example:
+
+```powershell
+dais remote action next_slide
+dais remote action toggle_blackout
+dais remote action toggle_laser
+```
+
+Parameterized controls use dedicated remote commands:
+
+```powershell
+dais remote goto 12
+dais remote pointer 0.5 0.5
+dais remote timer reset
+```
+
+This keeps external controllers generic: Stream Deck profiles, scripts, phone
+controls, or experimental devices can call the same stable action API without
+being built into Dais itself.

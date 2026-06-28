@@ -27,6 +27,8 @@ pub struct Config {
     pub keybindings: HashMap<String, Vec<String>>,
     /// Clicker/remote profile configuration.
     pub clicker: ClickerConfig,
+    /// Local HTTP remote-control API configuration.
+    pub remote: RemoteConfig,
     /// Sidecar save format: `"dais"` or `"pdfpc"`.
     pub sidecar_format: String,
 }
@@ -43,6 +45,7 @@ struct PartialConfig {
     notes: Option<PartialNotesConfig>,
     keybindings: Option<HashMap<String, Vec<String>>>,
     clicker: Option<PartialClickerConfig>,
+    remote: Option<PartialRemoteConfig>,
     sidecar_format: Option<String>,
 }
 
@@ -241,6 +244,32 @@ struct PartialClickerConfig {
     profiles: Option<HashMap<String, HashMap<String, String>>>,
 }
 
+/// Local HTTP remote-control API configuration.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct RemoteConfig {
+    /// Whether to start the remote API server with a presentation.
+    pub enabled: bool,
+    /// Bind host for the remote API. Defaults to loopback.
+    pub host: String,
+    /// Bind port for the remote API. `0` asks the OS to choose a free port.
+    pub port: u16,
+    /// Bearer token for remote API requests. Empty means generate one per launch.
+    pub token: String,
+    /// Allow unauthenticated requests from loopback clients when bound to loopback.
+    pub allow_unauthenticated_loopback: bool,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(default)]
+struct PartialRemoteConfig {
+    enabled: Option<bool>,
+    host: Option<String>,
+    port: Option<u16>,
+    token: Option<String>,
+    allow_unauthenticated_loopback: Option<bool>,
+}
+
 /// Notes panel configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -270,6 +299,7 @@ impl Default for Config {
             notes: NotesConfig::default(),
             keybindings: HashMap::new(),
             clicker: ClickerConfig::default(),
+            remote: RemoteConfig::default(),
             sidecar_format: "dais".to_string(),
         }
     }
@@ -346,6 +376,18 @@ impl Default for TextBoxConfig {
 impl Default for ClickerConfig {
     fn default() -> Self {
         Self { profile: "default".to_string(), profiles: HashMap::new() }
+    }
+}
+
+impl Default for RemoteConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            host: "127.0.0.1".to_string(),
+            port: 4317,
+            token: String::new(),
+            allow_unauthenticated_loopback: true,
+        }
     }
 }
 
@@ -531,6 +573,24 @@ fn apply_partial_config(config: &mut Config, partial: PartialConfig) {
         }
         if let Some(profiles) = clicker.profiles {
             config.clicker.profiles.extend(profiles);
+        }
+    }
+
+    if let Some(remote) = partial.remote {
+        if let Some(enabled) = remote.enabled {
+            config.remote.enabled = enabled;
+        }
+        if let Some(host) = remote.host {
+            config.remote.host = host;
+        }
+        if let Some(port) = remote.port {
+            config.remote.port = port;
+        }
+        if let Some(token) = remote.token {
+            config.remote.token = token;
+        }
+        if let Some(allow) = remote.allow_unauthenticated_loopback {
+            config.remote.allow_unauthenticated_loopback = allow;
         }
     }
 

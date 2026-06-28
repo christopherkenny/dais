@@ -1,12 +1,15 @@
 use std::path::Path;
 
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use dais_ui::display_mode::{DisplayHints, DisplayMode};
 
 /// Dais — A native PDF presenter console.
 #[derive(Parser, Debug)]
 #[command(name = "dais", version, about)]
 struct Cli {
+    #[command(subcommand)]
+    command: Option<CliCommand>,
+
     /// Path to the PDF file to present.
     pdf_path: Option<String>,
 
@@ -29,6 +32,67 @@ struct Cli {
     /// Open a diagnostic window that shows raw key events and their mapped actions.
     #[arg(long)]
     test_input: bool,
+
+    /// Start the local remote-control HTTP API with the presentation.
+    #[arg(long)]
+    remote: bool,
+
+    /// Override the remote-control HTTP API bind host.
+    #[arg(long)]
+    remote_host: Option<String>,
+
+    /// Override the remote-control HTTP API bind port.
+    #[arg(long)]
+    remote_port: Option<u16>,
+}
+
+#[derive(Subcommand, Debug)]
+enum CliCommand {
+    /// Send commands to a running Dais remote API.
+    Remote(RemoteCli),
+}
+
+#[derive(Parser, Debug)]
+struct RemoteCli {
+    /// Remote API host.
+    #[arg(long, default_value = "127.0.0.1")]
+    host: String,
+
+    /// Remote API port.
+    #[arg(long, default_value_t = 4317)]
+    port: u16,
+
+    /// Bearer token for authenticated remote APIs.
+    #[arg(long)]
+    token: Option<String>,
+
+    #[command(subcommand)]
+    command: RemoteCommand,
+}
+
+#[derive(Subcommand, Debug)]
+enum RemoteCommand {
+    /// Print the current presentation state as JSON.
+    State,
+    /// Dispatch a public Dais action name, such as `next_slide`.
+    Action { action_name: String },
+    /// Jump to a 1-based logical slide number.
+    Goto { slide_number: usize },
+    /// Set normalized pointer coordinates in the current slide area.
+    Pointer { x: f32, y: f32 },
+    /// Control the presentation timer.
+    Timer {
+        #[command(subcommand)]
+        command: RemoteTimerCommand,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum RemoteTimerCommand {
+    Start,
+    Pause,
+    Toggle,
+    Reset,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -42,6 +106,10 @@ fn main() -> anyhow::Result<()> {
 
     let cli = Cli::parse();
 
+    if let Some(CliCommand::Remote(remote)) = &cli.command {
+        return run_remote_cli(remote);
+    }
+
     // --- Test-input diagnostic mode (no PDF required) ---
     if cli.test_input {
         return run_test_input(&cli);
@@ -51,7 +119,7 @@ fn main() -> anyhow::Result<()> {
         anyhow::bail!("Usage: dais <file.pdf>");
     }
 
-    let pdf_path = cli.pdf_path.unwrap();
+    let pdf_path = cli.pdf_path.as_deref().unwrap();
     tracing::info!("Opening: {pdf_path}");
 
     // Load config
@@ -70,7 +138,7 @@ fn main() -> anyhow::Result<()> {
 
     // --- Grouping editor mode ---
     if cli.edit {
-        return run_grouping_editor(doc, &pdf_path, config.normalized_sidecar_format());
+        return run_grouping_editor(doc, pdf_path, config.normalized_sidecar_format());
     }
 
     // --- Presentation mode ---
@@ -119,6 +187,8 @@ fn main() -> anyhow::Result<()> {
         let _ = sender.send(dais_core::commands::Command::TogglePresentationMode);
     }
 
+    let _remote_server = start_remote_server_if_enabled(&cli, &config, &sender, &shared_state)?;
+
     tracing::info!("Dais v{} starting", env!("CARGO_PKG_VERSION"));
 
     // Create and run the eframe application
@@ -157,6 +227,75 @@ fn main() -> anyhow::Result<()> {
         }),
     )
     .map_err(|e| anyhow::anyhow!("eframe error: {e}"))?;
+
+    Ok(())
+}
+
+fn start_remote_server_if_enabled(
+    cli: &Cli,
+    config: &dais_core::config::Config,
+    sender: &dais_core::bus::CommandSender,
+    shared_state: &std::sync::Arc<std::sync::RwLock<dais_core::state::PresentationState>>,
+) -> anyhow::Result<Option<dais_remote::RemoteServer>> {
+    let remote_overrides = dais_remote::RemoteOverrides {
+        enabled: cli.remote,
+        host: cli.remote_host.clone(),
+        port: cli.remote_port,
+    };
+    let remote_settings =
+        dais_remote::ServerSettings::from_config(&config.remote, &remote_overrides);
+    if !remote_settings.enabled {
+        return Ok(None);
+    }
+
+    let server = dais_remote::start_server(remote_settings, sender.clone(), shared_state.clone())?;
+    tracing::info!("Dais remote API listening at http://{}", server.addr());
+    if server.requires_token_for_non_loopback() {
+        tracing::info!("Dais remote API token: {}", server.token());
+    } else {
+        tracing::info!(
+            "Dais remote API allows unauthenticated loopback requests; token for other clients: {}",
+            server.token()
+        );
+    }
+    Ok(Some(server))
+}
+
+fn run_remote_cli(remote: &RemoteCli) -> anyhow::Result<()> {
+    let endpoint = dais_remote::RemoteEndpoint {
+        host: remote.host.clone(),
+        port: remote.port,
+        token: remote.token.clone(),
+    };
+
+    match &remote.command {
+        RemoteCommand::State => {
+            let state = dais_remote::client_get_state(&endpoint)?;
+            println!("{}", serde_json::to_string_pretty(&state)?);
+        }
+        RemoteCommand::Action { action_name } => {
+            let response = dais_remote::client_action(&endpoint, action_name)?;
+            println!("{}", response.message);
+        }
+        RemoteCommand::Goto { slide_number } => {
+            let response = dais_remote::client_goto(&endpoint, *slide_number)?;
+            println!("{}", response.message);
+        }
+        RemoteCommand::Pointer { x, y } => {
+            let response = dais_remote::client_pointer(&endpoint, *x, *y)?;
+            println!("{}", response.message);
+        }
+        RemoteCommand::Timer { command } => {
+            let action = match command {
+                RemoteTimerCommand::Start => "start",
+                RemoteTimerCommand::Pause => "pause",
+                RemoteTimerCommand::Toggle => "toggle",
+                RemoteTimerCommand::Reset => "reset",
+            };
+            let response = dais_remote::client_timer(&endpoint, action)?;
+            println!("{}", response.message);
+        }
+    }
 
     Ok(())
 }
@@ -238,4 +377,39 @@ fn run_test_input(cli: &Cli) -> anyhow::Result<()> {
     .map_err(|e| anyhow::anyhow!("eframe error: {e}"))?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_remote_action_subcommand() {
+        let cli = Cli::try_parse_from(["dais", "remote", "action", "next_slide"]).unwrap();
+
+        let Some(CliCommand::Remote(remote)) = cli.command else {
+            panic!("expected remote subcommand");
+        };
+        let RemoteCommand::Action { action_name } = remote.command else {
+            panic!("expected action command");
+        };
+        assert_eq!(action_name, "next_slide");
+        assert_eq!(remote.host, "127.0.0.1");
+        assert_eq!(remote.port, 4317);
+    }
+
+    #[test]
+    fn parses_remote_timer_subcommand() {
+        let cli =
+            Cli::try_parse_from(["dais", "remote", "--port", "4318", "timer", "start"]).unwrap();
+
+        let Some(CliCommand::Remote(remote)) = cli.command else {
+            panic!("expected remote subcommand");
+        };
+        let RemoteCommand::Timer { command } = remote.command else {
+            panic!("expected timer command");
+        };
+        assert!(matches!(command, RemoteTimerCommand::Start));
+        assert_eq!(remote.port, 4318);
+    }
 }

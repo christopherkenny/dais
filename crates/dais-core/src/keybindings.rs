@@ -107,6 +107,11 @@ impl Action {
         }
     }
 
+    /// Parse a config-file action name into an action.
+    pub fn from_config_name(name: &str) -> Option<Self> {
+        Self::all().iter().copied().find(|action| action.config_name() == name)
+    }
+
     /// Human-readable description for the help overlay.
     pub fn description(self) -> &'static str {
         match self {
