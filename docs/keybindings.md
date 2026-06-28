@@ -69,8 +69,8 @@ Combine with `+`: `Shift+Right`, `Ctrl+s`, `Ctrl+Shift+s`
 
 ## Remote Actions
 
-The remote API uses the same action names as this keybinding reference for simple
-commands. For example:
+The remote API uses an allowlist of the same action names as this keybinding
+reference for simple presenter-control commands. For example:
 
 ```powershell
 dais remote action next_slide
@@ -89,3 +89,7 @@ dais remote timer reset
 This keeps external controllers generic: Stream Deck profiles, scripts, phone
 controls, or experimental devices can call the same stable action API without
 being built into Dais itself.
+
+Not every keybinding action is remote-dispatchable. Local-only or editing
+actions such as quit, save sidecar, notes editing, notes font changes, and text
+box mode stay inside the presenter console.

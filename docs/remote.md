@@ -212,8 +212,8 @@ Browser flows can also pass:
 
 ## Action Names
 
-For simple commands, the remote API uses the same action names as the keybinding
-system. Useful remote actions include:
+For simple presenter-control commands, the remote API uses an allowlist of the
+same action names as the keybinding system. Useful remote actions include:
 
 ```text
 next_slide
@@ -239,7 +239,9 @@ toggle_screen_share
 toggle_presentation_mode
 ```
 
-See [keybindings.md](keybindings.md) for the full action list.
+The remote API intentionally does not expose every keybinding action. Local-only
+or editing-oriented actions such as quit, save sidecar, notes editing, notes font
+changes, and text box mode are not dispatched through `remote action`.
 
 Parameterized operations, such as `goto`, `pointer`, and timer subcommands, use
 dedicated endpoints and CLI commands instead of pretending every operation is a

@@ -23,6 +23,12 @@ image = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
+axum = "0.8.9"
+tokio = { version = "1.52.3", features = ["net", "rt-multi-thread", "sync", "time"] }
+tower-http = { version = "0.7.0", features = ["sensitive-headers"] }
+reqwest = { version = "0.13.4", default-features = false, features = ["blocking", "json"] }
+async-stream = "0.3.6"
+futures-core = "0.3.32"
 
 [lints]
 workspace = true

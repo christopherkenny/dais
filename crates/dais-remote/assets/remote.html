@@ -88,14 +88,13 @@ const auth=token?{'Authorization':'Bearer '+token}:{};
 const qs=token?'?token='+encodeURIComponent(token):'';
 function withCache(path){return path+(qs||'?')+(qs?'&':'')+'v='+Date.now();}
 const $=id=>document.getElementById(id);
-let state=null,lastPage=-1,nextPage=-1;
+let state=null,lastPage=-1,nextPage=-1,pollTimer=null;
 function mmss(seconds){seconds=Math.max(0,seconds|0);const m=Math.floor(seconds/60),s=seconds%60;return m+':'+String(s).padStart(2,'0');}
 async function api(path,opts={}){const r=await fetch(path,{...opts,headers:{...(opts.headers||{}),...auth}});if(!r.ok)throw new Error(await r.text());return r.headers.get('content-type')?.includes('json')?r.json():r.text();}
 async function action(name){await api('/api/v1/actions/'+name,{method:'POST'});$('last').textContent=name;}
 async function timer(actionName){await api('/api/v1/commands/timer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:actionName})});$('last').textContent='timer '+actionName;}
-async function refresh(){
- try{
-  state=await api('/api/v1/state');
+function renderState(nextState){
+  state=nextState;
   $('conn').textContent='connected';$('conn').style.color='#8fbf9f';
   $('timer').textContent=mmss(state.timer.display_seconds);
   $('slide').textContent='Slide '+(state.current_logical_slide+1)+' / '+state.total_logical_slides;
@@ -109,7 +108,18 @@ async function refresh(){
   if(state.current_page!==lastPage){lastPage=state.current_page;$('currentImg').src=withCache('/api/v1/slides/current.png');}
   const np=Math.min(state.current_logical_slide+2,state.total_logical_slides);
   if(np!==nextPage){nextPage=np;$('nextImg').src=withCache('/api/v1/slides/next.png');}
+}
+async function refresh(){
+ try{
+  renderState(await api('/api/v1/state'));
  }catch(e){$('conn').textContent='disconnected';$('conn').style.color='#ff9b9b';}
+}
+function startPolling(){if(!pollTimer)pollTimer=setInterval(refresh,900);}
+function startEvents(){
+ if(!window.EventSource){startPolling();return;}
+ const events=new EventSource('/api/v1/events'+qs);
+ events.onmessage=e=>renderState(JSON.parse(e.data));
+ events.onerror=()=>{$('conn').textContent='disconnected';$('conn').style.color='#ff9b9b';startPolling();};
 }
 $('next').onclick=()=>action('next_slide').then(refresh);
 $('prev').onclick=()=>action('previous_slide').then(refresh);
@@ -120,7 +130,7 @@ $('laser').onclick=()=>action('toggle_laser').then(refresh);
 $('timerToggle').onclick=()=>timer('toggle').then(refresh);
 $('timerReset').onclick=()=>timer('reset').then(refresh);
 $('gotoBtn').onclick=async()=>{const slide=+$('gotoSlide').value;if(slide>0){await api('/api/v1/commands/goto',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slide})});$('last').textContent='goto '+slide;refresh();}};
-refresh();setInterval(refresh,900);
+refresh();startEvents();
 </script>
 </body>
 </html>

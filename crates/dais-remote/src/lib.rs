@@ -1,13 +1,20 @@
 use std::collections::HashMap;
+use std::convert::Infallible;
 use std::fmt::Write as _;
-use std::io::{Read, Write};
-use std::net::{IpAddr, SocketAddr, TcpListener, TcpStream};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::net::{IpAddr, SocketAddr};
 use std::sync::{Arc, Mutex, RwLock};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
 use anyhow::{Context, Result, anyhow};
+use axum::extract::{ConnectInfo, Path, Request, State};
+use axum::http::header::{AUTHORIZATION, HOST, ORIGIN};
+use axum::http::{HeaderMap, HeaderName, StatusCode};
+use axum::middleware::{self, Next};
+use axum::response::sse::{Event, KeepAlive, Sse};
+use axum::response::{Html, IntoResponse, Response};
+use axum::routing::{get, post};
+use axum::{Json, Router};
 use dais_core::bus::CommandSender;
 use dais_core::commands::Command;
 use dais_core::config::RemoteConfig;
@@ -18,10 +25,12 @@ use dais_document::source::DocumentSource;
 use image::codecs::png::PngEncoder;
 use image::{ColorType, ImageEncoder};
 use serde::{Deserialize, Serialize};
+use tokio::sync::oneshot;
+use tower_http::sensitive_headers::SetSensitiveRequestHeadersLayer;
 
-const READ_TIMEOUT: Duration = Duration::from_secs(3);
 const SSE_INTERVAL: Duration = Duration::from_millis(500);
 const REMOTE_SLIDE_SIZE: RenderSize = RenderSize { width: 960, height: 540 };
+const X_DAIS_TOKEN: HeaderName = HeaderName::from_static("x-dais-token");
 
 /// CLI-friendly remote endpoint selection.
 #[derive(Debug, Clone)]
@@ -78,7 +87,7 @@ pub struct RemoteServer {
     allow_unauthenticated_loopback: bool,
     urls: Vec<String>,
     status: RemoteStatusHandle,
-    shutdown: Arc<AtomicBool>,
+    shutdown: Option<oneshot::Sender<()>>,
     handle: Option<JoinHandle<()>>,
 }
 
@@ -110,8 +119,9 @@ impl RemoteServer {
 
 impl Drop for RemoteServer {
     fn drop(&mut self) {
-        self.shutdown.store(true, Ordering::SeqCst);
-        let _ = TcpStream::connect(self.addr);
+        if let Some(shutdown) = self.shutdown.take() {
+            let _ = shutdown.send(());
+        }
         if let Some(handle) = self.handle.take() {
             let _ = handle.join();
         }
@@ -190,31 +200,12 @@ enum TimerRemoteAction {
     Reset,
 }
 
-#[derive(Debug)]
-struct HttpRequest {
-    method: String,
-    path: String,
-    query: HashMap<String, String>,
-    headers: HashMap<String, String>,
-    body: Vec<u8>,
-    peer: SocketAddr,
-}
-
-#[derive(Debug)]
-struct HttpResponse {
-    status: u16,
-    reason: &'static str,
-    content_type: &'static str,
-    body: Vec<u8>,
-}
-
 #[derive(Clone)]
 struct HandlerContext {
     settings: Arc<ServerSettings>,
     sender: CommandSender,
     shared_state: Arc<RwLock<PresentationState>>,
     doc: Arc<dyn DocumentSource>,
-    shutdown: Arc<AtomicBool>,
     status: RemoteStatusHandle,
     png_cache: Arc<Mutex<HashMap<usize, Vec<u8>>>>,
 }
@@ -254,52 +245,50 @@ pub fn start_server(
     shared_state: Arc<RwLock<PresentationState>>,
     doc: Arc<dyn DocumentSource>,
 ) -> Result<RemoteServer> {
-    let listener =
-        TcpListener::bind((settings.host.as_str(), settings.port)).with_context(|| {
+    let std_listener = std::net::TcpListener::bind((settings.host.as_str(), settings.port))
+        .with_context(|| {
             format!("failed to bind remote API to {}:{}", settings.host, settings.port)
         })?;
-    listener.set_nonblocking(true).context("failed to set remote API listener nonblocking")?;
-    let addr = listener.local_addr().context("failed to read remote API address")?;
+    std_listener.set_nonblocking(true).context("failed to set remote API listener nonblocking")?;
+    let addr = std_listener.local_addr().context("failed to read remote API address")?;
     settings.port = addr.port();
-    let shutdown = Arc::new(AtomicBool::new(false));
-    let thread_shutdown = Arc::clone(&shutdown);
+    let (shutdown_tx, shutdown_rx) = oneshot::channel::<()>();
     let token = settings.token.clone();
     let allow_unauthenticated_loopback = server_settings_allow_loopback(&settings);
     let urls = remote_urls(addr);
     let status = RemoteStatusHandle::default();
-    let png_cache = Arc::new(Mutex::new(HashMap::new()));
-    let server_settings = Arc::new(settings);
-    let thread_settings = Arc::clone(&server_settings);
-    let thread_status = status.clone();
+    let context = HandlerContext {
+        settings: Arc::new(settings),
+        sender,
+        shared_state,
+        doc,
+        status: status.clone(),
+        png_cache: Arc::new(Mutex::new(HashMap::new())),
+    };
 
-    let handle = thread::spawn(move || {
-        while !thread_shutdown.load(Ordering::SeqCst) {
-            match listener.accept() {
-                Ok((stream, peer)) => {
-                    let context = HandlerContext {
-                        settings: Arc::clone(&thread_settings),
-                        sender: sender.clone(),
-                        shared_state: Arc::clone(&shared_state),
-                        doc: Arc::clone(&doc),
-                        shutdown: Arc::clone(&thread_shutdown),
-                        status: thread_status.clone(),
-                        png_cache: Arc::clone(&png_cache),
-                    };
-                    thread::spawn(move || {
-                        if let Err(error) = handle_stream(stream, peer, &context) {
-                            tracing::debug!("remote request failed: {error:#}");
-                        }
-                    });
+    let handle = thread::spawn(move || match tokio::runtime::Runtime::new() {
+        Ok(runtime) => {
+            runtime.block_on(async move {
+                let listener = match tokio::net::TcpListener::from_std(std_listener) {
+                    Ok(listener) => listener,
+                    Err(error) => {
+                        tracing::error!("failed to create remote API listener: {error}");
+                        return;
+                    }
+                };
+                let app = remote_router(context);
+                if let Err(error) =
+                    axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
+                        .with_graceful_shutdown(async {
+                            let _ = shutdown_rx.await;
+                        })
+                        .await
+                {
+                    tracing::warn!("remote API server stopped with error: {error}");
                 }
-                Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                    thread::sleep(Duration::from_millis(20));
-                }
-                Err(error) => {
-                    tracing::warn!("remote API accept failed: {error}");
-                    thread::sleep(Duration::from_millis(100));
-                }
-            }
+            });
         }
+        Err(error) => tracing::error!("failed to start remote API runtime: {error}"),
     });
 
     Ok(RemoteServer {
@@ -308,9 +297,199 @@ pub fn start_server(
         allow_unauthenticated_loopback,
         urls,
         status,
-        shutdown,
+        shutdown: Some(shutdown_tx),
         handle: Some(handle),
     })
+}
+
+fn remote_router(context: HandlerContext) -> Router {
+    Router::new()
+        .route("/", get(web_remote))
+        .route("/remote", get(web_remote))
+        .route("/api/v1/state", get(get_state))
+        .route("/api/v1/events", get(events))
+        .route("/api/v1/remote-status", get(remote_status))
+        .route("/api/v1/actions/{action}", post(action))
+        .route("/api/v1/commands/goto", post(goto))
+        .route("/api/v1/commands/pointer", post(pointer))
+        .route("/api/v1/commands/timer", post(timer))
+        .route("/api/v1/slides/current.png", get(current_slide_png))
+        .route("/api/v1/slides/next.png", get(next_slide_png))
+        .route("/api/v1/slides/{slide}/thumbnail.png", get(thumbnail_png))
+        .layer(SetSensitiveRequestHeadersLayer::new([AUTHORIZATION, X_DAIS_TOKEN]))
+        .route_layer(middleware::from_fn_with_state(context.clone(), request_guard))
+        .with_state(context)
+}
+
+async fn request_guard(
+    State(context): State<HandlerContext>,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    request: Request,
+    next: Next,
+) -> Response {
+    let query = request.uri().query();
+    if !host_header_allowed(&headers, &context.settings) || !origin_allowed(&headers) {
+        return StatusCode::FORBIDDEN.into_response();
+    }
+
+    if !is_authorized(&headers, query, peer, &context.settings) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+
+    next.run(request).await
+}
+
+async fn web_remote() -> Html<&'static str> {
+    Html(remote_html())
+}
+
+async fn get_state(State(context): State<HandlerContext>) -> Response {
+    match remote_state_snapshot(&context.shared_state) {
+        Ok((state, pages)) => {
+            preload_pages(&context, pages);
+            Json(state).into_response()
+        }
+        Err(error) => server_error(&error),
+    }
+}
+
+async fn remote_status(State(context): State<HandlerContext>) -> Json<RemoteStatus> {
+    Json(context.status.snapshot())
+}
+
+async fn current_slide_png(State(context): State<HandlerContext>) -> Response {
+    match current_page(&context.shared_state).and_then(|page| cached_png(&context, page)) {
+        Ok(png) => png_response(png),
+        Err(error) => server_error(&error),
+    }
+}
+
+async fn next_slide_png(State(context): State<HandlerContext>) -> Response {
+    match next_page(&context.shared_state).and_then(|page| cached_png(&context, page)) {
+        Ok(png) => png_response(png),
+        Err(error) => server_error(&error),
+    }
+}
+
+async fn thumbnail_png(
+    State(context): State<HandlerContext>,
+    Path(slide): Path<usize>,
+) -> Response {
+    if slide == 0 {
+        return bad_request(&anyhow!("slide must be 1 or greater"));
+    }
+
+    match logical_slide_page(&context.shared_state, slide - 1)
+        .and_then(|page| cached_png(&context, page))
+    {
+        Ok(png) => png_response(png),
+        Err(error) => bad_request(&error),
+    }
+}
+
+async fn action(State(context): State<HandlerContext>, Path(action): Path<String>) -> Response {
+    match send_remote_action(&context.sender, &action) {
+        Ok(()) => {
+            context.status.set_last_command(action);
+            preload_from_shared_state(&context);
+            Json(ok_response("action dispatched")).into_response()
+        }
+        Err(error) => bad_request(&error),
+    }
+}
+
+async fn goto(State(context): State<HandlerContext>, Json(body): Json<GoToRequest>) -> Response {
+    if body.slide == 0 {
+        return bad_request(&anyhow!("slide must be 1 or greater"));
+    }
+
+    match context.sender.send(Command::GoToSlide(body.slide - 1)) {
+        Ok(()) => {
+            context.status.set_last_command(format!("goto {}", body.slide));
+            preload_from_shared_state(&context);
+            Json(ok_response("goto dispatched")).into_response()
+        }
+        Err(_) => server_error(&anyhow!("presentation engine is not accepting commands")),
+    }
+}
+
+async fn pointer(
+    State(context): State<HandlerContext>,
+    Json(body): Json<PointerRequest>,
+) -> Response {
+    match context.sender.send(Command::SetPointerPosition(body.x, body.y)) {
+        Ok(()) => {
+            context.status.set_last_command("pointer");
+            preload_from_shared_state(&context);
+            Json(ok_response("pointer dispatched")).into_response()
+        }
+        Err(_) => server_error(&anyhow!("presentation engine is not accepting commands")),
+    }
+}
+
+async fn timer(State(context): State<HandlerContext>, Json(body): Json<TimerRequest>) -> Response {
+    let command = match body.action {
+        TimerRemoteAction::Start => Command::StartTimer,
+        TimerRemoteAction::Pause => Command::PauseTimer,
+        TimerRemoteAction::Toggle => Command::ToggleTimer,
+        TimerRemoteAction::Reset => Command::ResetTimer,
+    };
+
+    match context.sender.send(command) {
+        Ok(()) => {
+            context.status.set_last_command(format!("timer {:?}", body.action));
+            preload_from_shared_state(&context);
+            Json(ok_response("timer command dispatched")).into_response()
+        }
+        Err(_) => server_error(&anyhow!("presentation engine is not accepting commands")),
+    }
+}
+
+async fn events(
+    State(context): State<HandlerContext>,
+) -> Sse<impl futures_core::Stream<Item = Result<Event, Infallible>>> {
+    context.status.add_event_client();
+    let status = context.status.clone();
+    let shared_state = Arc::clone(&context.shared_state);
+    let stream = async_stream::stream! {
+        let _guard = EventClientGuard { status };
+        let mut interval = tokio::time::interval(SSE_INTERVAL);
+        loop {
+            interval.tick().await;
+            match remote_state_snapshot(&shared_state) {
+                Ok((state, _pages)) => {
+                    let json = serde_json::to_string(&state).unwrap_or_else(|_| "{}".to_string());
+                    yield Ok(Event::default().data(json));
+                }
+                Err(_) => break,
+            }
+        }
+    };
+
+    Sse::new(stream).keep_alive(KeepAlive::default())
+}
+
+struct EventClientGuard {
+    status: RemoteStatusHandle,
+}
+
+impl Drop for EventClientGuard {
+    fn drop(&mut self) {
+        self.status.remove_event_client();
+    }
+}
+
+fn png_response(png: Vec<u8>) -> Response {
+    ([(axum::http::header::CONTENT_TYPE, "image/png")], png).into_response()
+}
+
+fn bad_request(error: &anyhow::Error) -> Response {
+    (StatusCode::BAD_REQUEST, error.to_string()).into_response()
+}
+
+fn server_error(error: &anyhow::Error) -> Response {
+    (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()).into_response()
 }
 
 fn server_settings_allow_loopback(settings: &ServerSettings) -> bool {
@@ -360,11 +539,22 @@ pub fn send_remote_action(sender: &CommandSender, name: &str) -> Result<()> {
 }
 
 pub fn client_get_state(endpoint: &RemoteEndpoint) -> Result<RemoteState> {
-    let response = client_request(endpoint, "GET", "/api/v1/state", None)?;
-    if response.status != 200 {
-        return Err(anyhow!("remote API returned {} {}", response.status, response.reason));
+    let client = reqwest::blocking::Client::builder()
+        .timeout(Duration::from_secs(3))
+        .build()
+        .context("failed to create remote API client")?;
+    let request = client.get(endpoint_url(endpoint, "/api/v1/state"));
+    let request =
+        if let Some(token) = &endpoint.token { request.bearer_auth(token) } else { request };
+    let response = request.send().with_context(|| {
+        format!("failed to connect to remote API at {}:{}", endpoint.host, endpoint.port)
+    })?;
+    let status = response.status();
+    if !status.is_success() {
+        let text = response.text().unwrap_or_default();
+        return Err(anyhow!("remote API returned {}: {text}", status.as_u16()));
     }
-    serde_json::from_slice(&response.body).context("failed to parse remote state")
+    response.json().context("failed to parse remote state")
 }
 
 pub fn client_action(endpoint: &RemoteEndpoint, action: &str) -> Result<CommandResponse> {
@@ -404,392 +594,93 @@ fn client_json_request<T: Serialize>(
     path: &str,
     body: &T,
 ) -> Result<CommandResponse> {
-    let body = serde_json::to_vec(body).context("failed to serialize remote request")?;
-    let response = client_request(endpoint, method, path, Some(&body))?;
-    if !(200..300).contains(&response.status) {
-        let text = String::from_utf8_lossy(&response.body);
-        return Err(anyhow!("remote API returned {} {}: {text}", response.status, response.reason));
+    let client = reqwest::blocking::Client::builder()
+        .timeout(Duration::from_secs(3))
+        .build()
+        .context("failed to create remote API client")?;
+    let request = client.request(method.parse()?, endpoint_url(endpoint, path)).json(body);
+    let request =
+        if let Some(token) = &endpoint.token { request.bearer_auth(token) } else { request };
+    let response = request.send().with_context(|| {
+        format!("failed to connect to remote API at {}:{}", endpoint.host, endpoint.port)
+    })?;
+    let status = response.status();
+    if !status.is_success() {
+        let text = response.text().unwrap_or_default();
+        return Err(anyhow!("remote API returned {}: {text}", status.as_u16()));
     }
-    serde_json::from_slice(&response.body).context("failed to parse remote command response")
+    response.json().context("failed to parse remote command response")
 }
 
-fn client_request(
-    endpoint: &RemoteEndpoint,
-    method: &str,
-    path: &str,
-    body: Option<&[u8]>,
-) -> Result<HttpResponse> {
-    let mut stream =
-        TcpStream::connect((endpoint.host.as_str(), endpoint.port)).with_context(|| {
-            format!("failed to connect to remote API at {}:{}", endpoint.host, endpoint.port)
-        })?;
-    stream
-        .set_read_timeout(Some(READ_TIMEOUT))
-        .context("failed to set remote client read timeout")?;
-    let body = body.unwrap_or(&[]);
-    let mut request = format!(
-        "{method} {path} HTTP/1.1\r\nHost: {}:{}\r\nContent-Length: {}\r\nConnection: close\r\n",
-        endpoint.host,
-        endpoint.port,
-        body.len()
-    );
-    if !body.is_empty() {
-        request.push_str("Content-Type: application/json\r\n");
-    }
-    if let Some(token) = &endpoint.token {
-        let _ = write!(request, "Authorization: Bearer {token}\r\n");
-    }
-    request.push_str("\r\n");
-    stream.write_all(request.as_bytes()).context("failed to write remote request")?;
-    stream.write_all(body).context("failed to write remote request body")?;
-    parse_client_response(&mut stream)
+fn endpoint_url(endpoint: &RemoteEndpoint, path: &str) -> String {
+    format!("http://{}:{}{path}", endpoint.host, endpoint.port)
 }
 
-fn handle_stream(mut stream: TcpStream, peer: SocketAddr, context: &HandlerContext) -> Result<()> {
-    stream.set_read_timeout(Some(READ_TIMEOUT))?;
-    let request = parse_request(&mut stream, peer)?;
-
-    if !host_header_allowed(&request, &context.settings) || !origin_allowed(&request) {
-        return write_response(&mut stream, &forbidden());
-    }
-
-    if !is_authorized(&request, &context.settings) {
-        return write_response(&mut stream, &unauthorized());
-    }
-
-    if request.method == "GET" && request.path == "/api/v1/events" {
-        return stream_events(stream, &context.shared_state, &context.shutdown, &context.status);
-    }
-
-    let response = route_request(&request, context);
-    write_response(&mut stream, &response)
-}
-
-fn route_request(request: &HttpRequest, context: &HandlerContext) -> HttpResponse {
-    match (request.method.as_str(), request.path.as_str()) {
-        ("GET", "/remote" | "/") => html_response(remote_html()),
-        ("GET", "/api/v1/state") => match context.shared_state.read() {
-            Ok(state) => {
-                preload_remote_pages(context, &state);
-                json_response(200, "OK", &remote_state(&state))
-            }
-            Err(_) => text_response(500, "Internal Server Error", "state lock poisoned"),
-        },
-        ("GET", "/api/v1/remote-status") => json_response(200, "OK", &context.status.snapshot()),
-        ("GET", "/api/v1/slides/current.png") => match current_page(&context.shared_state) {
-            Ok(page) => png_response(context, page),
-            Err(error) => text_response(500, "Internal Server Error", &error.to_string()),
-        },
-        ("GET", "/api/v1/slides/next.png") => match next_page(&context.shared_state) {
-            Ok(page) => png_response(context, page),
-            Err(error) => text_response(500, "Internal Server Error", &error.to_string()),
-        },
-        ("GET", path)
-            if path.starts_with("/api/v1/slides/") && path.ends_with("/thumbnail.png") =>
-        {
-            match path
-                .trim_start_matches("/api/v1/slides/")
-                .trim_end_matches("/thumbnail.png")
-                .parse::<usize>()
-            {
-                Ok(slide) if slide > 0 => {
-                    match logical_slide_page(&context.shared_state, slide - 1) {
-                        Ok(page) => png_response(context, page),
-                        Err(error) => text_response(400, "Bad Request", &error.to_string()),
-                    }
-                }
-                _ => text_response(400, "Bad Request", "slide must be 1 or greater"),
-            }
-        }
-        ("POST", path) if path.starts_with("/api/v1/actions/") => {
-            let action = path.trim_start_matches("/api/v1/actions/");
-            match send_remote_action(&context.sender, action) {
-                Ok(()) => {
-                    context.status.set_last_command(action);
-                    preload_from_shared_state(context);
-                    json_response(200, "OK", &ok_response("action dispatched"))
-                }
-                Err(error) => text_response(400, "Bad Request", &error.to_string()),
-            }
-        }
-        ("POST", "/api/v1/commands/goto") => handle_json(request, |body: GoToRequest| {
-            if body.slide == 0 {
-                return Err(anyhow!("slide must be 1 or greater"));
-            }
-            context
-                .sender
-                .send(Command::GoToSlide(body.slide - 1))
-                .map_err(|_| anyhow!("presentation engine is not accepting commands"))?;
-            context.status.set_last_command(format!("goto {}", body.slide));
-            preload_from_shared_state(context);
-            Ok(ok_response("goto dispatched"))
-        }),
-        ("POST", "/api/v1/commands/pointer") => handle_json(request, |body: PointerRequest| {
-            context
-                .sender
-                .send(Command::SetPointerPosition(body.x, body.y))
-                .map_err(|_| anyhow!("presentation engine is not accepting commands"))?;
-            context.status.set_last_command("pointer");
-            preload_from_shared_state(context);
-            Ok(ok_response("pointer dispatched"))
-        }),
-        ("POST", "/api/v1/commands/timer") => handle_json(request, |body: TimerRequest| {
-            let command = match body.action {
-                TimerRemoteAction::Start => Command::StartTimer,
-                TimerRemoteAction::Pause => Command::PauseTimer,
-                TimerRemoteAction::Toggle => Command::ToggleTimer,
-                TimerRemoteAction::Reset => Command::ResetTimer,
-            };
-            context
-                .sender
-                .send(command)
-                .map_err(|_| anyhow!("presentation engine is not accepting commands"))?;
-            context.status.set_last_command(format!("timer {:?}", body.action));
-            preload_from_shared_state(context);
-            Ok(ok_response("timer command dispatched"))
-        }),
-        _ => text_response(404, "Not Found", "unknown remote API endpoint"),
-    }
-}
-
-fn handle_json<T, F>(request: &HttpRequest, handler: F) -> HttpResponse
-where
-    T: for<'de> Deserialize<'de>,
-    F: FnOnce(T) -> Result<CommandResponse>,
-{
-    match serde_json::from_slice::<T>(&request.body)
-        .context("invalid JSON request body")
-        .and_then(handler)
-    {
-        Ok(response) => json_response(200, "OK", &response),
-        Err(error) => text_response(400, "Bad Request", &error.to_string()),
-    }
-}
-
-fn stream_events(
-    mut stream: TcpStream,
+fn remote_state_snapshot(
     shared_state: &Arc<RwLock<PresentationState>>,
-    shutdown: &Arc<AtomicBool>,
-    status: &RemoteStatusHandle,
-) -> Result<()> {
-    stream.write_all(
-        b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-cache\r\nConnection: keep-alive\r\n\r\n",
-    )?;
-    status.add_event_client();
-    while !shutdown.load(Ordering::SeqCst) {
-        let state = shared_state
-            .read()
-            .map_err(|_| anyhow!("state lock poisoned"))
-            .map(|state| remote_state(&state))?;
-        let json =
-            serde_json::to_string(&state).context("failed to serialize remote state event")?;
-        if stream.write_all(format!("data: {json}\n\n").as_bytes()).is_err() {
-            break;
-        }
-        thread::sleep(SSE_INTERVAL);
-    }
-    status.remove_event_client();
-    Ok(())
-}
-
-fn parse_request(stream: &mut TcpStream, peer: SocketAddr) -> Result<HttpRequest> {
-    let mut buffer = Vec::new();
-    let mut temp = [0u8; 1024];
-    let header_end;
-    loop {
-        let n = stream.read(&mut temp).context("failed to read remote request")?;
-        if n == 0 {
-            return Err(anyhow!("empty remote request"));
-        }
-        buffer.extend_from_slice(&temp[..n]);
-        if let Some(pos) = find_header_end(&buffer) {
-            header_end = pos;
-            break;
-        }
-        if buffer.len() > 64 * 1024 {
-            return Err(anyhow!("remote request headers too large"));
-        }
-    }
-
-    let header_text = String::from_utf8_lossy(&buffer[..header_end]);
-    let mut lines = header_text.lines();
-    let request_line = lines.next().ok_or_else(|| anyhow!("missing request line"))?;
-    let mut parts = request_line.split_whitespace();
-    let method = parts.next().ok_or_else(|| anyhow!("missing method"))?.to_string();
-    let uri = parts.next().ok_or_else(|| anyhow!("missing path"))?;
-    let (path, query) = split_path_query(uri);
-    let headers = lines
-        .filter_map(|line| {
-            let (name, value) = line.split_once(':')?;
-            Some((name.trim().to_ascii_lowercase(), value.trim().to_string()))
-        })
-        .collect::<HashMap<_, _>>();
-    let content_length =
-        headers.get("content-length").and_then(|value| value.parse::<usize>().ok()).unwrap_or(0);
-    let mut body = buffer[header_end + 4..].to_vec();
-    while body.len() < content_length {
-        let n = stream.read(&mut temp).context("failed to read remote request body")?;
-        if n == 0 {
-            break;
-        }
-        body.extend_from_slice(&temp[..n]);
-    }
-    body.truncate(content_length);
-
-    Ok(HttpRequest { method, path, query, headers, body, peer })
-}
-
-fn parse_client_response(stream: &mut TcpStream) -> Result<HttpResponse> {
-    let mut buffer = Vec::new();
-    stream.read_to_end(&mut buffer).context("failed to read remote response")?;
-    let header_end = find_header_end(&buffer).ok_or_else(|| anyhow!("invalid remote response"))?;
-    let header_text = String::from_utf8_lossy(&buffer[..header_end]);
-    let mut lines = header_text.lines();
-    let status_line = lines.next().ok_or_else(|| anyhow!("missing status line"))?;
-    let mut parts = status_line.split_whitespace();
-    let _http = parts.next();
-    let status = parts
-        .next()
-        .ok_or_else(|| anyhow!("missing status code"))?
-        .parse::<u16>()
-        .context("invalid status code")?;
-    let reason = match status {
-        200 => "OK",
-        400 => "Bad Request",
-        401 => "Unauthorized",
-        403 => "Forbidden",
-        404 => "Not Found",
-        500 => "Internal Server Error",
-        _ => "Unknown",
-    };
-    Ok(HttpResponse {
-        status,
-        reason,
-        content_type: "application/octet-stream",
-        body: buffer[header_end + 4..].to_vec(),
-    })
-}
-
-fn find_header_end(buffer: &[u8]) -> Option<usize> {
-    buffer.windows(4).position(|window| window == b"\r\n\r\n")
-}
-
-fn write_response(stream: &mut TcpStream, response: &HttpResponse) -> Result<()> {
-    let headers = format!(
-        "HTTP/1.1 {} {}\r\nContent-Type: {}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
-        response.status,
-        response.reason,
-        response.content_type,
-        response.body.len()
-    );
-    stream.write_all(headers.as_bytes())?;
-    stream.write_all(&response.body)?;
-    Ok(())
-}
-
-fn json_response<T: Serialize>(status: u16, reason: &'static str, body: &T) -> HttpResponse {
-    let body = serde_json::to_vec(body).unwrap_or_else(|_| b"{\"ok\":false}".to_vec());
-    HttpResponse { status, reason, content_type: "application/json", body }
-}
-
-fn html_response(body: &'static str) -> HttpResponse {
-    HttpResponse {
-        status: 200,
-        reason: "OK",
-        content_type: "text/html; charset=utf-8",
-        body: body.as_bytes().to_vec(),
-    }
-}
-
-fn text_response(status: u16, reason: &'static str, body: &str) -> HttpResponse {
-    HttpResponse {
-        status,
-        reason,
-        content_type: "text/plain; charset=utf-8",
-        body: body.as_bytes().to_vec(),
-    }
-}
-
-fn forbidden() -> HttpResponse {
-    text_response(403, "Forbidden", "forbidden")
-}
-
-fn unauthorized() -> HttpResponse {
-    text_response(401, "Unauthorized", "unauthorized")
+) -> Result<(RemoteState, Vec<usize>)> {
+    let state = shared_state.read().map_err(|_| anyhow!("state lock poisoned"))?;
+    let dto = remote_state(&state);
+    let pages = preloaded_pages(&state);
+    Ok((dto, pages))
 }
 
 fn ok_response(message: &str) -> CommandResponse {
     CommandResponse { ok: true, message: message.to_string() }
 }
 
-fn is_authorized(request: &HttpRequest, settings: &ServerSettings) -> bool {
-    if settings.allow_unauthenticated_loopback && request.peer.ip().is_loopback() {
+fn is_authorized(
+    headers: &HeaderMap,
+    query: Option<&str>,
+    peer: SocketAddr,
+    settings: &ServerSettings,
+) -> bool {
+    if settings.allow_unauthenticated_loopback && peer.ip().is_loopback() {
         return true;
     }
 
-    request_token(request).is_some_and(|token| token == settings.token)
+    request_token(headers, query).is_some_and(|token| token == settings.token)
 }
 
-fn request_token(request: &HttpRequest) -> Option<&str> {
-    if let Some(token) = request.query.get("token") {
+fn request_token<'a>(headers: &'a HeaderMap, query: Option<&'a str>) -> Option<&'a str> {
+    if let Some(token) = query_token(query) {
         return Some(token);
     }
-    if let Some(auth) = request.headers.get("authorization") {
-        return auth.strip_prefix("Bearer ").or(Some(auth.as_str()));
+    if let Some(auth) = header_str(headers, AUTHORIZATION) {
+        return auth.strip_prefix("Bearer ").or(Some(auth));
     }
-    request.headers.get("x-dais-token").map(String::as_str)
+    header_str(headers, &X_DAIS_TOKEN)
 }
 
-fn split_path_query(uri: &str) -> (String, HashMap<String, String>) {
-    let (path, query) = uri.split_once('?').unwrap_or((uri, ""));
-    let query = query
+fn query_token(query: Option<&str>) -> Option<&str> {
+    query?
         .split('&')
-        .filter(|part| !part.is_empty())
-        .filter_map(|part| {
-            let (key, value) = part.split_once('=').unwrap_or((part, ""));
-            Some((url_decode(key)?, url_decode(value)?))
-        })
-        .collect();
-    (path.to_string(), query)
+        .filter_map(|part| part.split_once('='))
+        .find_map(|(key, value)| (key == "token").then_some(value))
 }
 
-fn url_decode(value: &str) -> Option<String> {
-    let mut out = String::with_capacity(value.len());
-    let bytes = value.as_bytes();
-    let mut i = 0;
-    while i < bytes.len() {
-        match bytes[i] {
-            b'+' => out.push(' '),
-            b'%' if i + 2 < bytes.len() => {
-                let hex = std::str::from_utf8(&bytes[i + 1..i + 3]).ok()?;
-                out.push(char::from(u8::from_str_radix(hex, 16).ok()?));
-                i += 2;
-            }
-            b => out.push(char::from(b)),
-        }
-        i += 1;
-    }
-    Some(out)
+fn header_str(headers: &HeaderMap, name: impl axum::http::header::AsHeaderName) -> Option<&str> {
+    headers.get(name)?.to_str().ok()
 }
 
-fn host_header_allowed(request: &HttpRequest, settings: &ServerSettings) -> bool {
-    let Some(host) = request.headers.get("host") else {
+fn host_header_allowed(headers: &HeaderMap, settings: &ServerSettings) -> bool {
+    let Some(host) = header_str(headers, HOST) else {
         return false;
     };
-    let Some((_, port)) = split_host_port(host) else {
+    let Some((name, port)) = split_host_port(host) else {
         return false;
     };
-    port == effective_port(settings)
+    port == effective_port(settings) && host_name_allowed(name, settings)
 }
 
-fn origin_allowed(request: &HttpRequest) -> bool {
-    let Some(origin) = request.headers.get("origin") else {
+fn origin_allowed(headers: &HeaderMap) -> bool {
+    let Some(origin) = header_str(headers, ORIGIN) else {
         return true;
     };
-    let Some(host) = request.headers.get("host") else {
+    let Some(host) = header_str(headers, HOST) else {
         return false;
     };
-    origin == &format!("http://{host}") || origin == &format!("https://{host}")
+    origin == format!("http://{host}") || origin == format!("https://{host}")
 }
 
 fn split_host_port(host: &str) -> Option<(&str, u16)> {
@@ -800,6 +691,27 @@ fn split_host_port(host: &str) -> Option<(&str, u16)> {
 
 fn effective_port(settings: &ServerSettings) -> u16 {
     settings.port
+}
+
+fn host_name_allowed(name: &str, settings: &ServerSettings) -> bool {
+    if name.eq_ignore_ascii_case("localhost") {
+        return true;
+    }
+
+    let Ok(host_ip) = name.parse::<IpAddr>() else {
+        return false;
+    };
+
+    if host_ip.is_loopback() {
+        return true;
+    }
+
+    let Ok(bind_ip) = settings.host.parse::<IpAddr>() else {
+        return false;
+    };
+
+    host_ip == bind_ip
+        || bind_ip.is_unspecified() && likely_lan_ip().is_some_and(|lan_ip| host_ip == lan_ip)
 }
 
 fn host_is_loopback(host: &str) -> bool {
@@ -843,13 +755,6 @@ fn logical_slide_page(
         .ok_or_else(|| anyhow!("logical slide out of range"))
 }
 
-fn png_response(context: &HandlerContext, page_index: usize) -> HttpResponse {
-    match cached_png(context, page_index) {
-        Ok(body) => HttpResponse { status: 200, reason: "OK", content_type: "image/png", body },
-        Err(error) => text_response(500, "Internal Server Error", &error.to_string()),
-    }
-}
-
 fn cached_png(context: &HandlerContext, page_index: usize) -> Result<Vec<u8>> {
     if let Ok(cache) = context.png_cache.lock()
         && let Some(png) = cache.get(&page_index)
@@ -870,21 +775,27 @@ fn cached_png(context: &HandlerContext, page_index: usize) -> Result<Vec<u8>> {
 }
 
 fn preload_from_shared_state(context: &HandlerContext) {
-    if let Ok(state) = context.shared_state.read() {
-        preload_remote_pages(context, &state);
+    if let Ok((_state, pages)) = remote_state_snapshot(&context.shared_state) {
+        preload_pages(context, pages);
     }
 }
 
-fn preload_remote_pages(context: &HandlerContext, state: &PresentationState) {
-    let pages = [
+fn preloaded_pages(state: &PresentationState) -> Vec<usize> {
+    [
         Some(state.current_page),
         state
             .slide_groups
             .get(state.current_logical_slide.saturating_add(1))
             .and_then(|group| group.pages.first())
             .copied(),
-    ];
-    for page in pages.into_iter().flatten() {
+    ]
+    .into_iter()
+    .flatten()
+    .collect()
+}
+
+fn preload_pages(context: &HandlerContext, pages: Vec<usize>) {
+    for page in pages {
         let _ = cached_png(context, page);
     }
 }
@@ -962,16 +873,16 @@ fn action_to_command(action: Action) -> Option<Command> {
         Action::ToggleZoom => Some(Command::ToggleZoom),
         Action::ToggleOverview => Some(Command::ToggleSlideOverview),
         Action::ToggleNotes => Some(Command::ToggleNotesPanel),
-        Action::ToggleNotesEdit => Some(Command::ToggleNotesEdit),
+        Action::ToggleNotesEdit => None,
         Action::StartPauseTimer => Some(Command::ToggleTimer),
         Action::ResetTimer => Some(Command::ResetTimer),
-        Action::IncrementNotesFont => Some(Command::IncrementNotesFontSize),
-        Action::DecrementNotesFont => Some(Command::DecrementNotesFontSize),
+        Action::IncrementNotesFont => None,
+        Action::DecrementNotesFont => None,
         Action::ToggleScreenShare => Some(Command::ToggleScreenShareMode),
         Action::TogglePresentationMode => Some(Command::TogglePresentationMode),
-        Action::ToggleTextBoxMode => Some(Command::ToggleTextBoxMode),
-        Action::Quit => Some(Command::Quit),
-        Action::SaveSidecar => Some(Command::SaveSidecar),
+        Action::ToggleTextBoxMode => None,
+        Action::Quit => None,
+        Action::SaveSidecar => None,
         Action::GoToSlide => None,
     }
 }
@@ -1033,25 +944,28 @@ mod tests {
         Arc::new(TestDoc)
     }
 
-    fn test_context(
-        sender: CommandSender,
-        shared_state: Arc<RwLock<PresentationState>>,
-    ) -> HandlerContext {
-        HandlerContext {
-            settings: Arc::new(ServerSettings {
+    fn test_server(sender: CommandSender) -> RemoteServer {
+        start_server(
+            ServerSettings {
                 enabled: true,
                 host: "127.0.0.1".to_string(),
-                port: 4317,
+                port: 0,
                 token: "secret".to_string(),
                 allow_unauthenticated_loopback: true,
-            }),
+            },
             sender,
-            shared_state,
-            doc: test_doc(),
-            shutdown: Arc::new(AtomicBool::new(false)),
-            status: RemoteStatusHandle::default(),
-            png_cache: Arc::new(Mutex::new(HashMap::new())),
-        }
+            Arc::new(RwLock::new(test_state())),
+            test_doc(),
+        )
+        .unwrap()
+    }
+
+    fn endpoint(server: &RemoteServer) -> RemoteEndpoint {
+        RemoteEndpoint { host: "127.0.0.1".to_string(), port: server.addr().port(), token: None }
+    }
+
+    fn headers(host: &str) -> HeaderMap {
+        HeaderMap::from_iter([(HOST, host.parse().unwrap())])
     }
 
     #[test]
@@ -1059,6 +973,9 @@ mod tests {
         assert_eq!(command_for_action_name("next_slide"), Some(Command::NextSlide));
         assert_eq!(command_for_action_name("start_pause_timer"), Some(Command::ToggleTimer));
         assert_eq!(command_for_action_name("go_to_slide"), None);
+        assert_eq!(command_for_action_name("quit"), None);
+        assert_eq!(command_for_action_name("save_sidecar"), None);
+        assert_eq!(command_for_action_name("toggle_notes_edit"), None);
         assert_eq!(command_for_action_name("missing"), None);
     }
 
@@ -1096,20 +1013,11 @@ mod tests {
         let bus = CommandBus::new();
         let sender = bus.sender();
         let receiver = bus.into_receiver();
-        let state = Arc::new(RwLock::new(test_state()));
-        let request = HttpRequest {
-            method: "POST".to_string(),
-            path: "/api/v1/actions/next_slide".to_string(),
-            query: HashMap::new(),
-            headers: HashMap::new(),
-            body: Vec::new(),
-            peer: "127.0.0.1:50000".parse().unwrap(),
-        };
-        let context = test_context(sender, state);
+        let server = test_server(sender);
 
-        let response = route_request(&request, &context);
+        let response = client_action(&endpoint(&server), "next_slide").unwrap();
 
-        assert_eq!(response.status, 200);
+        assert!(response.ok);
         assert_eq!(receiver.try_recv(), Some(Command::NextSlide));
     }
 
@@ -1118,65 +1026,42 @@ mod tests {
         let bus = CommandBus::new();
         let sender = bus.sender();
         let receiver = bus.into_receiver();
-        let state = Arc::new(RwLock::new(test_state()));
-        let request = HttpRequest {
-            method: "POST".to_string(),
-            path: "/api/v1/commands/goto".to_string(),
-            query: HashMap::new(),
-            headers: HashMap::new(),
-            body: br#"{"slide":0}"#.to_vec(),
-            peer: "127.0.0.1:50000".parse().unwrap(),
-        };
-        let context = test_context(sender, state);
+        let server = test_server(sender);
 
-        let response = route_request(&request, &context);
+        let error = client_goto(&endpoint(&server), 0).unwrap_err().to_string();
 
-        assert_eq!(response.status, 400);
+        assert!(error.contains("400"));
         assert_eq!(receiver.try_recv(), None);
     }
 
     #[test]
     fn web_remote_route_serves_html() {
         let bus = CommandBus::new();
-        let sender = bus.sender();
-        let state = Arc::new(RwLock::new(test_state()));
-        let context = test_context(sender, state);
-        let request = HttpRequest {
-            method: "GET".to_string(),
-            path: "/remote".to_string(),
-            query: HashMap::new(),
-            headers: HashMap::new(),
-            body: Vec::new(),
-            peer: "127.0.0.1:50000".parse().unwrap(),
-        };
+        let server = test_server(bus.sender());
 
-        let response = route_request(&request, &context);
+        let response = reqwest::blocking::get(format!("http://{}/remote", server.addr())).unwrap();
+        let content_type =
+            response.headers().get("content-type").unwrap().to_str().unwrap().to_string();
+        let body = response.text().unwrap();
 
-        assert_eq!(response.status, 200);
-        assert_eq!(response.content_type, "text/html; charset=utf-8");
-        assert!(String::from_utf8_lossy(&response.body).contains("Dais Remote"));
+        assert!(content_type.starts_with("text/html"));
+        assert!(body.contains("Dais Remote"));
     }
 
     #[test]
     fn slide_png_route_renders_image() {
         let bus = CommandBus::new();
-        let sender = bus.sender();
-        let state = Arc::new(RwLock::new(test_state()));
-        let context = test_context(sender, state);
-        let request = HttpRequest {
-            method: "GET".to_string(),
-            path: "/api/v1/slides/current.png".to_string(),
-            query: HashMap::new(),
-            headers: HashMap::new(),
-            body: Vec::new(),
-            peer: "127.0.0.1:50000".parse().unwrap(),
-        };
+        let server = test_server(bus.sender());
 
-        let response = route_request(&request, &context);
+        let response =
+            reqwest::blocking::get(format!("http://{}/api/v1/slides/current.png", server.addr()))
+                .unwrap();
+        let content_type =
+            response.headers().get("content-type").unwrap().to_str().unwrap().to_string();
+        let body = response.bytes().unwrap();
 
-        assert_eq!(response.status, 200);
-        assert_eq!(response.content_type, "image/png");
-        assert!(response.body.starts_with(b"\x89PNG"));
+        assert_eq!(content_type, "image/png");
+        assert!(body.starts_with(b"\x89PNG"));
     }
 
     #[test]
@@ -1188,16 +1073,14 @@ mod tests {
             token: "secret".to_string(),
             allow_unauthenticated_loopback: false,
         };
-        let request = HttpRequest {
-            method: "GET".to_string(),
-            path: "/api/v1/state".to_string(),
-            query: HashMap::from([("token".to_string(), "secret".to_string())]),
-            headers: HashMap::new(),
-            body: Vec::new(),
-            peer: "127.0.0.1:50000".parse().unwrap(),
-        };
+        let headers = HeaderMap::new();
 
-        assert!(is_authorized(&request, &settings));
+        assert!(is_authorized(
+            &headers,
+            Some("token=secret"),
+            "127.0.0.1:50000".parse().unwrap(),
+            &settings
+        ));
     }
 
     #[test]
@@ -1209,16 +1092,9 @@ mod tests {
             token: "secret".to_string(),
             allow_unauthenticated_loopback: true,
         };
-        let request = HttpRequest {
-            method: "GET".to_string(),
-            path: "/api/v1/state".to_string(),
-            query: HashMap::new(),
-            headers: HashMap::new(),
-            body: Vec::new(),
-            peer: "127.0.0.1:50000".parse().unwrap(),
-        };
+        let headers = HeaderMap::new();
 
-        assert!(is_authorized(&request, &settings));
+        assert!(is_authorized(&headers, None, "127.0.0.1:50000".parse().unwrap(), &settings));
     }
 
     #[test]
@@ -1230,16 +1106,9 @@ mod tests {
             token: "secret".to_string(),
             allow_unauthenticated_loopback: true,
         };
-        let request = HttpRequest {
-            method: "GET".to_string(),
-            path: "/api/v1/state".to_string(),
-            query: HashMap::new(),
-            headers: HashMap::new(),
-            body: Vec::new(),
-            peer: "192.168.1.50:50000".parse().unwrap(),
-        };
+        let headers = HeaderMap::new();
 
-        assert!(!is_authorized(&request, &settings));
+        assert!(!is_authorized(&headers, None, "192.168.1.50:50000".parse().unwrap(), &settings));
     }
 
     #[test]
@@ -1248,5 +1117,33 @@ mod tests {
 
         assert!(urls.iter().any(|url| url == "http://127.0.0.1:4317/remote"));
         assert!(!urls.iter().any(|url| url.contains("0.0.0.0")));
+    }
+
+    #[test]
+    fn host_header_rejects_unknown_hostname_even_on_matching_port() {
+        let settings = ServerSettings {
+            enabled: true,
+            host: "127.0.0.1".to_string(),
+            port: 4317,
+            token: "secret".to_string(),
+            allow_unauthenticated_loopback: true,
+        };
+        let headers = headers("attacker.example:4317");
+
+        assert!(!host_header_allowed(&headers, &settings));
+    }
+
+    #[test]
+    fn host_header_allows_loopback_names_on_matching_port() {
+        let settings = ServerSettings {
+            enabled: true,
+            host: "127.0.0.1".to_string(),
+            port: 4317,
+            token: "secret".to_string(),
+            allow_unauthenticated_loopback: true,
+        };
+        let headers = headers("localhost:4317");
+
+        assert!(host_header_allowed(&headers, &settings));
     }
 }
