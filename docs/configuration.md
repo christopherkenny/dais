@@ -90,6 +90,9 @@ mode = "elapsed"
 Dais can expose a local HTTP API for scripts, Stream Deck tools, phone/tablet web
 controls, and experimental input adapters.
 
+This section is the configuration reference. See [remote.md](remote.md) for the
+full remote-control guide.
+
 Start a presentation with the remote API enabled:
 
 ```powershell
@@ -98,8 +101,9 @@ dais --remote --remote-port 4317 slides.pdf
 ```
 
 By default, the server binds to `127.0.0.1:4317`. Loopback requests are allowed
-without a token unless `allow_unauthenticated_loopback = false`. Binding to a LAN
-address is an explicit advanced choice and should use a token:
+without a token unless `allow_unauthenticated_loopback = false`. Non-loopback
+clients always need a token. Binding to a LAN address is an explicit advanced
+choice:
 
 ```toml
 [remote]
@@ -135,6 +139,8 @@ http://192.168.1.24:4317/remote?token=<token>
 When remote mode is enabled, the presenter console shows a `Remote` status item
 in the bottom bar. Click it to view pairing URLs and QR codes. The status text
 also shows active remote event clients and the last remote command received.
+When bound to `0.0.0.0`, Dais shows usable loopback/LAN URLs rather than
+advertising `0.0.0.0` itself.
 
 REST endpoints use `/api/v1`:
 

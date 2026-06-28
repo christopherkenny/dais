@@ -723,10 +723,7 @@ fn ok_response(message: &str) -> CommandResponse {
 }
 
 fn is_authorized(request: &HttpRequest, settings: &ServerSettings) -> bool {
-    if settings.allow_unauthenticated_loopback
-        && host_is_loopback(&settings.host)
-        && request.peer.ip().is_loopback()
-    {
+    if settings.allow_unauthenticated_loopback && request.peer.ip().is_loopback() {
         return true;
     }
 
@@ -904,8 +901,18 @@ fn render_png(doc: &Arc<dyn DocumentSource>, page_index: usize) -> Result<Vec<u8
 }
 
 fn remote_urls(addr: SocketAddr) -> Vec<String> {
-    let mut urls = vec![format!("http://{addr}/remote")];
+    let mut urls = Vec::new();
+    if addr.ip().is_unspecified() {
+        urls.push(format!("http://127.0.0.1:{}/remote", addr.port()));
+        if let Some(ip) = likely_lan_ip() {
+            urls.push(format!("http://{}:{}/remote", ip, addr.port()));
+        }
+    } else {
+        urls.push(format!("http://{addr}/remote"));
+    }
+
     if !addr.ip().is_loopback()
+        && !addr.ip().is_unspecified()
         && let Some(ip) = likely_lan_ip()
     {
         urls.push(format!("http://{}:{}/remote", ip, addr.port()));
@@ -1194,7 +1201,7 @@ mod tests {
     }
 
     #[test]
-    fn token_required_for_non_loopback_when_loopback_exemption_does_not_apply() {
+    fn loopback_peer_can_use_loopback_exemption_on_wildcard_bind() {
         let settings = ServerSettings {
             enabled: true,
             host: "0.0.0.0".to_string(),
@@ -1211,6 +1218,35 @@ mod tests {
             peer: "127.0.0.1:50000".parse().unwrap(),
         };
 
+        assert!(is_authorized(&request, &settings));
+    }
+
+    #[test]
+    fn non_loopback_peer_requires_token_even_when_loopback_exemption_is_enabled() {
+        let settings = ServerSettings {
+            enabled: true,
+            host: "0.0.0.0".to_string(),
+            port: 4317,
+            token: "secret".to_string(),
+            allow_unauthenticated_loopback: true,
+        };
+        let request = HttpRequest {
+            method: "GET".to_string(),
+            path: "/api/v1/state".to_string(),
+            query: HashMap::new(),
+            headers: HashMap::new(),
+            body: Vec::new(),
+            peer: "192.168.1.50:50000".parse().unwrap(),
+        };
+
         assert!(!is_authorized(&request, &settings));
+    }
+
+    #[test]
+    fn wildcard_bind_urls_do_not_advertise_unspecified_address() {
+        let urls = remote_urls("0.0.0.0:4317".parse().unwrap());
+
+        assert!(urls.iter().any(|url| url == "http://127.0.0.1:4317/remote"));
+        assert!(!urls.iter().any(|url| url.contains("0.0.0.0")));
     }
 }

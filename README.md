@@ -102,6 +102,7 @@ See [docs/keybindings.md](docs/keybindings.md) for the full reference.
 ## Clicker & Remote Support
 
 See [docs/clicker-setup.md](docs/clicker-setup.md) for clicker profiles, custom mappings, and the `--test-input` diagnostic mode.
+See [docs/remote.md](docs/remote.md) for the browser remote, REST API, CLI remote commands, LAN pairing, and external-controller examples.
 
 ## Architecture
 
