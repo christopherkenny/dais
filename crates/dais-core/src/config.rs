@@ -31,6 +31,8 @@ pub struct Config {
     pub remote: RemoteConfig,
     /// Sidecar save format: `"dais"` or `"pdfpc"`.
     pub sidecar_format: String,
+    /// Whether to persist per-slide timing data when saving sidecars.
+    pub save_slide_timings: bool,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -47,6 +49,7 @@ struct PartialConfig {
     clicker: Option<PartialClickerConfig>,
     remote: Option<PartialRemoteConfig>,
     sidecar_format: Option<String>,
+    save_slide_timings: Option<bool>,
 }
 
 /// Display mode and monitor assignment.
@@ -301,6 +304,7 @@ impl Default for Config {
             clicker: ClickerConfig::default(),
             remote: RemoteConfig::default(),
             sidecar_format: "dais".to_string(),
+            save_slide_timings: true,
         }
     }
 }
@@ -577,25 +581,32 @@ fn apply_partial_config(config: &mut Config, partial: PartialConfig) {
     }
 
     if let Some(remote) = partial.remote {
-        if let Some(enabled) = remote.enabled {
-            config.remote.enabled = enabled;
-        }
-        if let Some(host) = remote.host {
-            config.remote.host = host;
-        }
-        if let Some(port) = remote.port {
-            config.remote.port = port;
-        }
-        if let Some(token) = remote.token {
-            config.remote.token = token;
-        }
-        if let Some(allow) = remote.allow_unauthenticated_loopback {
-            config.remote.allow_unauthenticated_loopback = allow;
-        }
+        apply_remote_config(&mut config.remote, remote);
     }
 
     if let Some(sidecar_format) = partial.sidecar_format {
         config.sidecar_format = sidecar_format;
+    }
+    if let Some(save_slide_timings) = partial.save_slide_timings {
+        config.save_slide_timings = save_slide_timings;
+    }
+}
+
+fn apply_remote_config(config: &mut RemoteConfig, partial: PartialRemoteConfig) {
+    if let Some(enabled) = partial.enabled {
+        config.enabled = enabled;
+    }
+    if let Some(host) = partial.host {
+        config.host = host;
+    }
+    if let Some(port) = partial.port {
+        config.port = port;
+    }
+    if let Some(token) = partial.token {
+        config.token = token;
+    }
+    if let Some(allow) = partial.allow_unauthenticated_loopback {
+        config.allow_unauthenticated_loopback = allow;
     }
 }
 
@@ -675,6 +686,7 @@ mod tests {
                 warning_minutes: Some(OptionalU32Value::Value(10)),
                 overrun_color: Some(false),
             }),
+            save_slide_timings: Some(false),
             ..Default::default()
         };
 
@@ -687,6 +699,7 @@ mod tests {
         assert_eq!(config.timer.duration_minutes, Some(45));
         assert_eq!(config.timer.warning_minutes, Some(10));
         assert!(!config.timer.overrun_color);
+        assert!(!config.save_slide_timings);
     }
 
     #[test]

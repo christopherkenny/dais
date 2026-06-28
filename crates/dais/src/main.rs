@@ -33,6 +33,10 @@ struct Cli {
     #[arg(long)]
     test_input: bool,
 
+    /// Do not update per-slide timing data when saving sidecars.
+    #[arg(long)]
+    time_ignore: bool,
+
     /// Start the local remote-control HTTP API with the presentation.
     #[arg(long)]
     remote: bool,
@@ -115,8 +119,7 @@ fn main() -> anyhow::Result<()> {
     let pdf_path = cli.pdf_path.as_deref().unwrap();
     tracing::info!("Opening: {pdf_path}");
 
-    let explicit_config = cli.config.as_deref().map(Path::new);
-    let config = dais_core::config::load_config_for(Path::new(&pdf_path), explicit_config);
+    let config = load_effective_config(&cli, Path::new(&pdf_path));
     tracing::debug!("Config loaded: {config:?}");
 
     let doc = dais_document::pdf_hayro::HayroDocument::open(Path::new(&pdf_path))?;
@@ -221,6 +224,15 @@ fn main() -> anyhow::Result<()> {
     .map_err(|e| anyhow::anyhow!("eframe error: {e}"))?;
 
     Ok(())
+}
+
+fn load_effective_config(cli: &Cli, pdf_path: &Path) -> dais_core::config::Config {
+    let explicit_config = cli.config.as_deref().map(Path::new);
+    let mut config = dais_core::config::load_config_for(pdf_path, explicit_config);
+    if cli.time_ignore {
+        config.save_slide_timings = false;
+    }
+    config
 }
 
 fn remote_toasts(server: Option<&dais_remote::RemoteServer>) -> Vec<String> {
@@ -442,5 +454,13 @@ mod tests {
         };
         assert!(matches!(command, RemoteTimerCommand::Start));
         assert_eq!(remote.port, 4318);
+    }
+
+    #[test]
+    fn parses_time_ignore_flag() {
+        let cli = Cli::try_parse_from(["dais", "--time-ignore", "slides.pdf"]).unwrap();
+
+        assert!(cli.time_ignore);
+        assert_eq!(cli.pdf_path.as_deref(), Some("slides.pdf"));
     }
 }

@@ -19,6 +19,7 @@ If a config layer doesn't exist, Dais skips it. All settings are optional.
 
 ```toml
 sidecar_format = "dais"        # "dais" (default) or "pdfpc"
+save_slide_timings = true      # Save per-slide timing data into sidecars
 
 [display]
 mode = "dual"                  # "dual", "single", or "screen-share"
@@ -277,6 +278,8 @@ sidecar_format = "pdfpc"   # "dais" (default) or "pdfpc"
 
 When loading, Dais checks in order: `.dais` sidecar → `.pdfpc` sidecar → embedded PDF metadata.
 The grouping editor and `save_sidecar` action both use `sidecar_format` when choosing what to write.
+Set `save_slide_timings = false`, or run with `--time-ignore`, to save sidecars
+without updating the `slide_timings` data.
 
 ## Single-Monitor Presentation Mode (F5)
 

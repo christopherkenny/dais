@@ -52,6 +52,8 @@ pub struct PresentationEngine {
     sidecar_kind: SidecarKind,
     /// Original metadata loaded for this presentation.
     metadata: PresentationMetadata,
+    /// Whether sidecar saves should update per-slide timing data.
+    save_slide_timings: bool,
 }
 
 impl PresentationEngine {
@@ -141,6 +143,7 @@ impl PresentationEngine {
                     SidecarKind::Pdfpc
                 },
                 metadata: metadata.clone(),
+                save_slide_timings: config.save_slide_timings,
             },
             shared_state,
         )
@@ -682,15 +685,17 @@ impl PresentationEngine {
         metadata.groups = groups;
         metadata.notes = notes;
 
-        // Persist per-slide timing data (logical slide index → seconds).
-        let mut slide_timings = std::collections::HashMap::new();
-        for (i, dur) in self.state.slide_elapsed_by_logical.iter().enumerate() {
-            let secs = dur.as_secs_f64();
-            if secs > 0.0 {
-                slide_timings.insert(i, secs);
+        if self.save_slide_timings {
+            // Persist per-slide timing data (logical slide index -> seconds).
+            let mut slide_timings = std::collections::HashMap::new();
+            for (i, dur) in self.state.slide_elapsed_by_logical.iter().enumerate() {
+                let secs = dur.as_secs_f64();
+                if secs > 0.0 {
+                    slide_timings.insert(i, secs);
+                }
             }
+            metadata.slide_timings = slide_timings;
         }
-        metadata.slide_timings = slide_timings;
 
         // Copy runtime annotations into metadata (completed strokes only).
         metadata.slide_annotations = self
@@ -1029,7 +1034,14 @@ mod tests {
     fn make_engine(
         total_pages: usize,
     ) -> (PresentationEngine, Arc<RwLock<PresentationState>>, dais_core::bus::CommandSender) {
-        make_engine_with_metadata(total_pages, &PresentationMetadata::default())
+        make_engine_with_metadata(total_pages, &test_metadata())
+    }
+
+    fn test_metadata() -> PresentationMetadata {
+        PresentationMetadata {
+            slide_timings: HashMap::from([(0, 9.7e-6)]),
+            ..PresentationMetadata::default()
+        }
     }
 
     fn make_engine_with_metadata(
@@ -1044,13 +1056,15 @@ mod tests {
         metadata: &PresentationMetadata,
         config: &Config,
     ) -> (PresentationEngine, Arc<RwLock<PresentationState>>, dais_core::bus::CommandSender) {
+        let mut config = config.clone();
+        config.save_slide_timings = false;
         let bus = CommandBus::new();
         let sender = bus.sender();
         let receiver = bus.into_receiver();
         let (engine, shared) = PresentationEngine::new(
             total_pages,
             metadata,
-            config,
+            &config,
             receiver,
             std::path::PathBuf::from("test.pdf"),
         );
