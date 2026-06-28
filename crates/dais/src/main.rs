@@ -96,13 +96,7 @@ enum RemoteTimerCommand {
 }
 
 fn main() -> anyhow::Result<()> {
-    // Initialize logging
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
-        )
-        .init();
+    init_logging();
 
     let cli = Cli::parse();
 
@@ -187,13 +181,15 @@ fn main() -> anyhow::Result<()> {
         let _ = sender.send(dais_core::commands::Command::TogglePresentationMode);
     }
 
-    let _remote_server = start_remote_server_if_enabled(&cli, &config, &sender, &shared_state)?;
-
-    tracing::info!("Dais v{} starting", env!("CARGO_PKG_VERSION"));
-
     // Create and run the eframe application
     let doc_arc: std::sync::Arc<dyn dais_document::source::DocumentSource> =
         std::sync::Arc::new(doc);
+
+    let remote_server =
+        start_remote_server_if_enabled(&cli, &config, &sender, &shared_state, doc_arc.clone())?;
+    let remote_toasts = remote_toasts(remote_server.as_ref());
+
+    tracing::info!("Dais v{} starting", env!("CARGO_PKG_VERSION"));
 
     let presenter_window_size = egui::vec2(1400.0, 850.0);
     let native_options = eframe::NativeOptions {
@@ -223,6 +219,10 @@ fn main() -> anyhow::Result<()> {
                 app.toast_manager_mut()
                     .push(dais_ui::widgets::toast::ToastLevel::Warning, warning.clone());
             }
+            for message in &remote_toasts {
+                app.toast_manager_mut()
+                    .push(dais_ui::widgets::toast::ToastLevel::Info, message.clone());
+            }
             Ok(Box::new(app))
         }),
     )
@@ -231,11 +231,29 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+fn remote_toasts(server: Option<&dais_remote::RemoteServer>) -> Vec<String> {
+    server
+        .map(|server| {
+            server.urls().iter().map(|url| format!("Remote control: {url}")).collect::<Vec<_>>()
+        })
+        .unwrap_or_default()
+}
+
+fn init_logging() {
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
+        )
+        .init();
+}
+
 fn start_remote_server_if_enabled(
     cli: &Cli,
     config: &dais_core::config::Config,
     sender: &dais_core::bus::CommandSender,
     shared_state: &std::sync::Arc<std::sync::RwLock<dais_core::state::PresentationState>>,
+    doc: std::sync::Arc<dyn dais_document::source::DocumentSource>,
 ) -> anyhow::Result<Option<dais_remote::RemoteServer>> {
     let remote_overrides = dais_remote::RemoteOverrides {
         enabled: cli.remote,
@@ -248,10 +266,15 @@ fn start_remote_server_if_enabled(
         return Ok(None);
     }
 
-    let server = dais_remote::start_server(remote_settings, sender.clone(), shared_state.clone())?;
+    let server =
+        dais_remote::start_server(remote_settings, sender.clone(), shared_state.clone(), doc)?;
     tracing::info!("Dais remote API listening at http://{}", server.addr());
+    for url in server.urls() {
+        tracing::info!("Dais web remote: {url}");
+    }
     if server.requires_token_for_non_loopback() {
         tracing::info!("Dais remote API token: {}", server.token());
+        tracing::info!("Open the web remote with ?token={} when using a browser", server.token());
     } else {
         tracing::info!(
             "Dais remote API allows unauthenticated loopback requests; token for other clients: {}",

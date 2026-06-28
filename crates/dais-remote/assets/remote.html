@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dais Remote</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#101316;color:#edf2f4;font:15px/1.4 system-ui,-apple-system,Segoe UI,sans-serif}
+body{display:flex;flex-direction:column}
+header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#181d22;border-bottom:1px solid #2a323a}
+h1{font-size:17px;margin:0;font-weight:650}
+#conn{font-size:12px;color:#8fbf9f}
+main{display:grid;grid-template-columns:1fr;gap:12px;padding:12px;max-width:1080px;width:100%;margin:0 auto}
+.band{background:#181d22;border:1px solid #2a323a;border-radius:8px;padding:10px}
+.slides{display:grid;grid-template-columns:1fr 42%;gap:10px;align-items:start}
+.slide img{display:block;width:100%;height:auto;background:#0a0c0f;border-radius:5px;border:1px solid #303840}
+.slide .label{display:flex;justify-content:space-between;color:#a7b0b8;font-size:12px;margin-bottom:6px}
+.timer{font-variant-numeric:tabular-nums;font-size:42px;font-weight:720;line-height:1;color:#f2c14e}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+button{appearance:none;border:1px solid #3a4650;background:#252d35;color:#f5f7f8;border-radius:7px;padding:12px 13px;font:inherit;font-weight:650;min-height:48px}
+button:active{transform:translateY(1px);background:#33404a}
+button.primary{background:#2764d8;border-color:#3e7df0}
+button.warn{background:#4d2630;border-color:#824250}
+button.good{background:#244836;border-color:#3b7556}
+.nav button{font-size:22px;min-height:66px}
+.notes{white-space:pre-wrap;min-height:90px;color:#d8dee4}
+.meta{color:#a7b0b8;font-size:13px}
+input{background:#11161b;border:1px solid #3a4650;border-radius:7px;color:#edf2f4;padding:11px;font:inherit;width:92px}
+@media (max-width:720px){.slides{grid-template-columns:1fr}.split{grid-template-columns:1fr}.timer{font-size:36px}}
+</style>
+</head>
+<body>
+<header><h1>Dais Remote</h1><span id="conn">connecting</span></header>
+<main>
+  <section class="band">
+    <div class="row" style="justify-content:space-between">
+      <div>
+        <div class="timer" id="timer">--:--</div>
+        <div class="meta" id="slide">Slide -- / --</div>
+      </div>
+      <div class="row">
+        <button id="timerToggle">Start/Pause</button>
+        <button id="timerReset">Reset</button>
+      </div>
+    </div>
+  </section>
+  <section class="slides">
+    <div class="slide band">
+      <div class="label"><span>Current</span><span id="mode"></span></div>
+      <img id="currentImg" alt="Current slide">
+    </div>
+    <div class="slide band">
+      <div class="label"><span>Next</span></div>
+      <img id="nextImg" alt="Next slide">
+    </div>
+  </section>
+  <section class="band nav split">
+    <button id="prev">Prev</button>
+    <button class="primary" id="next">Next</button>
+  </section>
+  <section class="band">
+    <div class="row">
+      <button id="blackout" class="warn">Blackout</button>
+      <button id="freeze">Freeze</button>
+      <button id="whiteboard">Whiteboard</button>
+      <button id="laser">Laser</button>
+    </div>
+  </section>
+  <section class="band">
+    <div class="row">
+      <input id="gotoSlide" type="number" min="1" placeholder="Slide">
+      <button id="gotoBtn">Go</button>
+      <span class="meta" id="last"></span>
+    </div>
+  </section>
+  <section class="band">
+    <div class="meta">Notes</div>
+    <div class="notes" id="notes"></div>
+  </section>
+</main>
+<script>
+const params=new URLSearchParams(location.search);
+const token=params.get('token')||localStorage.getItem('daisRemoteToken')||'';
+if(token)localStorage.setItem('daisRemoteToken',token);
+const auth=token?{'Authorization':'Bearer '+token}:{};
+const qs=token?'?token='+encodeURIComponent(token):'';
+function withCache(path){return path+(qs||'?')+(qs?'&':'')+'v='+Date.now();}
+const $=id=>document.getElementById(id);
+let state=null,lastPage=-1,nextPage=-1;
+function mmss(seconds){seconds=Math.max(0,seconds|0);const m=Math.floor(seconds/60),s=seconds%60;return m+':'+String(s).padStart(2,'0');}
+async function api(path,opts={}){const r=await fetch(path,{...opts,headers:{...(opts.headers||{}),...auth}});if(!r.ok)throw new Error(await r.text());return r.headers.get('content-type')?.includes('json')?r.json():r.text();}
+async function action(name){await api('/api/v1/actions/'+name,{method:'POST'});$('last').textContent=name;}
+async function timer(actionName){await api('/api/v1/commands/timer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:actionName})});$('last').textContent='timer '+actionName;}
+async function refresh(){
+ try{
+  state=await api('/api/v1/state');
+  $('conn').textContent='connected';$('conn').style.color='#8fbf9f';
+  $('timer').textContent=mmss(state.timer.display_seconds);
+  $('slide').textContent='Slide '+(state.current_logical_slide+1)+' / '+state.total_logical_slides;
+  $('notes').textContent=state.current_notes||'';
+  const flags=[]; if(state.blacked_out)flags.push('blackout'); if(state.frozen)flags.push('frozen'); if(state.whiteboard_active)flags.push('whiteboard'); if(state.laser_active)flags.push('laser');
+  $('mode').textContent=flags.join(' ');
+  $('blackout').classList.toggle('primary',state.blacked_out);
+  $('freeze').classList.toggle('primary',state.frozen);
+  $('whiteboard').classList.toggle('primary',state.whiteboard_active);
+  $('laser').classList.toggle('good',state.laser_active);
+  if(state.current_page!==lastPage){lastPage=state.current_page;$('currentImg').src=withCache('/api/v1/slides/current.png');}
+  const np=Math.min(state.current_logical_slide+2,state.total_logical_slides);
+  if(np!==nextPage){nextPage=np;$('nextImg').src=withCache('/api/v1/slides/next.png');}
+ }catch(e){$('conn').textContent='disconnected';$('conn').style.color='#ff9b9b';}
+}
+$('next').onclick=()=>action('next_slide').then(refresh);
+$('prev').onclick=()=>action('previous_slide').then(refresh);
+$('blackout').onclick=()=>action('toggle_blackout').then(refresh);
+$('freeze').onclick=()=>action('toggle_freeze').then(refresh);
+$('whiteboard').onclick=()=>action('toggle_whiteboard').then(refresh);
+$('laser').onclick=()=>action('toggle_laser').then(refresh);
+$('timerToggle').onclick=()=>timer('toggle').then(refresh);
+$('timerReset').onclick=()=>timer('reset').then(refresh);
+$('gotoBtn').onclick=async()=>{const slide=+$('gotoSlide').value;if(slide>0){await api('/api/v1/commands/goto',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slide})});$('last').textContent='goto '+slide;refresh();}};
+refresh();setInterval(refresh,900);
+</script>
+</body>
+</html>

@@ -120,6 +120,18 @@ dais remote pointer 0.5 0.5
 dais remote timer toggle
 ```
 
+Open the browser remote at:
+
+```text
+http://127.0.0.1:4317/remote
+```
+
+When token authentication is required, append the token shown in the Dais log:
+
+```text
+http://192.168.1.24:4317/remote?token=<token>
+```
+
 REST endpoints use `/api/v1`:
 
 ```powershell
@@ -127,10 +139,20 @@ curl http://127.0.0.1:4317/api/v1/state
 curl -X POST http://127.0.0.1:4317/api/v1/actions/next_slide
 curl -X POST http://127.0.0.1:4317/api/v1/commands/goto -H "Content-Type: application/json" -d "{\"slide\":12}"
 curl http://127.0.0.1:4317/api/v1/events
+curl http://127.0.0.1:4317/api/v1/slides/current.png --output current.png
 ```
 
 For token-protected sessions, send `Authorization: Bearer <token>` or
-`X-Dais-Token: <token>`.
+`X-Dais-Token: <token>`. Browser endpoints also accept `?token=<token>` so the
+built-in web remote can connect from a second device.
+
+Slide image endpoints are rendered on demand for the remote:
+
+| Endpoint | Description |
+|---|---|
+| `/api/v1/slides/current.png` | Current presenter page |
+| `/api/v1/slides/next.png` | First page of the next logical slide, or current page at the end |
+| `/api/v1/slides/<n>/thumbnail.png` | First page of 1-based logical slide `n` |
 
 ## Display Modes
 

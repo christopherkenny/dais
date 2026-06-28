@@ -15,9 +15,11 @@ readme = "README.md"
 
 [dependencies]
 dais-core = { workspace = true }
+dais-document = { workspace = true }
 
 anyhow = { workspace = true }
 fastrand = { workspace = true }
+image = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
