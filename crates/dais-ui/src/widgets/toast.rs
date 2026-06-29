@@ -38,7 +38,7 @@ impl ToastLevel {
 pub struct Toast {
     pub message: String,
     pub level: ToastLevel,
-    pub created: Instant,
+    pub shown_at: Option<Instant>,
     pub duration: Duration,
 }
 
@@ -61,12 +61,7 @@ impl ToastManager {
         message: impl Into<String>,
         duration: Duration,
     ) {
-        self.toasts.push(Toast {
-            message: message.into(),
-            level,
-            created: Instant::now(),
-            duration,
-        });
+        self.toasts.push(Toast { message: message.into(), level, shown_at: None, duration });
     }
 
     #[cfg(test)]
@@ -75,7 +70,11 @@ impl ToastManager {
     }
 
     pub fn show(&mut self, ctx: &egui::Context) {
-        self.toasts.retain(|t| t.created.elapsed() < t.duration);
+        let now = Instant::now();
+        for toast in &mut self.toasts {
+            toast.shown_at.get_or_insert(now);
+        }
+        self.toasts.retain(|t| t.shown_at.is_some_and(|shown_at| shown_at.elapsed() < t.duration));
 
         if self.toasts.is_empty() {
             return;
@@ -165,8 +164,8 @@ mod tests {
         let mut mgr = ToastManager::new();
         mgr.push_with_duration(ToastLevel::Info, "brief", Duration::from_millis(0));
         // Duration is zero so the toast is already expired.
-        std::thread::sleep(Duration::from_millis(1));
-        mgr.toasts.retain(|t| t.created.elapsed() < t.duration);
+        let ctx = egui::Context::default();
+        mgr.show(&ctx);
         assert_eq!(mgr.len(), 0);
     }
 }

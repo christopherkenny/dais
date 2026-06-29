@@ -29,6 +29,7 @@ use tower_http::sensitive_headers::SetSensitiveRequestHeadersLayer;
 
 const SSE_INTERVAL: Duration = Duration::from_millis(500);
 const REMOTE_SLIDE_SIZE: RenderSize = RenderSize { width: 960, height: 540 };
+const REMOTE_THUMBNAIL_SIZE: RenderSize = RenderSize { width: 320, height: 180 };
 const X_DAIS_TOKEN: HeaderName = HeaderName::from_static("x-dais-token");
 
 /// CLI-friendly remote endpoint selection.
@@ -205,7 +206,13 @@ struct HandlerContext {
     shared_state: Arc<RwLock<PresentationState>>,
     doc: Arc<dyn DocumentSource>,
     status: RemoteStatusHandle,
-    png_cache: Arc<Mutex<HashMap<usize, Vec<u8>>>>,
+    png_cache: Arc<Mutex<HashMap<PngCacheKey, Vec<u8>>>>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct PngCacheKey {
+    page_index: usize,
+    size: RenderSize,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -357,14 +364,18 @@ async fn remote_status(State(context): State<HandlerContext>) -> Json<RemoteStat
 }
 
 async fn current_slide_png(State(context): State<HandlerContext>) -> Response {
-    match current_page(&context.shared_state).and_then(|page| cached_png(&context, page)) {
+    match current_page(&context.shared_state)
+        .and_then(|page| cached_png(&context, page, REMOTE_SLIDE_SIZE))
+    {
         Ok(png) => png_response(png),
         Err(error) => server_error(&error),
     }
 }
 
 async fn next_slide_png(State(context): State<HandlerContext>) -> Response {
-    match next_page(&context.shared_state).and_then(|page| cached_png(&context, page)) {
+    match next_page(&context.shared_state)
+        .and_then(|page| cached_png(&context, page, REMOTE_SLIDE_SIZE))
+    {
         Ok(png) => png_response(png),
         Err(error) => server_error(&error),
     }
@@ -379,7 +390,7 @@ async fn thumbnail_png(
     }
 
     match logical_slide_page(&context.shared_state, slide - 1)
-        .and_then(|page| cached_png(&context, page))
+        .and_then(|page| cached_png(&context, page, REMOTE_THUMBNAIL_SIZE))
     {
         Ok(png) => png_response(png),
         Err(error) => bad_request(&error),
@@ -749,16 +760,17 @@ fn logical_slide_page(
         .ok_or_else(|| anyhow!("logical slide out of range"))
 }
 
-fn cached_png(context: &HandlerContext, page_index: usize) -> Result<Vec<u8>> {
+fn cached_png(context: &HandlerContext, page_index: usize, size: RenderSize) -> Result<Vec<u8>> {
+    let key = PngCacheKey { page_index, size };
     if let Ok(cache) = context.png_cache.lock()
-        && let Some(png) = cache.get(&page_index)
+        && let Some(png) = cache.get(&key)
     {
         return Ok(png.clone());
     }
 
-    let png = render_png(&context.doc, page_index)?;
+    let png = render_png(&context.doc, page_index, size)?;
     if let Ok(mut cache) = context.png_cache.lock() {
-        cache.insert(page_index, png.clone());
+        cache.insert(key, png.clone());
         if cache.len() > 12
             && let Some(oldest) = cache.keys().copied().next()
         {
@@ -790,13 +802,17 @@ fn preloaded_pages(state: &PresentationState) -> Vec<usize> {
 
 fn preload_pages(context: &HandlerContext, pages: Vec<usize>) {
     for page in pages {
-        let _ = cached_png(context, page);
+        let _ = cached_png(context, page, REMOTE_SLIDE_SIZE);
     }
 }
 
-fn render_png(doc: &Arc<dyn DocumentSource>, page_index: usize) -> Result<Vec<u8>> {
+fn render_png(
+    doc: &Arc<dyn DocumentSource>,
+    page_index: usize,
+    size: RenderSize,
+) -> Result<Vec<u8>> {
     let page = doc
-        .render_page(page_index, REMOTE_SLIDE_SIZE)
+        .render_page(page_index, size)
         .with_context(|| format!("failed to render page {}", page_index + 1))?;
     let mut png = Vec::new();
     PngEncoder::new(&mut png)

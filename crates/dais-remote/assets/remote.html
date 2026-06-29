@@ -19,11 +19,11 @@ main{display:grid;grid-template-columns:1fr;gap:10px;padding:10px;max-width:1080
 .timer{font-variant-numeric:tabular-nums;font-size:42px;font-weight:720;line-height:1;color:#f2c14e}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .split{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 button{appearance:none;border:1px solid #3a4650;background:#252d35;color:#f5f7f8;border-radius:7px;padding:10px 12px;font:inherit;font-weight:650;min-height:42px}
 button:active{transform:translateY(1px);background:#33404a}
 button.primary{background:#2764d8;border-color:#3e7df0}
-button.warn{background:#4d2630;border-color:#824250}
+button.warn.active{background:#4d2630;border-color:#824250}
 button.good{background:#244836;border-color:#3b7556}
 .view[hidden]{display:none}
 .overview{display:grid;grid-template-columns:repeat(auto-fill,minmax(124px,1fr));gap:10px}
@@ -33,9 +33,16 @@ button.good{background:#244836;border-color:#3b7556}
 .thumb.current{border-color:#f2c14e;box-shadow:0 0 0 2px rgba(242,193,78,.35)}
 .nav button{font-size:20px;min-height:56px}
 .notes{white-space:pre-wrap;min-height:90px;color:#d8dee4}
+.notes p{margin:0 0 .7em}
+.notes h1,.notes h2,.notes h3{margin:.15em 0 .45em;line-height:1.15}
+.notes h1{font-size:1.35em}.notes h2{font-size:1.2em}.notes h3{font-size:1.08em}
+.notes ul{margin:.2em 0 .8em;padding-left:1.25em}
+.notes li{margin:.18em 0}
+.notes code{background:#10161d;border:1px solid #303840;border-radius:4px;padding:0 .22em}
+.notesView .notes{min-height:58vh;font-size:20px;line-height:1.55}
 .meta{color:#a7b0b8;font-size:13px}
 input{background:#11161b;border:1px solid #3a4650;border-radius:7px;color:#edf2f4;padding:11px;font:inherit;width:92px}
-@media (max-width:720px){main{gap:8px;padding:8px}.band{padding:8px}.slides{grid-template-columns:1fr;gap:8px}.split{grid-template-columns:1fr}.tabs{gap:6px}.timer{font-size:30px}.row{gap:6px}button{min-height:38px;padding:8px 10px}.nav button{font-size:18px;min-height:48px}.notes{min-height:56px}.overview{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}}
+@media (max-width:720px){main{gap:8px;padding:8px}.band{padding:8px}.slides{grid-template-columns:1fr;gap:8px}.split{grid-template-columns:1fr}.tabs{gap:6px}.timer{font-size:30px}.row{gap:6px}button{min-height:38px;padding:8px 10px}.nav button{font-size:18px;min-height:48px}.notes{min-height:56px}.notesView .notes{min-height:62vh;font-size:18px}.overview{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}}
 </style>
 </head>
 <body>
@@ -55,7 +62,12 @@ input{background:#11161b;border:1px solid #3a4650;border-radius:7px;color:#edf2f
   </section>
   <section class="band tabs">
     <button class="primary" id="showControl">Control</button>
+    <button id="showNotes">Notes</button>
     <button id="showOverview">Overview</button>
+  </section>
+  <section class="band nav split">
+    <button id="prev">Prev</button>
+    <button class="primary" id="next">Next</button>
   </section>
   <div class="view" id="controlView">
     <section class="slides">
@@ -67,10 +79,6 @@ input{background:#11161b;border:1px solid #3a4650;border-radius:7px;color:#edf2f
         <div class="label"><span>Next</span></div>
         <img id="nextImg" alt="Next slide">
       </div>
-    </section>
-    <section class="band nav split">
-      <button id="prev">Prev</button>
-      <button class="primary" id="next">Next</button>
     </section>
     <section class="band">
       <div class="row">
@@ -87,6 +95,8 @@ input{background:#11161b;border:1px solid #3a4650;border-radius:7px;color:#edf2f
         <span class="meta" id="last"></span>
       </div>
     </section>
+  </div>
+  <div class="view notesView" id="notesView" hidden>
     <section class="band">
       <div class="meta">Notes</div>
       <div class="notes" id="notes"></div>
@@ -109,13 +119,67 @@ function withToken(path){
 }
 function withCache(path){const authed=withToken(path);return authed+(authed.includes('?')?'&':'?')+'v='+Date.now();}
 const $=id=>document.getElementById(id);
-let state=null,lastPage=-1,nextPage=-1,pollTimer=null,overviewCount=0,activeView='control';
+let state=null,lastPage=-1,nextPage=-1,pollTimer=null,overviewCount=0,activeView='control',everConnected=false;
 function mmss(seconds){seconds=Math.max(0,seconds|0);const m=Math.floor(seconds/60),s=seconds%60;return m+':'+String(s).padStart(2,'0');}
-async function api(path,opts={}){const r=await fetch(withToken(path),opts);if(!r.ok)throw new Error(await r.text());return r.headers.get('content-type')?.includes('json')?r.json():r.text();}
+function setConn(text,color){$('conn').textContent=text;$('conn').style.color=color;}
+function connectionMessage(error){
+ if(error?.status===401)return 'unauthorized';
+ if(error?.status===403)return 'blocked';
+ if(everConnected)return 'reconnecting';
+ return 'unreachable';
+}
+async function api(path,opts={}){
+ let r;
+ try{r=await fetch(withToken(path),opts);}catch(e){throw Object.assign(e,{network:true});}
+ if(!r.ok){const e=new Error(await r.text());e.status=r.status;throw e;}
+ return r.headers.get('content-type')?.includes('json')?r.json():r.text();
+}
 async function action(name){await api('/api/v1/actions/'+name,{method:'POST'});$('last').textContent=name;}
 async function timer(actionName){await api('/api/v1/commands/timer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:actionName})});$('last').textContent='timer '+actionName;}
 async function gotoSlide(slide){await api('/api/v1/commands/goto',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slide})});$('last').textContent='goto '+slide;refresh();}
-function showView(name){activeView=name;$('controlView').hidden=name!=='control';$('overviewView').hidden=name!=='overview';$('showControl').classList.toggle('primary',name==='control');$('showOverview').classList.toggle('primary',name==='overview');}
+function inlineMarkdown(text){
+ const frag=document.createDocumentFragment();
+ const re=/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g;
+ let pos=0,m;
+ while((m=re.exec(text))){
+  if(m.index>pos)frag.append(document.createTextNode(text.slice(pos,m.index)));
+  const token=m[0],el=token.startsWith('**')?document.createElement('strong'):token.startsWith('*')?document.createElement('em'):document.createElement('code');
+  el.textContent=token.startsWith('**')?token.slice(2,-2):token.slice(1,-1);
+  frag.append(el);pos=re.lastIndex;
+ }
+ if(pos<text.length)frag.append(document.createTextNode(text.slice(pos)));
+ return frag;
+}
+function renderMarkdown(text){
+ const frag=document.createDocumentFragment();
+ let list=null;
+ function closeList(){list=null;}
+ for(const raw of (text||'').split(/\r?\n/)){
+  const line=raw.trimEnd();
+  if(!line.trim()){closeList();continue;}
+  const bullet=line.match(/^\s*[-*]\s+(.+)$/);
+  if(bullet){
+   if(!list){list=document.createElement('ul');frag.append(list);}
+   const li=document.createElement('li');li.append(inlineMarkdown(bullet[1]));list.append(li);continue;
+  }
+  closeList();
+  const heading=line.match(/^(#{1,3})\s+(.+)$/);
+  const el=document.createElement(heading?'h'+heading[1].length:'p');
+  el.append(inlineMarkdown(heading?heading[2]:line));
+  frag.append(el);
+ }
+ if(!frag.childNodes.length){const p=document.createElement('p');p.textContent='';frag.append(p);}
+ return frag;
+}
+function showView(name){
+ activeView=name;
+ $('controlView').hidden=name!=='control';
+ $('notesView').hidden=name!=='notes';
+ $('overviewView').hidden=name!=='overview';
+ $('showControl').classList.toggle('primary',name==='control');
+ $('showNotes').classList.toggle('primary',name==='notes');
+ $('showOverview').classList.toggle('primary',name==='overview');
+}
 function syncOverview(){
  if(!state)return;
  if(overviewCount!==state.total_logical_slides){
@@ -133,13 +197,13 @@ function syncOverview(){
 }
 function renderState(nextState){
   state=nextState;
-  $('conn').textContent='connected';$('conn').style.color='#8fbf9f';
+  everConnected=true;setConn('connected','#8fbf9f');
   $('timer').textContent=mmss(state.timer.display_seconds);
   $('slide').textContent='Slide '+(state.current_logical_slide+1)+' / '+state.total_logical_slides;
-  $('notes').textContent=state.current_notes||'';
+  $('notes').replaceChildren(renderMarkdown(state.current_notes||''));
   const flags=[]; if(state.blacked_out)flags.push('blackout'); if(state.frozen)flags.push('frozen'); if(state.whiteboard_active)flags.push('whiteboard'); if(state.laser_active)flags.push('laser');
   $('mode').textContent=flags.join(' ');
-  $('blackout').classList.toggle('primary',state.blacked_out);
+  $('blackout').classList.toggle('active',state.blacked_out);
   $('freeze').classList.toggle('primary',state.frozen);
   $('whiteboard').classList.toggle('primary',state.whiteboard_active);
   $('laser').classList.toggle('good',state.laser_active);
@@ -151,14 +215,14 @@ function renderState(nextState){
 async function refresh(){
  try{
   renderState(await api('/api/v1/state'));
- }catch(e){$('conn').textContent='disconnected';$('conn').style.color='#ff9b9b';}
+ }catch(e){setConn(connectionMessage(e),'#ff9b9b');}
 }
 function startPolling(){if(!pollTimer)pollTimer=setInterval(refresh,900);}
 function startEvents(){
  if(!window.EventSource){startPolling();return;}
  const events=new EventSource(withToken('/api/v1/events'));
  events.onmessage=e=>renderState(JSON.parse(e.data));
- events.onerror=()=>{$('conn').textContent='disconnected';$('conn').style.color='#ff9b9b';startPolling();};
+ events.onerror=()=>{setConn(everConnected?'reconnecting':'unreachable','#ff9b9b');startPolling();};
 }
 $('next').onclick=()=>action('next_slide').then(refresh);
 $('prev').onclick=()=>action('previous_slide').then(refresh);
@@ -170,6 +234,7 @@ $('timerToggle').onclick=()=>timer('toggle').then(refresh);
 $('timerReset').onclick=()=>timer('reset').then(refresh);
 $('gotoBtn').onclick=()=>{const slide=+$('gotoSlide').value;if(slide>0)gotoSlide(slide);};
 $('showControl').onclick=()=>showView('control');
+$('showNotes').onclick=()=>showView('notes');
 $('showOverview').onclick=()=>showView('overview');
 refresh();startEvents();
 </script>
