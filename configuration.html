@@ -448,7 +448,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 <p>Set the save format in config:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="dt">sidecar_format</span> <span class="op">=</span> <span class="st">"pdfpc"</span>   <span class="co"># "dais" (default) or "pdfpc"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>When loading, Dais checks in order: <code>.dais</code> sidecar → <code>.pdfpc</code> sidecar → embedded PDF metadata. The grouping editor and <code>save_sidecar</code> action both use <code>sidecar_format</code> when choosing what to write. Set <code>save_slide_timings = false</code>, or run with <code>--time-ignore</code>, to save sidecars without updating the <code>slide_timings</code> data.</p>
+<p>When loading, Dais checks in order: <code>.dais</code> sidecar → <code>.pdfpc</code> sidecar → embedded PDF metadata. The grouping editor and <code>save_sidecar</code> action both use <code>sidecar_format</code> when choosing what to write. Set <code>save_slide_timings = false</code>, or run with <code>--time-ignore</code>, to save sidecars without updating the <code>slide_timings</code> data. In <code>.dais</code> files, page and slide references use one-based numbers that match the slide numbers shown in the presenter UI. Speaker notes are keyed by the one-based first page of the logical slide group.</p>
+<p>Per-logical-slide target durations can be assigned in seconds in <code>.dais</code> sidecars using <code>slide_target_durations</code> with one-based logical slide numbers. When a logical slide contains multiple PDF pages or build steps, one target duration applies to the whole group:</p>
+<pre class="eon"><code>slide_target_durations: {
+    "1": 60.0
+    "2": 90.0
+}</code></pre>
+<p>Dais also imports target durations from <code>.pdfpc</code> sidecars that already contain compatible timing sections, but target durations are written only to <code>.dais</code>. When a slide has a target duration, the presenter slide timer shows <code>elapsed / target</code> and turns red after the target is exceeded.</p>
 </section>
 <section id="single-monitor-presentation-mode-f5" class="level2">
 <h2 class="anchored" data-anchor-id="single-monitor-presentation-mode-f5">Single-Monitor Presentation Mode (F5)</h2>
