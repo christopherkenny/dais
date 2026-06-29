@@ -61,11 +61,32 @@ It currently shows:
 - Goto slide input
 - Connection state and last-command feedback
 
-Notes can be edited directly in the Notes tab. Click **Edit** to open the
-current slide's notes in a text field, make changes, then click **Save** to
-write them back and persist them to the sidecar immediately. **Cancel**
-discards the draft. Slide changes received from SSE while editing do not
-overwrite the draft.
+### Notes editing
+
+The Notes tab has an **Edit** button that opens the current slide's notes in a
+text field. Click **Save** to write the change and persist it to the sidecar
+immediately. **Cancel** discards the draft. Slide changes received while
+editing do not overwrite the draft.
+
+### Drawing
+
+The Draw tab shows the current slide with a canvas overlay. Draw with a finger,
+mouse, or stylus (including Apple Pencil on iPad). Each completed stroke is sent
+to the presenter screen and saved to the sidecar immediately.
+
+Controls:
+
+- **Color palette** — six presets: red, blue, green, yellow, white, black.
+- **Width** — Thin (2 px), Med (4 px), Thick (8 px).
+- **Clear** — removes all ink on the current slide.
+
+The local canvas provides immediate feedback while the stroke is in transit.
+When the presenter navigates to a different slide, the canvas clears
+automatically to match the new slide.
+
+Drawing works alongside the presenter's own ink tools. If the presenter already
+has ink mode active, remote strokes are added without toggling it; if ink mode
+is off, the remote enables it for the stroke and restores it afterward.
 
 ## Pairing A Second Device
 
@@ -175,6 +196,8 @@ All API endpoints are under `/api/v1`.
 | `/api/v1/commands/pointer` | `POST` | Set normalized pointer position |
 | `/api/v1/commands/timer` | `POST` | Start, pause, toggle, or reset the timer |
 | `/api/v1/commands/notes` | `POST` | Set speaker notes for the current slide and save |
+| `/api/v1/commands/ink/stroke` | `POST` | Add an ink stroke to the current slide and save |
+| `/api/v1/commands/ink/clear` | `POST` | Clear all ink on the current slide and save |
 | `/api/v1/slides/current.png` | `GET` | Render the current page as PNG |
 | `/api/v1/slides/next.png` | `GET` | Render the next logical slide as PNG |
 | `/api/v1/slides/<n>/thumbnail.png` | `GET` | Render logical slide `n` as PNG |
@@ -206,7 +229,21 @@ curl -X POST http://127.0.0.1:4317/api/v1/commands/timer `
 curl -X POST http://127.0.0.1:4317/api/v1/commands/notes `
   -H "Content-Type: application/json" `
   -d '{ "notes": "Mention the live demo here." }'
+
+curl -X POST http://127.0.0.1:4317/api/v1/commands/ink/stroke `
+  -H "Content-Type: application/json" `
+  -d '{ "points": [[0.1,0.2],[0.5,0.5],[0.9,0.8]], "color": [255,0,0,255], "width": 4.0 }'
+
+curl -X POST http://127.0.0.1:4317/api/v1/commands/ink/clear
 ```
+
+Ink stroke body fields:
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `points` | `[[f32, f32]]` | Yes | Two or more `[x, y]` pairs in normalized 0–1 coordinates |
+| `color` | `[u8, u8, u8, u8]` | No | RGBA pen color; uses the active pen color if omitted |
+| `width` | `f32` | No | Stroke width in logical pixels; uses the active pen width if omitted |
 
 Token-protected requests can authenticate with either header:
 
@@ -277,6 +314,7 @@ The state includes:
 - Notes visibility
 - Blackout, freeze, whiteboard, and screen-share state
 - Laser, ink, spotlight, and zoom state
+- Active pen color (`ink_pen_color`) and width (`ink_pen_width`)
 - Pointer and zoom-position data where relevant
 - URLs for current and next slide images
 

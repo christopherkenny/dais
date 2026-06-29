@@ -154,6 +154,8 @@ pub struct RemoteState {
     pub notes_visible: bool,
     pub notes_editing: bool,
     pub current_notes: Option<String>,
+    pub ink_pen_color: [u8; 4],
+    pub ink_pen_width: f32,
     pub timer: RemoteTimerState,
 }
 
@@ -196,6 +198,13 @@ struct TimerRequest {
 #[derive(Debug, Clone, Deserialize)]
 struct NotesRequest {
     notes: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct InkStrokeRequest {
+    points: Vec<[f32; 2]>,
+    color: Option<[u8; 4]>,
+    width: Option<f32>,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize)]
@@ -337,6 +346,8 @@ fn remote_router(context: HandlerContext) -> Router {
         .route("/api/v1/commands/pointer", post(pointer))
         .route("/api/v1/commands/timer", post(timer))
         .route("/api/v1/commands/notes", post(set_notes))
+        .route("/api/v1/commands/ink/stroke", post(ink_stroke))
+        .route("/api/v1/commands/ink/clear", post(ink_clear))
         .route("/api/v1/slides/current.png", get(current_slide_png))
         .route("/api/v1/slides/next.png", get(next_slide_png))
         .route("/api/v1/slides/{slide}/thumbnail.png", get(thumbnail_png))
@@ -491,6 +502,61 @@ async fn set_notes(
     }
 }
 
+async fn ink_stroke(
+    State(context): State<HandlerContext>,
+    Json(body): Json<InkStrokeRequest>,
+) -> Response {
+    if body.points.len() < 2 {
+        return bad_request(&anyhow!("stroke requires at least 2 points"));
+    }
+
+    let ink_was_active = context
+        .shared_state
+        .read()
+        .map(|s| s.ink_active)
+        .unwrap_or(false);
+
+    let mut cmds = Vec::with_capacity(body.points.len() + 5);
+    if !ink_was_active {
+        cmds.push(Command::ToggleInk);
+    }
+    if let Some(color) = body.color {
+        cmds.push(Command::SetInkColor(color));
+    }
+    if let Some(width) = body.width {
+        cmds.push(Command::SetInkWidth(width));
+    }
+    for &[x, y] in &body.points {
+        cmds.push(Command::AddInkPoint(x, y));
+    }
+    cmds.push(Command::FinishInkStroke);
+    if !ink_was_active {
+        cmds.push(Command::ToggleInk);
+    }
+    cmds.push(Command::SaveSidecar);
+
+    for cmd in cmds {
+        if context.sender.send(cmd).is_err() {
+            return server_error(&anyhow!("presentation engine is not accepting commands"));
+        }
+    }
+
+    context.status.set_last_command("ink_stroke");
+    Json(ok_response("stroke added")).into_response()
+}
+
+async fn ink_clear(State(context): State<HandlerContext>) -> Response {
+    match context.sender.send(Command::ClearInk)
+        .and_then(|()| context.sender.send(Command::SaveSidecar))
+    {
+        Ok(()) => {
+            context.status.set_last_command("ink_clear");
+            Json(ok_response("ink cleared")).into_response()
+        }
+        Err(_) => server_error(&anyhow!("presentation engine is not accepting commands")),
+    }
+}
+
 async fn events(
     State(context): State<HandlerContext>,
 ) -> Sse<impl futures_core::Stream<Item = Result<Event, Infallible>>> {
@@ -564,6 +630,8 @@ pub fn remote_state(state: &PresentationState) -> RemoteState {
         notes_visible: state.notes_visible,
         notes_editing: state.notes_editing,
         current_notes: state.current_notes.clone(),
+        ink_pen_color: state.active_pen.color,
+        ink_pen_width: state.active_pen.width,
         timer: RemoteTimerState {
             running: state.timer.running,
             elapsed_seconds: state.timer.elapsed.as_secs(),
@@ -640,6 +708,24 @@ pub fn client_notes(endpoint: &RemoteEndpoint, notes: &str) -> Result<CommandRes
         "/api/v1/commands/notes",
         &serde_json::json!({ "notes": notes }),
     )
+}
+
+pub fn client_ink_stroke(
+    endpoint: &RemoteEndpoint,
+    points: &[[f32; 2]],
+    color: Option<[u8; 4]>,
+    width: Option<f32>,
+) -> Result<CommandResponse> {
+    client_json_request(
+        endpoint,
+        "POST",
+        "/api/v1/commands/ink/stroke",
+        &serde_json::json!({ "points": points, "color": color, "width": width }),
+    )
+}
+
+pub fn client_ink_clear(endpoint: &RemoteEndpoint) -> Result<CommandResponse> {
+    client_json_request(endpoint, "POST", "/api/v1/commands/ink/clear", &serde_json::json!({}))
 }
 
 fn client_json_request<T: Serialize>(
@@ -1055,6 +1141,8 @@ mod tests {
         assert!(dto.blacked_out);
         assert!(dto.timer.running);
         assert_eq!(dto.current_notes.as_deref(), Some("hello"));
+        assert_eq!(dto.ink_pen_color, [255, 0, 0, 255]);
+        assert_eq!(dto.ink_pen_width, 3.0);
     }
 
     #[test]
@@ -1087,6 +1175,77 @@ mod tests {
 
         assert!(response.ok);
         assert_eq!(receiver.try_recv(), Some(Command::NextSlide));
+    }
+
+    #[test]
+    fn http_ink_stroke_dispatches_points_and_finishes() {
+        let bus = CommandBus::new();
+        let sender = bus.sender();
+        let receiver = bus.into_receiver();
+        let server = test_server(sender);
+
+        let response = client_ink_stroke(
+            &endpoint(&server),
+            &[[0.1, 0.2], [0.5, 0.5], [0.9, 0.8]],
+            Some([255, 0, 0, 255]),
+            Some(4.0),
+        )
+        .unwrap();
+
+        assert!(response.ok);
+        // ink_active is false in test state, so ToggleInk bookends the stroke
+        assert_eq!(receiver.try_recv(), Some(Command::ToggleInk));
+        assert_eq!(receiver.try_recv(), Some(Command::SetInkColor([255, 0, 0, 255])));
+        assert_eq!(receiver.try_recv(), Some(Command::SetInkWidth(4.0)));
+        assert_eq!(receiver.try_recv(), Some(Command::AddInkPoint(0.1, 0.2)));
+        assert_eq!(receiver.try_recv(), Some(Command::AddInkPoint(0.5, 0.5)));
+        assert_eq!(receiver.try_recv(), Some(Command::AddInkPoint(0.9, 0.8)));
+        assert_eq!(receiver.try_recv(), Some(Command::FinishInkStroke));
+        assert_eq!(receiver.try_recv(), Some(Command::ToggleInk));
+        assert_eq!(receiver.try_recv(), Some(Command::SaveSidecar));
+    }
+
+    #[test]
+    fn http_ink_stroke_rejects_single_point() {
+        let bus = CommandBus::new();
+        let server = test_server(bus.sender());
+
+        let error = client_ink_stroke(&endpoint(&server), &[[0.5, 0.5]], None, None)
+            .unwrap_err()
+            .to_string();
+
+        assert!(error.contains("400"));
+    }
+
+    #[test]
+    fn http_ink_stroke_without_color_or_width_omits_set_commands() {
+        let bus = CommandBus::new();
+        let sender = bus.sender();
+        let receiver = bus.into_receiver();
+        let server = test_server(sender);
+
+        client_ink_stroke(&endpoint(&server), &[[0.1, 0.2], [0.9, 0.8]], None, None).unwrap();
+
+        assert_eq!(receiver.try_recv(), Some(Command::ToggleInk));
+        assert_eq!(receiver.try_recv(), Some(Command::AddInkPoint(0.1, 0.2)));
+        assert_eq!(receiver.try_recv(), Some(Command::AddInkPoint(0.9, 0.8)));
+        assert_eq!(receiver.try_recv(), Some(Command::FinishInkStroke));
+        assert_eq!(receiver.try_recv(), Some(Command::ToggleInk));
+        assert_eq!(receiver.try_recv(), Some(Command::SaveSidecar));
+    }
+
+    #[test]
+    fn http_ink_clear_dispatches_command() {
+        let bus = CommandBus::new();
+        let sender = bus.sender();
+        let receiver = bus.into_receiver();
+        let server = test_server(sender);
+
+        let response = client_ink_clear(&endpoint(&server)).unwrap();
+
+        assert!(response.ok);
+        assert_eq!(receiver.try_recv(), Some(Command::ClearInk));
+        assert_eq!(receiver.try_recv(), Some(Command::SaveSidecar));
     }
 
     #[test]

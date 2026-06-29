@@ -19,7 +19,7 @@ main{display:grid;grid-template-columns:1fr;gap:10px;padding:10px;max-width:1080
 .timer{font-variant-numeric:tabular-nums;font-size:42px;font-weight:720;line-height:1;color:#f2c14e}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .split{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.tabs{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px}
 button{appearance:none;border:1px solid #3a4650;background:#252d35;color:#f5f7f8;border-radius:7px;padding:10px 12px;font:inherit;font-weight:650;min-height:42px}
 button:active{transform:translateY(1px);background:#33404a}
 button.primary{background:#2764d8;border-color:#3e7df0}
@@ -42,6 +42,8 @@ button.good{background:#244836;border-color:#3b7556}
 .notesView .notes{min-height:58vh;font-size:20px;line-height:1.55}
 textarea.notesEdit{display:block;width:100%;min-height:58vh;background:#11161b;border:1px solid #3e7df0;border-radius:7px;color:#edf2f4;font:20px/1.55 system-ui,-apple-system,Segoe UI,sans-serif;padding:10px;resize:vertical}
 @media (max-width:720px){textarea.notesEdit{font-size:18px;min-height:62vh}}
+.swatch{width:28px;min-height:28px;padding:0;border-radius:50%}
+.swatch.active,.drawWidth.active{outline:2px solid #edf2f4;outline-offset:2px}
 .meta{color:#a7b0b8;font-size:13px}
 input{background:#11161b;border:1px solid #3a4650;border-radius:7px;color:#edf2f4;padding:11px;font:inherit;width:92px}
 @media (max-width:720px){main{gap:8px;padding:8px}.band{padding:8px}.slides{grid-template-columns:1fr;gap:8px}.split{grid-template-columns:1fr}.tabs{gap:6px}.timer{font-size:30px}.row{gap:6px}button{min-height:38px;padding:8px 10px}.nav button{font-size:18px;min-height:48px}.notes{min-height:56px}.notesView .notes{min-height:62vh;font-size:18px}.overview{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}.notesActions{gap:6px}}
@@ -66,6 +68,7 @@ input{background:#11161b;border:1px solid #3a4650;border-radius:7px;color:#edf2f
     <button class="primary" id="showControl">Control</button>
     <button id="showNotes">Notes</button>
     <button id="showOverview">Overview</button>
+    <button id="showDraw">Draw</button>
   </section>
   <section class="band nav split">
     <button id="prev">Prev</button>
@@ -117,6 +120,31 @@ input{background:#11161b;border:1px solid #3a4650;border-radius:7px;color:#edf2f
       <div class="overview" id="overview"></div>
     </div>
   </div>
+  <div class="view" id="drawView" hidden>
+    <section class="band">
+      <div class="row" style="margin-bottom:8px;justify-content:space-between">
+        <div class="row" style="gap:5px">
+          <button class="swatch active" data-color="255,0,0,255" style="background:#f00" title="Red"></button>
+          <button class="swatch" data-color="0,110,255,255" style="background:#006eff" title="Blue"></button>
+          <button class="swatch" data-color="0,190,60,255" style="background:#00be3c" title="Green"></button>
+          <button class="swatch" data-color="255,210,0,200" style="background:rgba(255,210,0,.78)" title="Yellow"></button>
+          <button class="swatch" data-color="255,255,255,255" style="background:#fff;border-color:#888" title="White"></button>
+          <button class="swatch" data-color="0,0,0,255" style="background:#000;border-color:#555" title="Black"></button>
+        </div>
+        <div class="row" style="gap:5px">
+          <button class="drawWidth active" data-width="2" style="font-size:12px;min-height:30px;padding:3px 10px">Thin</button>
+          <button class="drawWidth" data-width="4" style="font-size:12px;min-height:30px;padding:3px 10px">Med</button>
+          <button class="drawWidth" data-width="8" style="font-size:12px;min-height:30px;padding:3px 10px">Thick</button>
+          <button id="drawClear" class="warn" style="font-size:12px;min-height:30px;padding:3px 10px">Clear</button>
+        </div>
+      </div>
+      <div style="position:relative">
+        <img id="drawImg" alt="Current slide" style="display:block;width:100%;height:auto;background:#0a0c0f;border-radius:5px;border:1px solid #303840;user-select:none;pointer-events:none">
+        <canvas id="drawCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;touch-action:none;cursor:crosshair;border-radius:5px"></canvas>
+      </div>
+      <div class="meta" id="drawStatus" style="margin-top:5px;min-height:16px"></div>
+    </section>
+  </div>
 </main>
 <script>
 const params=new URLSearchParams(location.search);
@@ -130,6 +158,7 @@ function withToken(path){
 function withCache(path){const authed=withToken(path);return authed+(authed.includes('?')?'&':'?')+'v='+Date.now();}
 const $=id=>document.getElementById(id);
 let state=null,lastPage=-1,nextPage=-1,pollTimer=null,overviewCount=0,activeView='control',everConnected=false,notesEditing=false;
+let drawColor=[255,0,0,255],drawWidth=2,drawStrokes=[],drawStroke=null;
 function mmss(seconds){seconds=Math.max(0,seconds|0);const m=Math.floor(seconds/60),s=seconds%60;return m+':'+String(s).padStart(2,'0');}
 function setConn(text,color){$('conn').textContent=text;$('conn').style.color=color;}
 function connectionMessage(error){
@@ -186,9 +215,15 @@ function showView(name){
  $('controlView').hidden=name!=='control';
  $('notesView').hidden=name!=='notes';
  $('overviewView').hidden=name!=='overview';
+ $('drawView').hidden=name!=='draw';
  $('showControl').classList.toggle('primary',name==='control');
  $('showNotes').classList.toggle('primary',name==='notes');
  $('showOverview').classList.toggle('primary',name==='overview');
+ $('showDraw').classList.toggle('primary',name==='draw');
+ if(name==='draw'){
+  if(!$('drawImg').getAttribute('src'))$('drawImg').src=withCache('/api/v1/slides/current.png');
+  requestAnimationFrame(initDrawCanvas);
+ }
 }
 function syncOverview(){
  if(!state)return;
@@ -217,7 +252,14 @@ function renderState(nextState){
   $('freeze').classList.toggle('primary',state.frozen);
   $('whiteboard').classList.toggle('primary',state.whiteboard_active);
   $('laser').classList.toggle('good',state.laser_active);
-  if(state.current_page!==lastPage){lastPage=state.current_page;$('currentImg').src=withCache('/api/v1/slides/current.png');}
+  if(state.current_page!==lastPage){
+   lastPage=state.current_page;
+   const slideUrl=withCache('/api/v1/slides/current.png');
+   $('currentImg').src=slideUrl;
+   $('drawImg').src=slideUrl;
+   drawStrokes=[];drawStroke=null;
+   if(activeView==='draw')redrawCanvas();
+  }
   const np=Math.min(state.current_logical_slide+2,state.total_logical_slides);
   if(np!==nextPage){nextPage=np;$('nextImg').src=withCache('/api/v1/slides/next.png');}
   syncOverview();
@@ -246,6 +288,7 @@ $('gotoBtn').onclick=()=>{const slide=+$('gotoSlide').value;if(slide>0)gotoSlide
 $('showControl').onclick=()=>showView('control');
 $('showNotes').onclick=()=>showView('notes');
 $('showOverview').onclick=()=>showView('overview');
+$('showDraw').onclick=()=>showView('draw');
 function enterNotesEdit(){
  notesEditing=true;
  $('notesEditArea').value=state?.current_notes||'';
@@ -275,6 +318,64 @@ $('notesSave').onclick=async()=>{
   refresh();
  }catch(e){$('last').textContent='save failed';}
  finally{$('notesSave').disabled=false;$('notesSave').textContent='Save';}
+};
+function initDrawCanvas(){
+ const img=$('drawImg'),canvas=$('drawCanvas');
+ if(!img.offsetWidth)return;
+ canvas.width=img.offsetWidth;canvas.height=img.offsetHeight;
+ redrawCanvas();
+}
+function redrawCanvas(){
+ const canvas=$('drawCanvas'),ctx=canvas.getContext('2d');
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ const all=drawStroke&&drawStroke.length>1
+  ?[...drawStrokes,{pts:drawStroke,c:drawColor,w:drawWidth}]
+  :drawStrokes;
+ for(const s of all){
+  if(s.pts.length<2)continue;
+  ctx.beginPath();
+  ctx.strokeStyle=`rgba(${s.c[0]},${s.c[1]},${s.c[2]},${+(s.c[3]/255).toFixed(3)})`;
+  ctx.lineWidth=s.w;ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.moveTo(s.pts[0][0]*canvas.width,s.pts[0][1]*canvas.height);
+  for(let i=1;i<s.pts.length;i++)ctx.lineTo(s.pts[i][0]*canvas.width,s.pts[i][1]*canvas.height);
+  ctx.stroke();
+ }
+}
+function canvasPt(e){
+ const r=$('drawCanvas').getBoundingClientRect();
+ return[Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))];
+}
+const dc=$('drawCanvas');
+dc.addEventListener('pointerdown',e=>{dc.setPointerCapture(e.pointerId);drawStroke=[canvasPt(e)];e.preventDefault();});
+dc.addEventListener('pointermove',e=>{if(!drawStroke)return;drawStroke.push(canvasPt(e));redrawCanvas();e.preventDefault();});
+dc.addEventListener('pointerup',async e=>{
+ if(!drawStroke)return;
+ drawStroke.push(canvasPt(e));
+ if(drawStroke.length<2){drawStroke=null;return;}
+ const s={pts:drawStroke,c:[...drawColor],w:drawWidth};
+ drawStrokes.push(s);drawStroke=null;redrawCanvas();
+ try{
+  await api('/api/v1/commands/ink/stroke',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({points:s.pts,color:s.c,width:s.w})});
+  $('drawStatus').textContent='';
+ }catch(err){$('drawStatus').textContent='stroke not sent';}
+ e.preventDefault();
+});
+dc.addEventListener('pointercancel',()=>{drawStroke=null;redrawCanvas();});
+$('drawImg').addEventListener('load',initDrawCanvas);
+new ResizeObserver(()=>{if(activeView==='draw')initDrawCanvas();}).observe($('drawImg'));
+document.querySelectorAll('.swatch').forEach(b=>b.onclick=()=>{
+ drawColor=b.dataset.color.split(',').map(Number);
+ document.querySelectorAll('.swatch').forEach(s=>s.classList.toggle('active',s===b));
+});
+document.querySelectorAll('.drawWidth').forEach(b=>b.onclick=()=>{
+ drawWidth=+b.dataset.width;
+ document.querySelectorAll('.drawWidth').forEach(w=>w.classList.toggle('active',w===b));
+});
+$('drawClear').onclick=async()=>{
+ drawStrokes=[];redrawCanvas();
+ try{await api('/api/v1/commands/ink/clear',{method:'POST'});}
+ catch(e){$('drawStatus').textContent='clear failed';}
 };
 refresh();startEvents();
 </script>
