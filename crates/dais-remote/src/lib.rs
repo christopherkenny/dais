@@ -61,6 +61,7 @@ pub struct ServerSettings {
     pub host: String,
     pub port: u16,
     pub token: String,
+    pub generated_token: bool,
     pub allow_unauthenticated_loopback: bool,
 }
 
@@ -69,12 +70,14 @@ impl ServerSettings {
         let host = overrides.host.clone().unwrap_or_else(|| config.host.clone());
         let port = overrides.port.unwrap_or(config.port);
         let enabled = overrides.enabled || config.enabled;
-        let token = if config.token.is_empty() { generate_token() } else { config.token.clone() };
+        let generated_token = config.token.is_empty();
+        let token = if generated_token { generate_token() } else { config.token.clone() };
         Self {
             enabled,
             host,
             port,
             token,
+            generated_token,
             allow_unauthenticated_loopback: config.allow_unauthenticated_loopback,
         }
     }
@@ -250,6 +253,16 @@ pub fn start_server(
     shared_state: Arc<RwLock<PresentationState>>,
     doc: Arc<dyn DocumentSource>,
 ) -> Result<RemoteServer> {
+    if settings.generated_token {
+        if !generated_pairing_code_is_valid(&settings.token) {
+            return Err(anyhow!("generated remote API pairing code is invalid"));
+        }
+    } else if !custom_token_is_valid(&settings.token) {
+        return Err(anyhow!(
+            "configured remote API token may only contain ASCII letters and digits"
+        ));
+    }
+
     let std_listener = std::net::TcpListener::bind((settings.host.as_str(), settings.port))
         .with_context(|| {
             format!("failed to bind remote API to {}:{}", settings.host, settings.port)
@@ -719,8 +732,7 @@ fn host_name_allowed(name: &str, settings: &ServerSettings) -> bool {
         return false;
     };
 
-    host_ip == bind_ip
-        || bind_ip.is_unspecified() && likely_lan_ip().is_some_and(|lan_ip| host_ip == lan_ip)
+    host_ip == bind_ip || bind_ip.is_unspecified()
 }
 
 fn host_is_loopback(host: &str) -> bool {
@@ -731,6 +743,19 @@ fn host_is_loopback(host: &str) -> bool {
 fn generate_token() -> String {
     let code = fastrand::u32(0..100_000_000);
     format!("{:04}-{:04}", code / 10_000, code % 10_000)
+}
+
+fn custom_token_is_valid(token: &str) -> bool {
+    !token.is_empty() && token.bytes().all(|byte| byte.is_ascii_alphanumeric())
+}
+
+fn generated_pairing_code_is_valid(token: &str) -> bool {
+    token.len() == 9
+        && token.as_bytes().get(4) == Some(&b'-')
+        && token
+            .bytes()
+            .enumerate()
+            .all(|(index, byte)| if index == 4 { byte == b'-' } else { byte.is_ascii_digit() })
 }
 
 fn current_page(shared_state: &Arc<RwLock<PresentationState>>) -> Result<usize> {
@@ -961,6 +986,7 @@ mod tests {
                 host: "127.0.0.1".to_string(),
                 port: 0,
                 token: "secret".to_string(),
+                generated_token: false,
                 allow_unauthenticated_loopback: true,
             },
             sender,
@@ -1081,6 +1107,7 @@ mod tests {
             host: "0.0.0.0".to_string(),
             port: 4317,
             token: "secret".to_string(),
+            generated_token: false,
             allow_unauthenticated_loopback: false,
         };
         let headers = HeaderMap::new();
@@ -1100,6 +1127,7 @@ mod tests {
             host: "0.0.0.0".to_string(),
             port: 4317,
             token: "secret".to_string(),
+            generated_token: false,
             allow_unauthenticated_loopback: true,
         };
         let headers = HeaderMap::new();
@@ -1114,6 +1142,7 @@ mod tests {
             host: "0.0.0.0".to_string(),
             port: 4317,
             token: "secret".to_string(),
+            generated_token: false,
             allow_unauthenticated_loopback: true,
         };
         let headers = HeaderMap::new();
@@ -1136,6 +1165,7 @@ mod tests {
             host: "127.0.0.1".to_string(),
             port: 4317,
             token: "secret".to_string(),
+            generated_token: false,
             allow_unauthenticated_loopback: true,
         };
         let headers = headers("attacker.example:4317");
@@ -1150,11 +1180,63 @@ mod tests {
             host: "127.0.0.1".to_string(),
             port: 4317,
             token: "secret".to_string(),
+            generated_token: false,
             allow_unauthenticated_loopback: true,
         };
         let headers = headers("localhost:4317");
 
         assert!(host_header_allowed(&headers, &settings));
+    }
+
+    #[test]
+    fn wildcard_bind_allows_ip_literal_host_on_matching_port() {
+        let settings = ServerSettings {
+            enabled: true,
+            host: "0.0.0.0".to_string(),
+            port: 4317,
+            token: "secret".to_string(),
+            generated_token: false,
+            allow_unauthenticated_loopback: true,
+        };
+        let headers = headers("192.168.50.25:4317");
+
+        assert!(host_header_allowed(&headers, &settings));
+    }
+
+    #[test]
+    fn custom_token_must_be_alphanumeric() {
+        assert!(custom_token_is_valid("abcDEF123"));
+        assert!(!custom_token_is_valid(""));
+        assert!(!custom_token_is_valid("abc-123"));
+        assert!(!custom_token_is_valid("abc_123"));
+        assert!(!custom_token_is_valid("abc+123"));
+        assert!(!custom_token_is_valid("abc/123"));
+        assert!(!custom_token_is_valid("abc&123"));
+    }
+
+    #[test]
+    fn start_server_rejects_configured_token_that_is_not_alphanumeric() {
+        let bus = CommandBus::new();
+
+        let result = start_server(
+            ServerSettings {
+                enabled: true,
+                host: "127.0.0.1".to_string(),
+                port: 0,
+                token: "not-a-normal-code".to_string(),
+                generated_token: false,
+                allow_unauthenticated_loopback: true,
+            },
+            bus.sender(),
+            Arc::new(RwLock::new(test_state())),
+            test_doc(),
+        );
+        let error = match result {
+            Ok(_) => panic!("expected invalid token to be rejected"),
+            Err(error) => error.to_string(),
+        };
+
+        assert!(error.contains("ASCII letters and digits"));
     }
 
     #[test]
@@ -1164,5 +1246,6 @@ mod tests {
         assert_eq!(token.len(), 9);
         assert_eq!(token.as_bytes()[4], b'-');
         assert!(token.chars().filter(char::is_ascii_digit).count() == 8);
+        assert!(generated_pairing_code_is_valid(&token));
     }
 }

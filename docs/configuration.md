@@ -66,7 +66,7 @@ font_size_step = 2.0           # Increment/decrement step
 enabled = false                 # Start the local HTTP remote-control API
 host = "127.0.0.1"              # Loopback by default; set explicitly for LAN use
 port = 4317                     # Use 0 to ask the OS for a free port
-token = ""                      # Empty = generate a token per launch
+token = ""                      # Empty = generate; custom tokens may use A-Z, a-z, 0-9
 allow_unauthenticated_loopback = true
 ```
 
@@ -115,6 +115,8 @@ port = 4317
 token = "choose-a-long-random-token"
 allow_unauthenticated_loopback = false
 ```
+
+Custom remote tokens may contain only ASCII letters and digits.
 
 The same `dais` binary can send remote commands:
 

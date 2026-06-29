@@ -1,3 +1,19 @@
+# dais 0.2.0
+
+## New features
+
+- Remote control can run alongside a presentation with `--remote` or `--remote-lan`.
+- Built-in browser remote at `/remote` supports current and next slide previews, notes, timer controls, previous/next navigation, goto slide, blackout, freeze, whiteboard, and laser controls.
+- Presenter console now shows remote pairing URLs, QR codes, pairing code, connected remote clients, and the last remote command.
+- New `dais remote ...` subcommands can query state and send actions, goto, pointer, and timer commands to a running presentation.
+- Remote settings can be configured under `[remote]` in `config.toml` or project-local `dais.toml`.
+- `--time-ignore` can disable per-slide timing updates when saving sidecars.
+
+## Bug fixes
+
+- Remote LAN mode now accepts valid IP-literal hosts when bound to `0.0.0.0`.
+- Custom remote tokens are restricted to URL-safe characters so browser pairing links work reliably.
+
 # dais 0.1.1
 
 ## New features

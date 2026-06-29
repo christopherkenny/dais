@@ -113,7 +113,7 @@ Fields:
 | `enabled` | Start the remote server when a presentation starts |
 | `host` | Bind address. `127.0.0.1` is local-only; `0.0.0.0` accepts connections on all interfaces |
 | `port` | TCP port. Use `0` to ask the OS for a free port |
-| `token` | Authentication token. Empty means Dais generates a short pairing code per launch |
+| `token` | Authentication token. Empty means Dais generates a short pairing code per launch. Custom tokens may contain only ASCII letters and digits |
 | `allow_unauthenticated_loopback` | Allows local same-machine requests without a token |
 
 Loopback convenience only applies to loopback clients. Non-loopback clients
