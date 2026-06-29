@@ -510,11 +510,7 @@ async fn ink_stroke(
         return bad_request(&anyhow!("stroke requires at least 2 points"));
     }
 
-    let ink_was_active = context
-        .shared_state
-        .read()
-        .map(|s| s.ink_active)
-        .unwrap_or(false);
+    let ink_was_active = context.shared_state.read().is_ok_and(|s| s.ink_active);
 
     let mut cmds = Vec::with_capacity(body.points.len() + 5);
     if !ink_was_active {
@@ -546,7 +542,9 @@ async fn ink_stroke(
 }
 
 async fn ink_clear(State(context): State<HandlerContext>) -> Response {
-    match context.sender.send(Command::ClearInk)
+    match context
+        .sender
+        .send(Command::ClearInk)
         .and_then(|()| context.sender.send(Command::SaveSidecar))
     {
         Ok(()) => {
@@ -1142,7 +1140,7 @@ mod tests {
         assert!(dto.timer.running);
         assert_eq!(dto.current_notes.as_deref(), Some("hello"));
         assert_eq!(dto.ink_pen_color, [255, 0, 0, 255]);
-        assert_eq!(dto.ink_pen_width, 3.0);
+        assert!((dto.ink_pen_width - 3.0).abs() < f32::EPSILON);
     }
 
     #[test]
