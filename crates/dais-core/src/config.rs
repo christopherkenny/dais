@@ -27,8 +27,12 @@ pub struct Config {
     pub keybindings: HashMap<String, Vec<String>>,
     /// Clicker/remote profile configuration.
     pub clicker: ClickerConfig,
+    /// Local HTTP remote-control API configuration.
+    pub remote: RemoteConfig,
     /// Sidecar save format: `"dais"` or `"pdfpc"`.
     pub sidecar_format: String,
+    /// Whether to persist per-slide timing data when saving sidecars.
+    pub save_slide_timings: bool,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -43,7 +47,9 @@ struct PartialConfig {
     notes: Option<PartialNotesConfig>,
     keybindings: Option<HashMap<String, Vec<String>>>,
     clicker: Option<PartialClickerConfig>,
+    remote: Option<PartialRemoteConfig>,
     sidecar_format: Option<String>,
+    save_slide_timings: Option<bool>,
 }
 
 /// Display mode and monitor assignment.
@@ -241,6 +247,32 @@ struct PartialClickerConfig {
     profiles: Option<HashMap<String, HashMap<String, String>>>,
 }
 
+/// Local HTTP remote-control API configuration.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct RemoteConfig {
+    /// Whether to start the remote API server with a presentation.
+    pub enabled: bool,
+    /// Bind host for the remote API. Defaults to loopback.
+    pub host: String,
+    /// Bind port for the remote API. `0` asks the OS to choose a free port.
+    pub port: u16,
+    /// Bearer token for remote API requests. Empty means generate one per launch.
+    pub token: String,
+    /// Allow unauthenticated requests from loopback clients when bound to loopback.
+    pub allow_unauthenticated_loopback: bool,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(default)]
+struct PartialRemoteConfig {
+    enabled: Option<bool>,
+    host: Option<String>,
+    port: Option<u16>,
+    token: Option<String>,
+    allow_unauthenticated_loopback: Option<bool>,
+}
+
 /// Notes panel configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -270,7 +302,9 @@ impl Default for Config {
             notes: NotesConfig::default(),
             keybindings: HashMap::new(),
             clicker: ClickerConfig::default(),
+            remote: RemoteConfig::default(),
             sidecar_format: "dais".to_string(),
+            save_slide_timings: true,
         }
     }
 }
@@ -346,6 +380,18 @@ impl Default for TextBoxConfig {
 impl Default for ClickerConfig {
     fn default() -> Self {
         Self { profile: "default".to_string(), profiles: HashMap::new() }
+    }
+}
+
+impl Default for RemoteConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            host: "127.0.0.1".to_string(),
+            port: 4317,
+            token: String::new(),
+            allow_unauthenticated_loopback: true,
+        }
     }
 }
 
@@ -534,8 +580,33 @@ fn apply_partial_config(config: &mut Config, partial: PartialConfig) {
         }
     }
 
+    if let Some(remote) = partial.remote {
+        apply_remote_config(&mut config.remote, remote);
+    }
+
     if let Some(sidecar_format) = partial.sidecar_format {
         config.sidecar_format = sidecar_format;
+    }
+    if let Some(save_slide_timings) = partial.save_slide_timings {
+        config.save_slide_timings = save_slide_timings;
+    }
+}
+
+fn apply_remote_config(config: &mut RemoteConfig, partial: PartialRemoteConfig) {
+    if let Some(enabled) = partial.enabled {
+        config.enabled = enabled;
+    }
+    if let Some(host) = partial.host {
+        config.host = host;
+    }
+    if let Some(port) = partial.port {
+        config.port = port;
+    }
+    if let Some(token) = partial.token {
+        config.token = token;
+    }
+    if let Some(allow) = partial.allow_unauthenticated_loopback {
+        config.allow_unauthenticated_loopback = allow;
     }
 }
 
@@ -615,6 +686,7 @@ mod tests {
                 warning_minutes: Some(OptionalU32Value::Value(10)),
                 overrun_color: Some(false),
             }),
+            save_slide_timings: Some(false),
             ..Default::default()
         };
 
@@ -627,6 +699,7 @@ mod tests {
         assert_eq!(config.timer.duration_minutes, Some(45));
         assert_eq!(config.timer.warning_minutes, Some(10));
         assert!(!config.timer.overrun_color);
+        assert!(!config.save_slide_timings);
     }
 
     #[test]

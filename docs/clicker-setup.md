@@ -2,6 +2,9 @@
 
 Dais reads clickers as keyboard input. Most USB presenter remotes send standard keys such as `PageDown`, `PageUp`, and `F5`, so they work through the normal keybinding system.
 
+For browser remotes, REST/CLI control, Stream Deck profiles, and other networked
+controllers, see [remote.md](remote.md).
+
 ## How Clicker Profiles Work
 
 A **clicker profile** is a named mapping from key names to Dais action names. Dais ships with a built-in `default` profile and also supports custom profiles in config.

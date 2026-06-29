@@ -22,10 +22,12 @@ use self::layout::PresenterLayout;
 use self::next_preview::NextPreviewPanel;
 use self::notes_panel::{NotesPanel, NotesPanelView};
 use self::overview::OverviewGrid;
+use crate::app::RemoteUiInfo;
 use crate::audience::display::AudienceDisplay;
 
 use crate::input::{InputHandler, UiModes};
 use crate::widgets::{HelpOverlay, TextBoxTextureCache};
+use qrcode::QrCode;
 
 const MIN_LEFT_FRACTION: f32 = 0.35;
 const MAX_LEFT_FRACTION: f32 = 0.8;
@@ -33,6 +35,8 @@ const MIN_TOP_FRACTION: f32 = 0.2;
 const MAX_TOP_FRACTION: f32 = 0.8;
 const SPLITTER_COLOR: egui::Color32 = egui::Color32::from_gray(70);
 const SPLITTER_HOVER: egui::Color32 = egui::Color32::from_rgb(124, 178, 255);
+const QR_DARK: egui::Color32 = egui::Color32::from_gray(20);
+const QR_LIGHT: egui::Color32 = egui::Color32::from_gray(245);
 
 /// The presenter console window — composes all sub-panels.
 pub struct PresenterConsole {
@@ -49,6 +53,7 @@ pub struct PresenterConsole {
     top_fraction: f32,
     single_left_fraction: f32,
     single_top_fraction: f32,
+    remote_panel_open: bool,
 }
 
 impl PresenterConsole {
@@ -67,6 +72,7 @@ impl PresenterConsole {
             top_fraction: 0.50,
             single_left_fraction: 0.72,
             single_top_fraction: 0.40,
+            remote_panel_open: false,
         }
     }
 
@@ -87,6 +93,7 @@ impl PresenterConsole {
         state: &PresentationState,
         cache: &mut PageCache,
         sender: &CommandSender,
+        remote: Option<&RemoteUiInfo>,
     ) {
         // Help overlay intercepts input when visible.
         let help_consumed = self.help.show(ctx, self.input.keybindings());
@@ -261,9 +268,11 @@ impl PresenterConsole {
                 );
 
                 // Status bar
-                if self.show_status_bar(ui, layout.status_bar, state, sender) {
+                if self.show_status_bar(ui, layout.status_bar, state, sender, remote) {
                     self.help.toggle();
                 }
+
+                self.show_remote_panel(ctx, remote);
 
                 // Slide overview (modal overlay)
                 if state.overview_visible {
@@ -284,6 +293,7 @@ impl PresenterConsole {
         cache: &mut PageCache,
         sender: &CommandSender,
         audience_render_size: dais_document::page::RenderSize,
+        remote: Option<&RemoteUiInfo>,
     ) {
         // Help overlay intercepts input when visible.
         let help_consumed = self.help.show(ctx, self.input.keybindings());
@@ -503,9 +513,11 @@ impl PresenterConsole {
                     sender,
                 );
 
-                if self.show_status_bar(ui, status_rect, state, sender) {
+                if self.show_status_bar(ui, status_rect, state, sender, remote) {
                     self.help.toggle();
                 }
+
+                self.show_remote_panel(ctx, remote);
 
                 if state.overview_visible {
                     self.overview.show(ctx, ui, state, cache, sender);
@@ -612,11 +624,12 @@ impl PresenterConsole {
 
     #[allow(clippy::too_many_lines)]
     fn show_status_bar(
-        &self,
+        &mut self,
         ui: &mut egui::Ui,
         area: egui::Rect,
         state: &PresentationState,
         sender: &CommandSender,
+        remote: Option<&RemoteUiInfo>,
     ) -> bool {
         let mut help_clicked = false;
         let mut child_ui = ui.new_child(egui::UiBuilder::new().max_rect(area));
@@ -684,6 +697,27 @@ impl PresenterConsole {
                 if state.ink_active {
                     indicators.push(("[D]raw", egui::Color32::from_rgb(255, 165, 0)));
                 }
+
+                if let Some(remote) = remote {
+                    let status = remote.status.snapshot();
+                    let label = format!(
+                        "Remote: {} client{}{}",
+                        status.active_event_clients,
+                        if status.active_event_clients == 1 { "" } else { "s" },
+                        status
+                            .last_command
+                            .as_ref()
+                            .map(|cmd| format!(" · last {cmd}"))
+                            .unwrap_or_default()
+                    );
+                    if ui
+                        .button(egui::RichText::new(label).size(12.0))
+                        .on_hover_text("Show remote pairing")
+                        .clicked()
+                    {
+                        self.remote_panel_open = true;
+                    }
+                }
                 if state.spotlight_active {
                     indicators.push(("Spotlight", egui::Color32::LIGHT_YELLOW));
                 }
@@ -743,8 +777,103 @@ impl PresenterConsole {
         help_clicked
     }
 
+    fn show_remote_panel(&mut self, ctx: &egui::Context, remote: Option<&RemoteUiInfo>) {
+        let Some(remote) = remote else {
+            self.remote_panel_open = false;
+            return;
+        };
+        if !self.remote_panel_open {
+            return;
+        }
+
+        egui::Window::new("Remote Pairing")
+            .open(&mut self.remote_panel_open)
+            .collapsible(false)
+            .resizable(true)
+            .default_width(420.0)
+            .show(ctx, |ui| {
+                ui.label("Open the web remote on a phone or tablet.");
+                if remote.requires_token {
+                    ui.label(format!("Pairing code: {}", remote.token));
+                }
+                ui.separator();
+
+                let urls = pairing_urls(remote);
+                for pairing in &urls {
+                    let is_loopback = is_loopback_url(pairing);
+                    ui.label(if is_loopback { "This computer" } else { "Phone or tablet" });
+                    copyable_url(ui, pairing);
+                    if !is_loopback || urls.len() == 1 {
+                        draw_qr(ui, pairing, 176.0);
+                    }
+                    ui.add_space(8.0);
+                }
+                ui.separator();
+                ui.label("If a phone cannot connect, Wi-Fi isolation or a firewall may be blocking local device access.");
+            });
+    }
+
     /// Check whether a `?` text event was produced this frame.
     fn question_mark_pressed(ctx: &egui::Context) -> bool {
         ctx.input(|i| i.events.iter().any(|e| matches!(e, egui::Event::Text(t) if t == "?")))
+    }
+}
+
+fn pairing_url(url: &str, remote: &RemoteUiInfo) -> String {
+    if remote.requires_token {
+        let sep = if url.contains('?') { '&' } else { '?' };
+        format!("{url}{sep}token={}", remote.token)
+    } else {
+        url.to_string()
+    }
+}
+
+fn pairing_urls(remote: &RemoteUiInfo) -> Vec<String> {
+    let mut urls = remote.urls.iter().map(|url| pairing_url(url, remote)).collect::<Vec<_>>();
+    urls.sort();
+    urls.dedup();
+    urls
+}
+
+fn is_loopback_url(url: &str) -> bool {
+    url.contains("://127.0.0.1:") || url.contains("://localhost:")
+}
+
+fn copyable_url(ui: &mut egui::Ui, url: &str) {
+    ui.horizontal(|ui| {
+        let mut text = url.to_string();
+        ui.add(
+            egui::TextEdit::singleline(&mut text)
+                .font(egui::TextStyle::Monospace)
+                .desired_width(320.0),
+        );
+        if ui.button("Copy").clicked() {
+            ui.ctx().copy_text(url.to_string());
+        }
+    });
+}
+
+#[allow(clippy::cast_precision_loss)]
+fn draw_qr(ui: &mut egui::Ui, value: &str, size: f32) {
+    let Ok(code) = QrCode::new(value.as_bytes()) else {
+        ui.label("Could not render QR code");
+        return;
+    };
+    let modules = code.width();
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(size, size), egui::Sense::hover());
+    ui.painter().rect_filled(rect, 4.0, QR_LIGHT);
+    let quiet = 4.0;
+    let cell = (size - quiet * 2.0) / modules as f32;
+    for y in 0..modules {
+        for x in 0..modules {
+            if code[(x, y)] == qrcode::Color::Dark {
+                let min = rect.min + egui::vec2(quiet + x as f32 * cell, quiet + y as f32 * cell);
+                ui.painter().rect_filled(
+                    egui::Rect::from_min_size(min, egui::vec2(cell, cell)),
+                    0.0,
+                    QR_DARK,
+                );
+            }
+        }
     }
 }

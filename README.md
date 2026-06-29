@@ -14,6 +14,7 @@ Dais is designed for straightforward installation, reliable operation in real pr
 - Presentation tools including a laser pointer, freehand ink, spotlight, and zoom.
 - `.pdfpc` compatibility and a native `.dais` sidecar format.
 - Fully remappable keybindings with presenter-console defaults.
+- Local remote-control API for scripts and external controllers.
 - Single-binary distribution with no runtime dependencies or installers.
 
 ## Installation
@@ -40,7 +41,11 @@ dais --single <file.pdf>         # Single-monitor mode (no audience window)
 dais --screen-share <file.pdf>   # Screen-share mode (audience as normal window)
 dais --edit <file.pdf>           # Open the slide grouping editor
 dais --config <path> <file.pdf>  # Use a specific config file
+dais --time-ignore <file.pdf>    # Do not update slide timing data on save
 dais --test-input                # Diagnostic mode for clicker/remote setup
+dais --remote <file.pdf>         # Start the local remote-control API and web remote
+dais --remote-lan <file.pdf>     # Start the web remote for phone/tablet pairing
+dais remote action next_slide    # Control a running presentation
 ```
 
 ### Display Modes
@@ -48,6 +53,7 @@ dais --test-input                # Diagnostic mode for clicker/remote setup
 - **Dual** (default with 2+ monitors): Presenter console on primary, audience fullscreen on secondary.
 - **Single** (`--single`): Single-window mode. Press `F5` to switch between the presenter console and the presentation HUD.
 - **Screen-share** (`--screen-share`): Audience is a normal resizable window for Zoom/Teams sharing.
+- **Remote** (`--remote`, `--remote-lan`): Local HTTP API, browser remote at `/remote`, presenter QR pairing, and `dais remote ...` commands for scripts, Stream Decks, phone/tablet controls, and other external adapters.
 
 With one monitor, Dais automatically falls back to single mode.
 
@@ -98,10 +104,11 @@ See [docs/keybindings.md](docs/keybindings.md) for the full reference.
 ## Clicker & Remote Support
 
 See [docs/clicker-setup.md](docs/clicker-setup.md) for clicker profiles, custom mappings, and the `--test-input` diagnostic mode.
+See [docs/remote.md](docs/remote.md) for the browser remote, REST API, CLI remote commands, LAN pairing, and external-controller examples.
 
 ## Architecture
 
-Dais is organized as a 7-crate Cargo workspace:
+Dais is organized as an 8-crate Cargo workspace:
 
 | Crate | Role |
 |---|---|
@@ -111,6 +118,7 @@ Dais is organized as a 7-crate Cargo workspace:
 | `dais-document` | `DocumentSource` trait, hayro PDF renderer, and page cache |
 | `dais-sidecar` | `.pdfpc` parser/writer, metadata extraction |
 | `dais-platform` | Platform-specific monitor enumeration |
+| `dais-remote` | HTTP remote-control server, browser remote, and REST API |
 | `dais-ui` | egui UI for the presenter console, audience window, and grouping editor |
 
 Key architectural decisions:

@@ -44,6 +44,7 @@ dais --single <file.pdf>         # Single-monitor mode (no audience window)
 dais --screen-share <file.pdf>   # Screen-share mode (audience as normal window)
 dais --edit <file.pdf>           # Open the slide grouping editor
 dais --config <path> <file.pdf>  # Use a specific config file
+dais --time-ignore <file.pdf>    # Do not update slide timing data on save
 dais --test-input                # Diagnostic mode for clicker/remote setup
 ```
 
@@ -85,10 +86,11 @@ The binary will be at `target/release/dais`, or `dais.exe` on Windows.
 - [Configuration](configuration.md)
 - [Keybindings](keybindings.md)
 - [Clicker & Remote Setup](clicker-setup.md)
+- [Remote Control](remote.md)
 
 ## Architecture
 
-Dais is organized as a 7-crate Cargo workspace:
+Dais is organized as an 8-crate Cargo workspace:
 
 | Crate | Role |
 |---|---|
@@ -98,4 +100,5 @@ Dais is organized as a 7-crate Cargo workspace:
 | `dais-document` | `DocumentSource` trait, hayro PDF renderer, and page cache |
 | `dais-sidecar` | `.dais` and `.pdfpc` sidecar formats |
 | `dais-platform` | Platform-specific monitor enumeration |
+| `dais-remote` | HTTP remote-control server, browser remote, and REST API |
 | `dais-ui` | egui UI for the presenter console, audience window, and grouping editor |

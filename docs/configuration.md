@@ -19,6 +19,7 @@ If a config layer doesn't exist, Dais skips it. All settings are optional.
 
 ```toml
 sidecar_format = "dais"        # "dais" (default) or "pdfpc"
+save_slide_timings = true      # Save per-slide timing data into sidecars
 
 [display]
 mode = "dual"                  # "dual", "single", or "screen-share"
@@ -60,6 +61,13 @@ font_size_step = 2.0           # Increment/decrement step
 # next_slide = ["j", "Return"]
 # toggle_laser = ["p"]
 # cycle_laser_style = ["Ctrl+l"]
+
+[remote]
+enabled = false                 # Start the local HTTP remote-control API
+host = "127.0.0.1"              # Loopback by default; set explicitly for LAN use
+port = 4317                     # Use 0 to ask the OS for a free port
+token = ""                      # Empty = generate; custom tokens may use A-Z, a-z, 0-9
+allow_unauthenticated_loopback = true
 ```
 
 ## Project-Local Config
@@ -77,6 +85,92 @@ mode = "dual"
 [timer]
 mode = "elapsed"
 ```
+
+## Remote Control API
+
+Dais can expose a local HTTP API for scripts, Stream Deck tools, phone/tablet web
+controls, and experimental input adapters.
+
+This section is the configuration reference. See [remote.md](remote.md) for the
+full remote-control guide.
+
+Start a presentation with the remote API enabled:
+
+```powershell
+dais --remote slides.pdf
+dais --remote-lan slides.pdf
+dais --remote --remote-port 4317 slides.pdf
+```
+
+By default, the server binds to `127.0.0.1:4317`. Loopback requests are allowed
+without a token unless `allow_unauthenticated_loopback = false`. Non-loopback
+clients always need a token. Use `--remote-lan` for normal phone/tablet pairing.
+Set `host` explicitly only when you want LAN binding from config:
+
+```toml
+[remote]
+enabled = true
+host = "0.0.0.0"
+port = 4317
+token = "choose-a-long-random-token"
+allow_unauthenticated_loopback = false
+```
+
+Custom remote tokens may contain only ASCII letters and digits.
+
+The same `dais` binary can send remote commands:
+
+```powershell
+dais remote state
+dais remote action next_slide
+dais remote goto 12
+dais remote pointer 0.5 0.5
+dais remote timer toggle
+```
+
+Open the browser remote at:
+
+```text
+http://127.0.0.1:4317/remote
+```
+
+When token authentication is required, append the token shown in the Dais log:
+
+```text
+http://192.168.1.24:4317/remote?token=<token>
+```
+
+When remote mode is enabled, the presenter console shows a `Remote` status item
+in the bottom bar. Click it to view pairing URLs and QR codes. The status text
+also shows active remote event clients and the last remote command received.
+When bound to `0.0.0.0`, Dais shows usable loopback/LAN URLs rather than
+advertising `0.0.0.0` itself.
+
+REST endpoints use `/api/v1`:
+
+```powershell
+curl http://127.0.0.1:4317/api/v1/state
+curl -X POST http://127.0.0.1:4317/api/v1/actions/next_slide
+curl -X POST http://127.0.0.1:4317/api/v1/commands/goto -H "Content-Type: application/json" -d "{\"slide\":12}"
+curl http://127.0.0.1:4317/api/v1/events
+curl http://127.0.0.1:4317/api/v1/slides/current.png --output current.png
+```
+
+For token-protected sessions, send `Authorization: Bearer <token>` or
+`X-Dais-Token: <token>`. Browser endpoints also accept `?token=<token>` so the
+built-in web remote can connect from a second device.
+
+Slide image endpoints are rendered on demand for the remote:
+
+| Endpoint | Description |
+|---|---|
+| `/api/v1/slides/current.png` | Current presenter page |
+| `/api/v1/slides/next.png` | First page of the next logical slide, or current page at the end |
+| `/api/v1/slides/<n>/thumbnail.png` | First page of 1-based logical slide `n` |
+
+Remote slide PNGs are cached in-memory during the session. State and command
+requests opportunistically warm the current and next slide images so the web
+remote stays responsive during navigation.
 
 ## Display Modes
 
@@ -187,6 +281,8 @@ sidecar_format = "pdfpc"   # "dais" (default) or "pdfpc"
 
 When loading, Dais checks in order: `.dais` sidecar → `.pdfpc` sidecar → embedded PDF metadata.
 The grouping editor and `save_sidecar` action both use `sidecar_format` when choosing what to write.
+Set `save_slide_timings = false`, or run with `--time-ignore`, to save sidecars
+without updating the `slide_timings` data.
 
 ## Single-Monitor Presentation Mode (F5)
 

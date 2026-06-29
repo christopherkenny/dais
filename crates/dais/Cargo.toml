@@ -19,6 +19,7 @@ dais-core = { workspace = true }
 dais-document = { workspace = true }
 dais-engine = { workspace = true }
 dais-platform = { workspace = true }
+dais-remote = { workspace = true }
 dais-sidecar = { workspace = true }
 dais-ui = { workspace = true }
 
@@ -26,6 +27,7 @@ egui = { workspace = true }
 eframe = { workspace = true }
 clap = { workspace = true }
 anyhow = { workspace = true }
+serde_json = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 directories = { workspace = true }

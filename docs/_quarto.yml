@@ -20,6 +20,8 @@ website:
         href: keybindings.md
       - text: Clickers
         href: clicker-setup.md
+      - text: Remote
+        href: remote.md
       - text: News
         href: news.qmd
     right:
