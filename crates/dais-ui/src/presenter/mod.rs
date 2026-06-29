@@ -794,15 +794,18 @@ impl PresenterConsole {
             .show(ctx, |ui| {
                 ui.label("Open the web remote on a phone or tablet.");
                 if remote.requires_token {
-                    ui.label("Token is included in the QR code URLs.");
+                    ui.label(format!("Pairing code: {}", remote.token));
                 }
                 ui.separator();
-                for url in &remote.urls {
-                    let pairing_url = pairing_url(url, remote);
-                    ui.horizontal_wrapped(|ui| {
-                        ui.monospace(&pairing_url);
-                    });
-                    draw_qr(ui, &pairing_url, 176.0);
+
+                let urls = pairing_urls(remote);
+                for pairing in &urls {
+                    let is_loopback = is_loopback_url(pairing);
+                    ui.label(if is_loopback { "This computer" } else { "Phone or tablet" });
+                    copyable_url(ui, pairing);
+                    if !is_loopback || urls.len() == 1 {
+                        draw_qr(ui, pairing, 176.0);
+                    }
                     ui.add_space(8.0);
                 }
             });
@@ -821,6 +824,31 @@ fn pairing_url(url: &str, remote: &RemoteUiInfo) -> String {
     } else {
         url.to_string()
     }
+}
+
+fn pairing_urls(remote: &RemoteUiInfo) -> Vec<String> {
+    let mut urls = remote.urls.iter().map(|url| pairing_url(url, remote)).collect::<Vec<_>>();
+    urls.sort();
+    urls.dedup();
+    urls
+}
+
+fn is_loopback_url(url: &str) -> bool {
+    url.contains("://127.0.0.1:") || url.contains("://localhost:")
+}
+
+fn copyable_url(ui: &mut egui::Ui, url: &str) {
+    ui.horizontal(|ui| {
+        let mut text = url.to_string();
+        ui.add(
+            egui::TextEdit::singleline(&mut text)
+                .font(egui::TextStyle::Monospace)
+                .desired_width(320.0),
+        );
+        if ui.button("Copy").clicked() {
+            ui.ctx().copy_text(url.to_string());
+        }
+    });
 }
 
 #[allow(clippy::cast_precision_loss)]

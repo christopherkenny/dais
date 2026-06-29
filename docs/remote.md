@@ -74,7 +74,8 @@ dais --remote --remote-host 0.0.0.0 --remote-port 4317 slides.pdf
 ```
 
 When remote mode is enabled, the presenter console shows a `Remote` item in the
-bottom status bar. Click it to see usable remote URLs and QR codes.
+bottom status bar. Click it to see copyable pairing URLs, the current pairing
+code, and QR codes for phone/tablet URLs.
 
 If Dais is bound to `0.0.0.0`, it does not advertise `0.0.0.0` as a pairing URL.
 Instead, it shows loopback and likely LAN URLs such as:
@@ -84,12 +85,12 @@ http://127.0.0.1:4317/remote
 http://192.168.1.24:4317/remote?token=...
 ```
 
-Non-loopback devices always need a token. If a phone cannot connect, check:
+Non-loopback devices always need the pairing code. If a phone cannot connect, check:
 
 - The phone and computer are on the same network.
 - The network allows devices to reach each other.
 - The OS firewall allowed Dais to accept local network connections.
-- The phone used the tokenized pairing URL from the Dais presenter UI.
+- The phone used the tokenized pairing URL or QR code from the Dais presenter UI.
 
 ## Configuration
 
@@ -112,11 +113,11 @@ Fields:
 | `enabled` | Start the remote server when a presentation starts |
 | `host` | Bind address. `127.0.0.1` is local-only; `0.0.0.0` accepts connections on all interfaces |
 | `port` | TCP port. Use `0` to ask the OS for a free port |
-| `token` | Authentication token. Empty means Dais generates one per launch |
+| `token` | Authentication token. Empty means Dais generates a short pairing code per launch |
 | `allow_unauthenticated_loopback` | Allows local same-machine requests without a token |
 
 Loopback convenience only applies to loopback clients. Non-loopback clients
-always need a token.
+always need a pairing code.
 
 CLI flags override config for the current session:
 
@@ -204,7 +205,7 @@ curl http://192.168.1.24:4317/api/v1/state `
   -H "X-Dais-Token: <token>"
 ```
 
-Browser flows can also pass:
+Browser flows can also pass the pairing code in the URL:
 
 ```text
 ?token=<token>
@@ -324,7 +325,7 @@ The remote server is local-first:
 
 - It binds to loopback by default.
 - LAN binding requires an explicit host choice.
-- Empty tokens generate a per-launch token.
+- Empty tokens generate a per-launch pairing code.
 - Loopback requests can be unauthenticated for convenience.
 - Non-loopback requests always require token authentication.
 - Browser-originating requests receive basic Host and Origin checks.
@@ -345,7 +346,7 @@ Then, in another terminal:
 ```powershell
 curl http://127.0.0.1:4317/api/v1/state
 curl -X POST http://127.0.0.1:4317/api/v1/actions/next_slide
-cargo run -p dais -- remote goto 2 --port 4317
+cargo run -p dais -- remote --port 4317 goto 2
 ```
 
 Second-device test:

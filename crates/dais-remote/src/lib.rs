@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::convert::Infallible;
-use std::fmt::Write as _;
 use std::net::{IpAddr, SocketAddr};
 use std::sync::{Arc, Mutex, RwLock};
 use std::thread::{self, JoinHandle};
@@ -720,12 +719,8 @@ fn host_is_loopback(host: &str) -> bool {
 }
 
 fn generate_token() -> String {
-    let mut token = String::with_capacity(32);
-    for _ in 0..4 {
-        let _ = write!(token, "{:016x}", fastrand::u64(..));
-    }
-    token.truncate(32);
-    token
+    let code = fastrand::u32(0..100_000_000);
+    format!("{:04}-{:04}", code / 10_000, code % 10_000)
 }
 
 fn current_page(shared_state: &Arc<RwLock<PresentationState>>) -> Result<usize> {
@@ -1145,5 +1140,14 @@ mod tests {
         let headers = headers("localhost:4317");
 
         assert!(host_header_allowed(&headers, &settings));
+    }
+
+    #[test]
+    fn generated_token_is_human_typeable() {
+        let token = generate_token();
+
+        assert_eq!(token.len(), 9);
+        assert_eq!(token.as_bytes()[4], b'-');
+        assert!(token.chars().filter(char::is_ascii_digit).count() == 8);
     }
 }
