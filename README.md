@@ -44,6 +44,7 @@ dais --config <path> <file.pdf>  # Use a specific config file
 dais --time-ignore <file.pdf>    # Do not update slide timing data on save
 dais --test-input                # Diagnostic mode for clicker/remote setup
 dais --remote <file.pdf>         # Start the local remote-control API and web remote
+dais --remote-lan <file.pdf>     # Start the web remote for phone/tablet pairing
 dais remote action next_slide    # Control a running presentation
 ```
 
@@ -52,7 +53,7 @@ dais remote action next_slide    # Control a running presentation
 - **Dual** (default with 2+ monitors): Presenter console on primary, audience fullscreen on secondary.
 - **Single** (`--single`): Single-window mode. Press `F5` to switch between the presenter console and the presentation HUD.
 - **Screen-share** (`--screen-share`): Audience is a normal resizable window for Zoom/Teams sharing.
-- **Remote** (`--remote`): Local HTTP API, browser remote at `/remote`, presenter QR pairing, and `dais remote ...` commands for scripts, Stream Decks, phone/tablet controls, and other external adapters.
+- **Remote** (`--remote`, `--remote-lan`): Local HTTP API, browser remote at `/remote`, presenter QR pairing, and `dais remote ...` commands for scripts, Stream Decks, phone/tablet controls, and other external adapters.
 
 With one monitor, Dais automatically falls back to single mode.
 

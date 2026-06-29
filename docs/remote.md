@@ -70,7 +70,7 @@ For a phone or tablet on the same network, bind the server to a LAN-reachable
 address:
 
 ```powershell
-dais --remote --remote-host 0.0.0.0 --remote-port 4317 slides.pdf
+dais --remote-lan slides.pdf
 ```
 
 When remote mode is enabled, the presenter console shows a `Remote` item in the
@@ -123,9 +123,13 @@ CLI flags override config for the current session:
 
 ```powershell
 dais --remote slides.pdf
+dais --remote-lan slides.pdf
 dais --remote --remote-port 4317 slides.pdf
-dais --remote --remote-host 0.0.0.0 slides.pdf
+dais --remote --remote-host 192.168.1.24 slides.pdf
 ```
+
+Use `--remote-lan` for normal phone/tablet pairing. Use `--remote-host` only
+when you need to bind to a specific interface.
 
 ## CLI Remote
 
@@ -295,6 +299,13 @@ Good fits include:
 
 For example, a hardware button can send:
 
+```powershell
+dais remote action next_slide
+dais remote action toggle_blackout
+```
+
+Tools that can send HTTP requests can call the API directly:
+
 ```text
 POST /api/v1/actions/next_slide
 ```
@@ -305,9 +316,9 @@ or:
 POST /api/v1/actions/toggle_blackout
 ```
 
-That keeps devices such as clickers, Stream Decks, rings, and experimental
-accelerometer adapters outside the core app while letting them drive the same
-presentation commands.
+That keeps tools such as Stream Deck profiles, shell scripts, and experimental
+adapters outside the core app while letting them drive the same presentation
+commands.
 
 ## Relationship To Clickers
 
@@ -352,7 +363,7 @@ cargo run -p dais -- remote --port 4317 goto 2
 Second-device test:
 
 ```powershell
-cargo run -p dais -- --remote --remote-host 0.0.0.0 --remote-port 4317 tests/example.pdf
+cargo run -p dais -- --remote-lan --remote-port 4317 tests/example.pdf
 ```
 
 Click `Remote` in the presenter status bar, scan the QR code with a phone, and

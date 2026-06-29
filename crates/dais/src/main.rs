@@ -41,6 +41,10 @@ struct Cli {
     #[arg(long)]
     remote: bool,
 
+    /// Start the remote-control HTTP API for phone/tablet access on the local network.
+    #[arg(long)]
+    remote_lan: bool,
+
     /// Override the remote-control HTTP API bind host.
     #[arg(long)]
     remote_host: Option<String>,
@@ -276,8 +280,8 @@ fn start_remote_server_if_enabled(
     doc: std::sync::Arc<dyn dais_document::source::DocumentSource>,
 ) -> anyhow::Result<Option<dais_remote::RemoteServer>> {
     let remote_overrides = dais_remote::RemoteOverrides {
-        enabled: cli.remote,
-        host: cli.remote_host.clone(),
+        enabled: cli.remote || cli.remote_lan,
+        host: remote_host_override(cli),
         port: cli.remote_port,
     };
     let remote_settings =
@@ -302,6 +306,10 @@ fn start_remote_server_if_enabled(
         );
     }
     Ok(Some(server))
+}
+
+fn remote_host_override(cli: &Cli) -> Option<String> {
+    cli.remote_host.clone().or_else(|| cli.remote_lan.then(|| "0.0.0.0".to_string()))
 }
 
 fn run_remote_cli(remote: &RemoteCli) -> anyhow::Result<()> {
@@ -462,5 +470,27 @@ mod tests {
 
         assert!(cli.time_ignore);
         assert_eq!(cli.pdf_path.as_deref(), Some("slides.pdf"));
+    }
+
+    #[test]
+    fn remote_lan_enables_wildcard_remote_host() {
+        let cli = Cli::try_parse_from(["dais", "--remote-lan", "slides.pdf"]).unwrap();
+
+        assert!(cli.remote_lan);
+        assert_eq!(remote_host_override(&cli).as_deref(), Some("0.0.0.0"));
+    }
+
+    #[test]
+    fn explicit_remote_host_overrides_remote_lan_host() {
+        let cli = Cli::try_parse_from([
+            "dais",
+            "--remote-lan",
+            "--remote-host",
+            "192.168.1.5",
+            "slides.pdf",
+        ])
+        .unwrap();
+
+        assert_eq!(remote_host_override(&cli).as_deref(), Some("192.168.1.5"));
     }
 }

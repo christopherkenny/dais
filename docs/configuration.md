@@ -98,13 +98,14 @@ Start a presentation with the remote API enabled:
 
 ```powershell
 dais --remote slides.pdf
+dais --remote-lan slides.pdf
 dais --remote --remote-port 4317 slides.pdf
 ```
 
 By default, the server binds to `127.0.0.1:4317`. Loopback requests are allowed
 without a token unless `allow_unauthenticated_loopback = false`. Non-loopback
-clients always need a token. Binding to a LAN address is an explicit advanced
-choice:
+clients always need a token. Use `--remote-lan` for normal phone/tablet pairing.
+Set `host` explicitly only when you want LAN binding from config:
 
 ```toml
 [remote]
