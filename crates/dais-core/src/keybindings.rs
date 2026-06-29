@@ -62,6 +62,8 @@ pub enum Action {
     ToggleScreenShare,
     /// Toggle the single-monitor presentation surface.
     TogglePresentationMode,
+    /// Swap presenter and audience monitors for this session.
+    SwapDisplays,
     /// Enable or disable text box placement mode.
     ToggleTextBoxMode,
     /// Request application shutdown.
@@ -101,6 +103,7 @@ impl Action {
             Self::DecrementNotesFont => "decrement_notes_font",
             Self::ToggleScreenShare => "toggle_screen_share",
             Self::TogglePresentationMode => "toggle_presentation_mode",
+            Self::SwapDisplays => "swap_displays",
             Self::ToggleTextBoxMode => "toggle_text_box_mode",
             Self::Quit => "quit",
             Self::SaveSidecar => "save_sidecar",
@@ -142,6 +145,7 @@ impl Action {
             Self::DecrementNotesFont => "Decrease notes font",
             Self::ToggleScreenShare => "Screen-share mode",
             Self::TogglePresentationMode => "Presentation mode",
+            Self::SwapDisplays => "Swap displays",
             Self::ToggleTextBoxMode => "Text box mode",
             Self::Quit => "Quit",
             Self::SaveSidecar => "Save sidecar",
@@ -164,7 +168,8 @@ impl Action {
             | Self::ToggleBlackout
             | Self::ToggleWhiteboard
             | Self::ToggleScreenShare
-            | Self::TogglePresentationMode => "Display",
+            | Self::TogglePresentationMode
+            | Self::SwapDisplays => "Display",
 
             Self::ToggleLaser
             | Self::CycleLaserStyle
@@ -203,6 +208,7 @@ impl Action {
             Self::ToggleWhiteboard,
             Self::ToggleScreenShare,
             Self::TogglePresentationMode,
+            Self::SwapDisplays,
             Self::ToggleLaser,
             Self::CycleLaserStyle,
             Self::ToggleInk,
@@ -391,6 +397,7 @@ fn default_keybindings() -> Vec<(Action, Vec<String>)> {
         (Action::ToggleWhiteboard, vec!["w".into()]),
         (Action::ToggleScreenShare, vec!["Shift+s".into()]),
         (Action::TogglePresentationMode, vec!["F5".into()]),
+        (Action::SwapDisplays, vec!["F6".into()]),
         (Action::ToggleLaser, vec!["l".into()]),
         (Action::CycleLaserStyle, vec!["Ctrl+l".into()]),
         (Action::ToggleInk, vec!["d".into()]),
@@ -454,6 +461,13 @@ mod tests {
         let map = KeybindingMap::from_config(&HashMap::new());
         let right = KeyCombo::parse("Right").unwrap();
         assert_eq!(map.lookup(&right), Some(Action::NextSlide));
+    }
+
+    #[test]
+    fn default_swap_display_binding_loads() {
+        let map = KeybindingMap::from_config(&HashMap::new());
+        let f6 = KeyCombo::parse("F6").unwrap();
+        assert_eq!(map.lookup(&f6), Some(Action::SwapDisplays));
     }
 
     #[test]

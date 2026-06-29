@@ -13,8 +13,8 @@ use dais_document::render_pipeline::FALLBACK_RENDER_SIZE;
 /// How the application should lay out presenter and audience windows.
 #[derive(Debug, Clone)]
 pub enum DisplayMode {
-    /// Dual monitor: presenter on primary, audience fullscreen on secondary.
-    Dual { audience_monitor: MonitorInfo },
+    /// Dual monitor: presenter console on one monitor, audience fullscreen on another.
+    Dual { presenter_monitor: MonitorInfo, audience_monitor: MonitorInfo },
     /// Single window with presenter only (no audience viewport).
     Single,
     /// Audience as a normal resizable window (for screen sharing).
@@ -89,6 +89,15 @@ pub struct AudienceReassignmentPrompt {
     pub available_monitors: Vec<MonitorInfo>,
 }
 
+/// Runtime presenter viewport placement for a specific monitor.
+#[derive(Debug, Clone, Copy)]
+pub struct PresenterViewportPlacement {
+    /// Outer window position.
+    pub position: egui::Pos2,
+    /// Inner window size.
+    pub inner_size: egui::Vec2,
+}
+
 /// Determine the initial display mode from CLI hints, config, and detected monitors.
 pub fn determine_display_mode(
     hints: DisplayHints,
@@ -152,13 +161,17 @@ fn resolve_dual_mode(
     let audience_name = &config.display.audience_monitor;
     if audience_name != "auto" && !audience_name.is_empty() {
         if let Some(mon) = monitor_mgr.find_by_selector(audience_name) {
+            let presenter = resolve_presenter_monitor(config, monitors, monitor_mgr, &mon);
             tracing::info!(
                 "Using configured audience monitor '{}' -> {} '{}'",
                 audience_name,
                 mon.id,
                 mon.name
             );
-            return (DisplayMode::Dual { audience_monitor: mon }, None);
+            return (
+                DisplayMode::Dual { presenter_monitor: presenter, audience_monitor: mon },
+                None,
+            );
         }
         let available = monitors.iter().map(|m| m.name.as_str()).collect::<Vec<_>>().join(", ");
         let msg = format!(
@@ -176,6 +189,7 @@ fn resolve_dual_mode(
         });
 
         if let Some(secondary) = attempted_fallback {
+            let presenter = resolve_presenter_monitor(config, monitors, monitor_mgr, &secondary);
             tracing::info!(
                 "Dual mode fallback: audience on '{}' ({}x{} @ {:?})",
                 secondary.name,
@@ -183,7 +197,10 @@ fn resolve_dual_mode(
                 secondary.size.1,
                 secondary.position
             );
-            return (DisplayMode::Dual { audience_monitor: secondary }, prompt);
+            return (
+                DisplayMode::Dual { presenter_monitor: presenter, audience_monitor: secondary },
+                prompt,
+            );
         }
 
         let msg = "Single monitor detected — expected dual. Using single mode.".to_string();
@@ -193,6 +210,7 @@ fn resolve_dual_mode(
     }
 
     if let Some(secondary) = monitor_mgr.secondary_monitor() {
+        let presenter = resolve_presenter_monitor(config, monitors, monitor_mgr, &secondary);
         tracing::info!(
             "Dual mode: audience on '{}' ({}x{} @ {:?})",
             secondary.name,
@@ -200,7 +218,10 @@ fn resolve_dual_mode(
             secondary.size.1,
             secondary.position
         );
-        return (DisplayMode::Dual { audience_monitor: secondary }, None);
+        return (
+            DisplayMode::Dual { presenter_monitor: presenter, audience_monitor: secondary },
+            None,
+        );
     }
 
     let msg = "Single monitor detected — expected dual. Using single mode.".to_string();
@@ -209,11 +230,44 @@ fn resolve_dual_mode(
     (DisplayMode::Single, None)
 }
 
+fn resolve_presenter_monitor(
+    config: &Config,
+    monitors: &[MonitorInfo],
+    monitor_mgr: &dyn MonitorManager,
+    audience_monitor: &MonitorInfo,
+) -> MonitorInfo {
+    let presenter_selector = config.display.presenter_monitor.trim();
+    let configured = if presenter_selector.is_empty() || presenter_selector == "auto" {
+        None
+    } else {
+        monitor_mgr.find_by_selector(presenter_selector)
+    };
+
+    configured
+        .or_else(|| monitor_mgr.primary_monitor())
+        .filter(|monitor| monitor.id != audience_monitor.id)
+        .or_else(|| monitors.iter().find(|monitor| monitor.id != audience_monitor.id).cloned())
+        .unwrap_or_else(|| audience_monitor.clone())
+}
+
+/// Return the active dual-mode monitor assignment after applying a runtime swap.
+pub fn effective_display_mode(mode: &DisplayMode, displays_swapped: bool) -> DisplayMode {
+    match mode {
+        DisplayMode::Dual { presenter_monitor, audience_monitor } if displays_swapped => {
+            DisplayMode::Dual {
+                presenter_monitor: audience_monitor.clone(),
+                audience_monitor: presenter_monitor.clone(),
+            }
+        }
+        _ => mode.clone(),
+    }
+}
+
 /// Build the audience viewport builder for the given display mode.
 #[allow(clippy::cast_precision_loss)]
 pub fn audience_viewport_builder(mode: &DisplayMode) -> egui::ViewportBuilder {
     match mode {
-        DisplayMode::Dual { audience_monitor } => {
+        DisplayMode::Dual { audience_monitor, .. } => {
             tracing::debug!(
                 "Audience viewport: fullscreen on '{}' at ({}, {})",
                 audience_monitor.name,
@@ -260,19 +314,43 @@ pub fn presenter_viewport_builder(
         monitor_mgr.find_by_selector(presenter_selector).or_else(|| monitor_mgr.primary_monitor())
     };
 
-    let builder = with_app_icon(egui::ViewportBuilder::default())
+    match monitor {
+        Some(monitor) => presenter_viewport_builder_for_monitor(&monitor, window_size),
+        None => presenter_viewport_builder_without_monitor(),
+    }
+}
+
+fn presenter_viewport_builder_without_monitor() -> egui::ViewportBuilder {
+    with_app_icon(egui::ViewportBuilder::default())
         .with_title("Dais — Presenter Console")
         .with_resizable(true)
-        .with_maximized(true);
+        .with_maximized(true)
+}
 
-    let Some(monitor) = monitor else {
+/// Build the presenter viewport on a specific monitor.
+#[allow(clippy::cast_precision_loss)]
+pub fn presenter_viewport_builder_for_monitor(
+    monitor: &MonitorInfo,
+    window_size: egui::Vec2,
+) -> egui::ViewportBuilder {
+    let builder = presenter_viewport_builder_without_monitor();
+
+    let Some(placement) = presenter_viewport_placement(monitor, window_size) else {
         return builder;
     };
 
-    if monitor.size.0 == 0 || monitor.size.1 == 0 {
-        return builder;
-    }
+    builder.with_inner_size(placement.inner_size).with_position(placement.position)
+}
 
+/// Calculate presenter viewport placement for a specific monitor.
+#[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
+pub fn presenter_viewport_placement(
+    monitor: &MonitorInfo,
+    window_size: egui::Vec2,
+) -> Option<PresenterViewportPlacement> {
+    if monitor.size.0 == 0 || monitor.size.1 == 0 {
+        return None;
+    }
     let (_logical_work_x, _logical_work_y, logical_work_w, logical_work_h) =
         monitor.logical_work_area();
     let (logical_monitor_w, logical_monitor_h) = monitor.logical_size();
@@ -298,7 +376,10 @@ pub fn presenter_viewport_builder(
     let top_margin: f32 = 24.0;
     let y = work_y + top_margin.min((usable_h as f32 - target_h).max(0.0));
 
-    builder.with_inner_size(egui::vec2(target_w, target_h)).with_position(egui::pos2(x, y))
+    Some(PresenterViewportPlacement {
+        position: egui::pos2(x, y),
+        inner_size: egui::vec2(target_w, target_h),
+    })
 }
 
 /// Determine the audience render size from the selected display mode.
@@ -308,7 +389,7 @@ pub fn presenter_viewport_builder(
 /// we fall back to the fixed render size.
 pub fn audience_render_size(mode: &DisplayMode) -> RenderSize {
     match mode {
-        DisplayMode::Dual { audience_monitor }
+        DisplayMode::Dual { audience_monitor, .. }
             if audience_monitor.size.0 > 0 && audience_monitor.size.1 > 0 =>
         {
             RenderSize { width: audience_monitor.size.0, height: audience_monitor.size.1 }
@@ -416,7 +497,7 @@ mod tests {
         let result = determine_display_mode(hints, &config, &mgr);
         assert!(matches!(result.mode, DisplayMode::Dual { .. }));
         assert!(result.audience_reassignment.is_none());
-        if let DisplayMode::Dual { audience_monitor } = result.mode {
+        if let DisplayMode::Dual { audience_monitor, .. } = result.mode {
             assert_eq!(audience_monitor.name, "DELL U2718Q");
         }
     }
@@ -452,7 +533,7 @@ mod tests {
         let result = determine_display_mode(hints, &config, &mgr);
         assert!(matches!(result.mode, DisplayMode::Dual { .. }));
         assert!(result.audience_reassignment.is_none());
-        if let DisplayMode::Dual { audience_monitor } = result.mode {
+        if let DisplayMode::Dual { audience_monitor, .. } = result.mode {
             assert_eq!(audience_monitor.name, "DELL U2718Q");
         }
     }
@@ -502,10 +583,31 @@ mod tests {
     #[test]
     fn audience_render_size_uses_monitor_size_when_available() {
         let mgr = dual_monitors();
-        let mode = DisplayMode::Dual { audience_monitor: mgr.monitors[1].clone() };
+        let mode = DisplayMode::Dual {
+            presenter_monitor: mgr.monitors[0].clone(),
+            audience_monitor: mgr.monitors[1].clone(),
+        };
         let size = audience_render_size(&mode);
         assert_eq!(size.width, 3840);
         assert_eq!(size.height, 2160);
+    }
+
+    #[test]
+    fn effective_display_mode_swaps_dual_monitors() {
+        let mgr = dual_monitors();
+        let mode = DisplayMode::Dual {
+            presenter_monitor: mgr.monitors[0].clone(),
+            audience_monitor: mgr.monitors[1].clone(),
+        };
+
+        let swapped = effective_display_mode(&mode, true);
+
+        if let DisplayMode::Dual { presenter_monitor, audience_monitor } = swapped {
+            assert_eq!(presenter_monitor.id, "m2");
+            assert_eq!(audience_monitor.id, "m1");
+        } else {
+            panic!("dual mode should remain dual after swapping");
+        }
     }
 
     #[test]

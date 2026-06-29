@@ -1031,6 +1031,7 @@ fn action_to_command(action: Action) -> Option<Command> {
         Action::DecrementNotesFont => None,
         Action::ToggleScreenShare => Some(Command::ToggleScreenShareMode),
         Action::TogglePresentationMode => Some(Command::TogglePresentationMode),
+        Action::SwapDisplays => Some(Command::SwapDisplays),
         Action::ToggleTextBoxMode => None,
         Action::Quit => None,
         Action::SaveSidecar => None,

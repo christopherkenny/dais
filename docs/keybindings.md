@@ -33,6 +33,7 @@ All keybindings are remappable via the `[keybindings]` section in `config.toml`.
 | `decrement_notes_font` | - | Decrease notes font size |
 | `toggle_screen_share` | Shift+S | Toggle screen-share mode |
 | `toggle_presentation_mode` | F5 | Toggle the active single-monitor presentation surface |
+| `swap_displays` | F6 | Swap the presenter and audience monitors for the current session |
 | `toggle_text_box_mode` | X | Toggle text box placement mode |
 | `quit` | Q, Escape | Quit presentation (exits HUD first) |
 | `save_sidecar` | Ctrl+S | Save sidecar file |

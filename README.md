@@ -51,7 +51,7 @@ dais remote action next_slide    # Control a running presentation
 
 ### Display Modes
 
-- **Dual** (default with 2+ monitors): Presenter console on primary, audience fullscreen on secondary.
+- **Dual** (default with 2+ monitors): Presenter console on primary, audience fullscreen on secondary. Press `F6` to swap the presenter and audience monitors for the current session.
 - **Single** (`--single`): Single-window mode. Press `F5` to switch between the presenter console and the presentation HUD.
 - **Screen-share** (`--screen-share`): Audience is a normal resizable window for Zoom/Teams sharing.
 - **Remote** (`--remote`, `--remote-lan`): Local HTTP API, browser remote at `/remote`, presenter QR pairing, and `dais remote ...` commands for scripts, Stream Decks, phone/tablet controls, and other external adapters.
@@ -96,7 +96,7 @@ can override both.
 
 See [docs/configuration.md](docs/configuration.md) for the full reference.
 
-For display assignment, `audience_monitor` can be a monitor name or a simple display number like `"2"`.
+For display assignment, `audience_monitor` and `presenter_monitor` can be monitor names or simple display numbers like `"1"` and `"2"`.
 
 ## Keybindings
 

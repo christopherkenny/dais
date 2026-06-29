@@ -50,7 +50,7 @@ dais --test-input                # Diagnostic mode for clicker/remote setup
 
 ## Display Modes
 
-- **Dual**: presenter console on the primary monitor, audience fullscreen on a secondary monitor.
+- **Dual**: presenter console on the primary monitor, audience fullscreen on a secondary monitor. Press `F6` to swap them for the current session.
 - **Single**: one-window mode. Press `F5` to switch between the presenter console and the configured single-monitor presentation surface.
 - **Screen-share**: the audience view is a normal resizable window for Zoom/Teams sharing.
 

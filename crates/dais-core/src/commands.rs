@@ -35,6 +35,8 @@ pub enum Command {
     ToggleScreenShareMode,
     /// Toggle presentation mode (single-monitor: console ↔ fullscreen HUD).
     TogglePresentationMode,
+    /// Swap presenter and audience monitors for this session.
+    SwapDisplays,
 
     // -- Presentation aids --
     /// Toggle the laser pointer on/off.

@@ -60,6 +60,8 @@ pub struct PresentationState {
     pub screen_share_mode: bool,
     /// Whether presentation mode is active (single-monitor fullscreen HUD).
     pub presentation_mode: bool,
+    /// Whether presenter and audience monitors are swapped for this session.
+    pub displays_swapped: bool,
 
     // -- Presentation aids --
     /// Whether the laser pointer is active.
@@ -147,6 +149,7 @@ impl PresentationState {
             whiteboard_strokes: Vec::new(),
             screen_share_mode: false,
             presentation_mode: false,
+            displays_swapped: false,
             laser_active: true,
             pointer_position: None,
             pointer_style: PointerStyle::Dot,

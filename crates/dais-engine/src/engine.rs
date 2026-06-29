@@ -249,7 +249,8 @@ impl PresentationEngine {
             | Command::ToggleBlackout
             | Command::ToggleWhiteboard
             | Command::ToggleScreenShareMode
-            | Command::TogglePresentationMode => {
+            | Command::TogglePresentationMode
+            | Command::SwapDisplays => {
                 self.handle_display_mode(cmd);
             }
 
@@ -353,6 +354,9 @@ impl PresentationEngine {
             }
             Command::TogglePresentationMode => {
                 self.state.presentation_mode = !self.state.presentation_mode;
+            }
+            Command::SwapDisplays => {
+                self.state.displays_swapped = !self.state.displays_swapped;
             }
             _ => {}
         }
@@ -1516,6 +1520,20 @@ mod tests {
         sender.send(Command::TogglePresentationMode).unwrap();
         engine.tick();
         assert!(!engine.state().presentation_mode);
+    }
+
+    #[test]
+    fn swap_displays_toggles_runtime_flag() {
+        let (mut engine, _, sender) = make_engine(5);
+        assert!(!engine.state().displays_swapped);
+
+        sender.send(Command::SwapDisplays).unwrap();
+        engine.tick();
+        assert!(engine.state().displays_swapped);
+
+        sender.send(Command::SwapDisplays).unwrap();
+        engine.tick();
+        assert!(!engine.state().displays_swapped);
     }
 
     #[test]

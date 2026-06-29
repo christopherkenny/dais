@@ -288,6 +288,7 @@ start_pause_timer
 reset_timer
 toggle_screen_share
 toggle_presentation_mode
+swap_displays
 ```
 
 The remote API intentionally does not expose every keybinding action. Local-only

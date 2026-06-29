@@ -494,6 +494,7 @@ fn action_to_command(action: Action) -> Option<Command> {
         Action::DecrementNotesFont => Some(Command::DecrementNotesFontSize),
         Action::ToggleScreenShare => Some(Command::ToggleScreenShareMode),
         Action::TogglePresentationMode => Some(Command::TogglePresentationMode),
+        Action::SwapDisplays => Some(Command::SwapDisplays),
         Action::ToggleTextBoxMode => Some(Command::ToggleTextBoxMode),
         Action::Quit => Some(Command::Quit),
         Action::SaveSidecar => Some(Command::SaveSidecar),

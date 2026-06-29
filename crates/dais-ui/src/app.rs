@@ -39,6 +39,8 @@ pub struct DaisApp {
     audience_reassignment: Option<AudienceReassignmentPrompt>,
     toast_manager: ToastManager,
     remote: Option<RemoteUiInfo>,
+    presenter_window_size: egui::Vec2,
+    applied_presenter_monitor_id: Option<String>,
 }
 
 const MAX_ZOOM_RENDER_DIMENSION: u32 = 4320;
@@ -67,6 +69,7 @@ impl DaisApp {
         let audience = AudienceWindow::new();
         let cache = PageCache::new(64);
         let pipeline = RenderPipeline::new(doc, 2);
+        let presenter_window_size = egui::vec2(1400.0, 850.0);
 
         Self {
             engine,
@@ -84,6 +87,8 @@ impl DaisApp {
             audience_reassignment: None,
             toast_manager: ToastManager::new(),
             remote: None,
+            presenter_window_size,
+            applied_presenter_monitor_id: None,
         }
     }
 
@@ -123,7 +128,10 @@ impl eframe::App for DaisApp {
 
         // Submit render requests for pages we need
         let presenter_size = FALLBACK_RENDER_SIZE;
-        let base_audience_size = display_mode::audience_render_size(&self.display_mode);
+        let effective_display_mode =
+            display_mode::effective_display_mode(&self.display_mode, state.displays_swapped);
+        self.apply_presenter_viewport(ctx, &effective_display_mode);
+        let base_audience_size = display_mode::audience_render_size(&effective_display_mode);
         let audience_size = effective_audience_render_size(&state, base_audience_size);
         self.pipeline.prefetch_neighborhood(
             state.current_page,
@@ -200,7 +208,7 @@ impl eframe::App for DaisApp {
                 .with_fullscreen(false)
                 .with_resizable(true)
         } else {
-            display_mode::audience_viewport_builder(&self.display_mode)
+            display_mode::audience_viewport_builder(&effective_display_mode)
         };
 
         let shared = self.shared_state.clone();
@@ -222,6 +230,53 @@ impl eframe::App for DaisApp {
 }
 
 impl DaisApp {
+    fn apply_presenter_viewport(&mut self, ctx: &egui::Context, mode: &DisplayMode) {
+        let DisplayMode::Dual { presenter_monitor, .. } = mode else {
+            self.applied_presenter_monitor_id = None;
+            return;
+        };
+
+        if self.applied_presenter_monitor_id.as_deref() == Some(presenter_monitor.id.as_str()) {
+            return;
+        }
+
+        let Some(placement) = display_mode::presenter_viewport_placement(
+            presenter_monitor,
+            self.presenter_window_size,
+        ) else {
+            return;
+        };
+        ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(false));
+        ctx.send_viewport_cmd(egui::ViewportCommand::Maximized(false));
+        ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(placement.inner_size));
+        ctx.send_viewport_cmd(egui::ViewportCommand::OuterPosition(placement.position));
+        ctx.send_viewport_cmd(egui::ViewportCommand::Maximized(true));
+        self.applied_presenter_monitor_id = Some(presenter_monitor.id.clone());
+    }
+
+    fn current_presenter_monitor(&self) -> Option<dais_core::monitor::MonitorInfo> {
+        match &self.display_mode {
+            DisplayMode::Dual { presenter_monitor, .. } => Some(presenter_monitor.clone()),
+            DisplayMode::Single | DisplayMode::ScreenShare => None,
+        }
+    }
+
+    fn presenter_for_audience(
+        &self,
+        audience_monitor: &dais_core::monitor::MonitorInfo,
+        available_monitors: &[dais_core::monitor::MonitorInfo],
+    ) -> dais_core::monitor::MonitorInfo {
+        self.current_presenter_monitor()
+            .filter(|presenter| presenter.id != audience_monitor.id)
+            .or_else(|| {
+                available_monitors
+                    .iter()
+                    .find(|candidate| candidate.id != audience_monitor.id)
+                    .cloned()
+            })
+            .unwrap_or_else(|| audience_monitor.clone())
+    }
+
     fn show_audience_reassignment_prompt(&mut self, ctx: &egui::Context) {
         let Some(prompt) = self.audience_reassignment.clone() else {
             return;
@@ -271,8 +326,12 @@ impl DaisApp {
                     let primary = if monitor.is_primary { ", primary" } else { "" };
                     let label = format!("Use {} ({}{primary})", monitor.name, monitor.id);
                     if ui.button(label).clicked() {
-                        self.display_mode =
-                            DisplayMode::Dual { audience_monitor: monitor.clone() };
+                        let presenter_monitor =
+                            self.presenter_for_audience(monitor, &prompt.available_monitors);
+                        self.display_mode = DisplayMode::Dual {
+                            presenter_monitor,
+                            audience_monitor: monitor.clone(),
+                        };
                         self.toast_manager.push(
                             crate::widgets::toast::ToastLevel::Info,
                             format!("Audience moved to '{}'", monitor.name),
@@ -284,8 +343,12 @@ impl DaisApp {
                 ui.horizontal(|ui| {
                     if let Some(fallback) = &prompt.attempted_fallback {
                         if ui.button("Keep current fallback").clicked() {
-                            self.display_mode =
-                                DisplayMode::Dual { audience_monitor: fallback.clone() };
+                            let presenter_monitor =
+                                self.presenter_for_audience(fallback, &prompt.available_monitors);
+                            self.display_mode = DisplayMode::Dual {
+                                presenter_monitor,
+                                audience_monitor: fallback.clone(),
+                            };
                             self.toast_manager.push(
                                 crate::widgets::toast::ToastLevel::Info,
                                 format!("Keeping fallback audience monitor '{}'", fallback.name),

@@ -182,6 +182,8 @@ remote stays responsive during navigation.
 
 CLI flags (`--single`, `--screen-share`) override config. If no flag is given and config is `"dual"` (default), Dais auto-detects: 2+ monitors → dual, 1 monitor → single.
 
+In dual mode, press **F6** to swap the presenter and audience monitors for the current session. This does not rewrite `dais.toml`; use `display.presenter_monitor` and `display.audience_monitor` for a permanent assignment.
+
 ## Monitor Assignment
 
 Set `audience_monitor` and `presenter_monitor` to a monitor name, monitor id, or a 1-based display number such as `"1"` or `"2"`. Use `"auto"` for automatic assignment.
