@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.37">
+<meta name="generator" content="quarto-1.9.38">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -75,10 +75,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-5124bffaafc33745092a05ebb8111c84.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dabe172eb55fd7b6fc99fa15088a2693.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -142,6 +142,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li class="nav-item">
     <a class="nav-link" href="./clicker-setup.html"> 
 <span class="menu-text">Clickers</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./remote.html"> 
+<span class="menu-text">Remote</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./news.html"> 
@@ -218,7 +222,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--screen-share</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>   <span class="co"># Screen-share mode (audience as normal window)</span></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--edit</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>           <span class="co"># Open the slide grouping editor</span></span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--config</span> <span class="op">&lt;</span>path<span class="op">&gt;</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>  <span class="co"># Use a specific config file</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--test-input</span>                <span class="co"># Diagnostic mode for clicker/remote setup</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--time-ignore</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>    <span class="co"># Do not update slide timing data on save</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--test-input</span>                <span class="co"># Diagnostic mode for clicker/remote setup</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="display-modes" class="level2">
 <h2 class="anchored" data-anchor-id="display-modes">Display Modes</h2>
@@ -248,11 +253,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><a href="./configuration.html">Configuration</a></li>
 <li><a href="./keybindings.html">Keybindings</a></li>
 <li><a href="./clicker-setup.html">Clicker &amp; Remote Setup</a></li>
+<li><a href="./remote.html">Remote Control</a></li>
 </ul>
 </section>
 <section id="architecture" class="level2">
 <h2 class="anchored" data-anchor-id="architecture">Architecture</h2>
-<p>Dais is organized as a 7-crate Cargo workspace:</p>
+<p>Dais is organized as an 8-crate Cargo workspace:</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 50%">
@@ -290,6 +296,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>Platform-specific monitor enumeration</td>
 </tr>
 <tr class="odd">
+<td><code>dais-remote</code></td>
+<td>HTTP remote-control server, browser remote, and REST API</td>
+</tr>
+<tr class="even">
 <td><code>dais-ui</code></td>
 <td>egui UI for the presenter console, audience window, and grouping editor</td>
 </tr>

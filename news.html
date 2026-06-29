@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.37">
+<meta name="generator" content="quarto-1.9.38">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -40,10 +40,10 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-5124bffaafc33745092a05ebb8111c84.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dabe172eb55fd7b6fc99fa15088a2693.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -109,6 +109,10 @@ ul.task-list li input[type="checkbox"] {
 <span class="menu-text">Clickers</span></a>
   </li>  
   <li class="nav-item">
+    <a class="nav-link" href="./remote.html"> 
+<span class="menu-text">Remote</span></a>
+  </li>  
+  <li class="nav-item">
     <a class="nav-link active" href="./news.html" aria-current="page"> 
 <span class="menu-text">News</span></a>
   </li>  
@@ -153,16 +157,39 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<section id="dais-0.1.1" class="level1">
-<h1>dais 0.1.1</h1>
+<section id="dais-0.2.0" class="level1">
+<h1>dais 0.2.0</h1>
 <section id="new-features" class="level2">
 <h2 class="anchored" data-anchor-id="new-features">New features</h2>
 <ul>
-<li>Text boxes can use a configured Typst prelude from <code>[text_boxes].typst_prelude</code> in <code>dais.toml</code>.</li>
+<li>Remote control can run alongside a presentation with <code>--remote</code> or <code>--remote-lan</code>.</li>
+<li>Built-in browser remote at <code>/remote</code> supports current and next slide previews, notes, timer controls, previous/next navigation, goto slide, blackout, freeze, whiteboard, and laser controls.</li>
+<li>Speaker notes are editable from the browser remote. The Notes tab has an Edit button that opens the current slide’s notes in a textarea; Save writes the change and persists it to the sidecar immediately.</li>
+<li>Slides are annotatable from the browser remote. The Draw tab shows the current slide with a canvas overlay; draw with a finger, mouse, or Apple Pencil and strokes are sent to the presenter screen and saved to the sidecar. Includes a six-color palette, three width presets, and a clear button.</li>
+<li>Presenter console shows remote pairing URLs, QR codes, pairing code, connected remote clients, and the last remote command.</li>
+<li><code>dais remote ...</code> subcommands query state and send actions, goto, pointer, timer, and notes commands to a running presentation.</li>
+<li>Remote settings can be configured under <code>[remote]</code> in <code>config.toml</code> or project-local <code>dais.toml</code>.</li>
+<li><code>--time-ignore</code> can disable per-slide timing updates when saving sidecars.</li>
 </ul>
 </section>
 <section id="bug-fixes" class="level2">
 <h2 class="anchored" data-anchor-id="bug-fixes">Bug fixes</h2>
+<ul>
+<li>Remote LAN mode now accepts valid IP-literal hosts when bound to <code>0.0.0.0</code>.</li>
+<li>Custom remote tokens are restricted to URL-safe characters so browser pairing links work reliably.</li>
+</ul>
+</section>
+</section>
+<section id="dais-0.1.1" class="level1">
+<h1>dais 0.1.1</h1>
+<section id="new-features-1" class="level2">
+<h2 class="anchored" data-anchor-id="new-features-1">New features</h2>
+<ul>
+<li>Text boxes can use a configured Typst prelude from <code>[text_boxes].typst_prelude</code> in <code>dais.toml</code>.</li>
+</ul>
+</section>
+<section id="bug-fixes-1" class="level2">
+<h2 class="anchored" data-anchor-id="bug-fixes-1">Bug fixes</h2>
 <ul>
 <li>Ctrl+L laser-style cycling now advances one style per keypress and reaches every pointer style.</li>
 <li>Normal forward/back navigation now steps through incremental build pages instead of skipping to the next logical slide.</li>
@@ -172,8 +199,8 @@ ul.task-list li input[type="checkbox"] {
 </section>
 <section id="dais-0.1.0" class="level1">
 <h1>dais 0.1.0</h1>
-<section id="new-features-1" class="level2">
-<h2 class="anchored" data-anchor-id="new-features-1">New features</h2>
+<section id="new-features-2" class="level2">
+<h2 class="anchored" data-anchor-id="new-features-2">New features</h2>
 <ul>
 <li>Initial release of Dais, a native Rust PDF presenter console for PDF slides, such as those made with LaTeX/Beamer or Typst.</li>
 <li>Presenter console with current slide, next-slide preview, notes, timer, slide thumbnails, and audience display control.</li>

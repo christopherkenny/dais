@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.37">
+<meta name="generator" content="quarto-1.9.38">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -75,10 +75,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-5124bffaafc33745092a05ebb8111c84.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dabe172eb55fd7b6fc99fa15088a2693.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -142,6 +142,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li class="nav-item">
     <a class="nav-link" href="./clicker-setup.html"> 
 <span class="menu-text">Clickers</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./remote.html"> 
+<span class="menu-text">Remote</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./news.html"> 
@@ -370,6 +374,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><code>Alt</code> / <code>Option</code> — Alt on Windows/Linux, Option on macOS</li>
 </ul>
 <p>Combine with <code>+</code>: <code>Shift+Right</code>, <code>Ctrl+s</code>, <code>Ctrl+Shift+s</code></p>
+</section>
+<section id="remote-actions" class="level2">
+<h2 class="anchored" data-anchor-id="remote-actions">Remote Actions</h2>
+<p>The remote API uses an allowlist of the same action names as this keybinding reference for simple presenter-control commands. For example:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>dais remote action next_slide</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>dais remote action toggle_blackout</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>dais remote action toggle_laser</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Parameterized controls use dedicated remote commands:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>dais remote goto <span class="dv">12</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="dt">dais</span> remote pointer <span class="dv">0.5</span> <span class="dv">0.5</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="dt">dais</span> remote timer reset</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This keeps external controllers generic: Stream Deck profiles, scripts, phone controls, or experimental devices can call the same stable action API without being built into Dais itself.</p>
+<p>Not every keybinding action is remote-dispatchable. Local-only or editing actions such as quit, save sidecar, notes editing, notes font changes, and text box mode stay inside the presenter console.</p>
 
 
 </section>

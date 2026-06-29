@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.37">
+<meta name="generator" content="quarto-1.9.38">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -75,10 +75,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-5124bffaafc33745092a05ebb8111c84.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dabe172eb55fd7b6fc99fa15088a2693.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -144,6 +144,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text">Clickers</span></a>
   </li>  
   <li class="nav-item">
+    <a class="nav-link" href="./remote.html"> 
+<span class="menu-text">Remote</span></a>
+  </li>  
+  <li class="nav-item">
     <a class="nav-link" href="./news.html"> 
 <span class="menu-text">News</span></a>
   </li>  
@@ -191,47 +195,55 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="full-default-configuration" class="level2">
 <h2 class="anchored" data-anchor-id="full-default-configuration">Full Default Configuration</h2>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dt">sidecar_format</span> <span class="op">=</span> <span class="st">"dais"</span>        <span class="co"># "dais" (default) or "pdfpc"</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">[display]</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="dt">mode</span> <span class="op">=</span> <span class="st">"dual"</span>                  <span class="co"># "dual", "single", or "screen-share"</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="dt">single_monitor_view</span> <span class="op">=</span> <span class="st">"hud"</span>    <span class="co"># "hud" or "split" when F5 enters single-monitor presentation mode</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="dt">audience_monitor</span> <span class="op">=</span> <span class="st">"auto"</span>      <span class="co"># Monitor name, monitor id, display number like "2", or "auto"</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="dt">presenter_monitor</span> <span class="op">=</span> <span class="st">"auto"</span>     <span class="co"># Monitor name, monitor id, display number like "1", or "auto"</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="kw">[timer]</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="dt">mode</span> <span class="op">=</span> <span class="st">"elapsed"</span>               <span class="co"># "countdown" or "elapsed"</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co"># duration_minutes = 20        # Optional. If omitted in elapsed mode, no limit is shown.</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co"># warning_minutes = 5          # Optional. Used only when duration_minutes is set.</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="dt">overrun_color</span> <span class="op">=</span> <span class="cn">true</span>           <span class="co"># Red when past duration</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="kw">[laser]</span></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#FF0000"</span>              <span class="co"># Default for all pointer styles</span></span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="dt">size</span> <span class="op">=</span> <span class="fl">12.0</span>                    <span class="co"># Default pixels at 1x scale</span></span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="dt">style</span> <span class="op">=</span> <span class="st">"dot"</span>                  <span class="co"># "dot", "minimal", "crosshair", "arrow", "ring", "bullseye", or "highlight"</span></span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="kw">[spotlight]</span></span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="dt">radius</span> <span class="op">=</span> <span class="fl">80.0</span>                  <span class="co"># Pixels at 1x scale</span></span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="dt">dim_opacity</span> <span class="op">=</span> <span class="fl">0.6</span>              <span class="co"># 0.0 = invisible, 1.0 = fully black</span></span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="kw">[ink]</span></span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="dt">colors</span> <span class="op">=</span> <span class="op">[</span><span class="st">"#FF0000"</span><span class="op">]</span>           <span class="co"># Pen color presets, RGB or RGBA hex strings</span></span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="dt">width</span> <span class="op">=</span> <span class="fl">3.0</span></span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="kw">[text_boxes]</span></span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#000000"</span></span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="dt">background</span> <span class="op">=</span> <span class="st">"transparent"</span>    <span class="co"># Hex color or "transparent"</span></span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a><span class="dt">typst_prelude</span> <span class="op">=</span> <span class="st">""</span>            <span class="co"># Typst setup inserted before newly created text box content</span></span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="kw">[notes]</span></span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="dt">font_size</span> <span class="op">=</span> <span class="fl">16.0</span></span>
-<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a><span class="dt">font_size_step</span> <span class="op">=</span> <span class="fl">2.0</span>           <span class="co"># Increment/decrement step</span></span>
-<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a><span class="kw">[keybindings]</span></span>
-<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a><span class="co"># See docs/keybindings.md for the full reference</span></span>
-<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a><span class="co"># Example overrides:</span></span>
-<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a><span class="co"># next_slide = ["j", "Return"]</span></span>
-<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a><span class="co"># toggle_laser = ["p"]</span></span>
-<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a><span class="co"># cycle_laser_style = ["Ctrl+l"]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="dt">save_slide_timings</span> <span class="op">=</span> <span class="cn">true</span>      <span class="co"># Save per-slide timing data into sidecars</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[display]</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="dt">mode</span> <span class="op">=</span> <span class="st">"dual"</span>                  <span class="co"># "dual", "single", or "screen-share"</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="dt">single_monitor_view</span> <span class="op">=</span> <span class="st">"hud"</span>    <span class="co"># "hud" or "split" when F5 enters single-monitor presentation mode</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="dt">audience_monitor</span> <span class="op">=</span> <span class="st">"auto"</span>      <span class="co"># Monitor name, monitor id, display number like "2", or "auto"</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="dt">presenter_monitor</span> <span class="op">=</span> <span class="st">"auto"</span>     <span class="co"># Monitor name, monitor id, display number like "1", or "auto"</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="kw">[timer]</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="dt">mode</span> <span class="op">=</span> <span class="st">"elapsed"</span>               <span class="co"># "countdown" or "elapsed"</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co"># duration_minutes = 20        # Optional. If omitted in elapsed mode, no limit is shown.</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="co"># warning_minutes = 5          # Optional. Used only when duration_minutes is set.</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="dt">overrun_color</span> <span class="op">=</span> <span class="cn">true</span>           <span class="co"># Red when past duration</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="kw">[laser]</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#FF0000"</span>              <span class="co"># Default for all pointer styles</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="dt">size</span> <span class="op">=</span> <span class="fl">12.0</span>                    <span class="co"># Default pixels at 1x scale</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="dt">style</span> <span class="op">=</span> <span class="st">"dot"</span>                  <span class="co"># "dot", "minimal", "crosshair", "arrow", "ring", "bullseye", or "highlight"</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="kw">[spotlight]</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="dt">radius</span> <span class="op">=</span> <span class="fl">80.0</span>                  <span class="co"># Pixels at 1x scale</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="dt">dim_opacity</span> <span class="op">=</span> <span class="fl">0.6</span>              <span class="co"># 0.0 = invisible, 1.0 = fully black</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="kw">[ink]</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="dt">colors</span> <span class="op">=</span> <span class="op">[</span><span class="st">"#FF0000"</span><span class="op">]</span>           <span class="co"># Pen color presets, RGB or RGBA hex strings</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="dt">width</span> <span class="op">=</span> <span class="fl">3.0</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a><span class="kw">[text_boxes]</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#000000"</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a><span class="dt">background</span> <span class="op">=</span> <span class="st">"transparent"</span>    <span class="co"># Hex color or "transparent"</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a><span class="dt">typst_prelude</span> <span class="op">=</span> <span class="st">""</span>            <span class="co"># Typst setup inserted before newly created text box content</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="kw">[notes]</span></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a><span class="dt">font_size</span> <span class="op">=</span> <span class="fl">16.0</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a><span class="dt">font_size_step</span> <span class="op">=</span> <span class="fl">2.0</span>           <span class="co"># Increment/decrement step</span></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a><span class="kw">[keybindings]</span></span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a><span class="co"># See docs/keybindings.md for the full reference</span></span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a><span class="co"># Example overrides:</span></span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a><span class="co"># next_slide = ["j", "Return"]</span></span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a><span class="co"># toggle_laser = ["p"]</span></span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a><span class="co"># cycle_laser_style = ["Ctrl+l"]</span></span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a><span class="kw">[remote]</span></span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a><span class="dt">enabled</span> <span class="op">=</span> <span class="cn">false</span>                 <span class="co"># Start the local HTTP remote-control API</span></span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a><span class="dt">host</span> <span class="op">=</span> <span class="st">"127.0.0.1"</span>              <span class="co"># Loopback by default; set explicitly for LAN use</span></span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a><span class="dt">port</span> <span class="op">=</span> <span class="dv">4317</span>                     <span class="co"># Use 0 to ask the OS for a free port</span></span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a><span class="dt">token</span> <span class="op">=</span> <span class="st">""</span>                      <span class="co"># Empty = generate; custom tokens may use A-Z, a-z, 0-9</span></span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a><span class="dt">allow_unauthenticated_loopback</span> <span class="op">=</span> <span class="cn">true</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="project-local-config" class="level2">
 <h2 class="anchored" data-anchor-id="project-local-config">Project-Local Config</h2>
@@ -243,6 +255,69 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">[timer]</span></span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="dt">mode</span> <span class="op">=</span> <span class="st">"elapsed"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="remote-control-api" class="level2">
+<h2 class="anchored" data-anchor-id="remote-control-api">Remote Control API</h2>
+<p>Dais can expose a local HTTP API for scripts, Stream Deck tools, phone/tablet web controls, and experimental input adapters.</p>
+<p>This section is the configuration reference. See <a href="./remote.html">remote.md</a> for the full remote-control guide.</p>
+<p>Start a presentation with the remote API enabled:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>dais <span class="op">--</span>remote slides<span class="op">.</span><span class="fu">pdf</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>dais <span class="op">--</span>remote-lan slides<span class="op">.</span><span class="fu">pdf</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>dais <span class="op">--</span>remote <span class="op">--</span>remote-port <span class="dv">4317</span> slides<span class="op">.</span><span class="fu">pdf</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>By default, the server binds to <code>127.0.0.1:4317</code>. Loopback requests are allowed without a token unless <code>allow_unauthenticated_loopback = false</code>. Non-loopback clients always need a token. Use <code>--remote-lan</code> for normal phone/tablet pairing. Set <code>host</code> explicitly only when you want LAN binding from config:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[remote]</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="dt">enabled</span> <span class="op">=</span> <span class="cn">true</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="dt">host</span> <span class="op">=</span> <span class="st">"0.0.0.0"</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="dt">port</span> <span class="op">=</span> <span class="dv">4317</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="dt">token</span> <span class="op">=</span> <span class="st">"choose-a-long-random-token"</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="dt">allow_unauthenticated_loopback</span> <span class="op">=</span> <span class="cn">false</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Custom remote tokens may contain only ASCII letters and digits.</p>
+<p>The same <code>dais</code> binary can send remote commands:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>dais remote state</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>dais remote action next_slide</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>dais remote goto <span class="dv">12</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="dt">dais</span> remote pointer <span class="dv">0.5</span> <span class="dv">0.5</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="dt">dais</span> remote timer toggle</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Open the browser remote at:</p>
+<pre class="text"><code>http://127.0.0.1:4317/remote</code></pre>
+<p>When token authentication is required, append the token shown in the Dais log:</p>
+<pre class="text"><code>http://192.168.1.24:4317/remote?token=&lt;token&gt;</code></pre>
+<p>When remote mode is enabled, the presenter console shows a <code>Remote</code> status item in the bottom bar. Click it to view pairing URLs and QR codes. The status text also shows active remote event clients and the last remote command received. When bound to <code>0.0.0.0</code>, Dais shows usable loopback/LAN URLs rather than advertising <code>0.0.0.0</code> itself.</p>
+<p>REST endpoints use <code>/api/v1</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">curl</span> http<span class="op">://</span><span class="dv">127.0</span><span class="op">.</span><span class="dv">0.1</span><span class="op">:</span><span class="dv">4317</span><span class="op">/</span>api<span class="op">/</span>v1<span class="op">/</span>state</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">curl</span> <span class="op">-</span>X POST http<span class="op">://</span><span class="dv">127.0</span><span class="op">.</span><span class="dv">0.1</span><span class="op">:</span><span class="dv">4317</span><span class="op">/</span>api<span class="op">/</span>v1<span class="op">/</span>actions<span class="op">/</span>next_slide</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">curl</span> <span class="op">-</span>X POST http<span class="op">://</span><span class="dv">127.0</span><span class="op">.</span><span class="dv">0.1</span><span class="op">:</span><span class="dv">4317</span><span class="op">/</span>api<span class="op">/</span>v1<span class="op">/</span>commands<span class="op">/</span>goto <span class="op">-</span>H <span class="st">"Content-Type: application/json"</span> <span class="op">-</span>d <span class="st">"{\"</span>slide\<span class="st">":12}"</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">curl</span> http<span class="op">://</span><span class="dv">127.0</span><span class="op">.</span><span class="dv">0.1</span><span class="op">:</span><span class="dv">4317</span><span class="op">/</span>api<span class="op">/</span>v1<span class="op">/</span>events</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">curl</span> http<span class="op">://</span><span class="dv">127.0</span><span class="op">.</span><span class="dv">0.1</span><span class="op">:</span><span class="dv">4317</span><span class="op">/</span>api<span class="op">/</span>v1<span class="op">/</span>slides<span class="op">/</span>current<span class="op">.</span><span class="fu">png</span> <span class="op">--</span>output current<span class="op">.</span><span class="fu">png</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>For token-protected sessions, send <code>Authorization: Bearer &lt;token&gt;</code> or <code>X-Dais-Token: &lt;token&gt;</code>. Browser endpoints also accept <code>?token=&lt;token&gt;</code> so the built-in web remote can connect from a second device.</p>
+<p>Slide image endpoints are rendered on demand for the remote:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>/api/v1/slides/current.png</code></td>
+<td>Current presenter page</td>
+</tr>
+<tr class="even">
+<td><code>/api/v1/slides/next.png</code></td>
+<td>First page of the next logical slide, or current page at the end</td>
+</tr>
+<tr class="odd">
+<td><code>/api/v1/slides/&lt;n&gt;/thumbnail.png</code></td>
+<td>First page of 1-based logical slide <code>n</code></td>
+</tr>
+</tbody>
+</table>
+<p>Remote slide PNGs are cached in-memory during the session. State and command requests opportunistically warm the current and next slide images so the web remote stays responsive during navigation.</p>
 </section>
 <section id="display-modes" class="level2">
 <h2 class="anchored" data-anchor-id="display-modes">Display Modes</h2>
@@ -290,18 +365,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="laser-pointer">Laser Pointer</h2>
 <p><code>[laser]</code> controls the active pointer style and the default appearance used by every pointer style. Add <code>[laser.dot]</code>, <code>[laser.minimal]</code>, <code>[laser.crosshair]</code>, <code>[laser.arrow]</code>, <code>[laser.ring]</code>, <code>[laser.bullseye]</code>, or <code>[laser.highlight]</code> only when you want to override one style.</p>
 <p>Example:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[laser]</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#FFFFFF"</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="dt">size</span> <span class="op">=</span> <span class="fl">12.0</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="dt">style</span> <span class="op">=</span> <span class="st">"dot"</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="kw">[laser.crosshair]</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#00FF00"</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="dt">size</span> <span class="op">=</span> <span class="fl">24.0</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="kw">[laser.highlight]</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#FFFF0080"</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="dt">size</span> <span class="op">=</span> <span class="fl">36.0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[laser]</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#FFFFFF"</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="dt">size</span> <span class="op">=</span> <span class="fl">12.0</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="dt">style</span> <span class="op">=</span> <span class="st">"dot"</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="kw">[laser.crosshair]</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#00FF00"</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="dt">size</span> <span class="op">=</span> <span class="fl">24.0</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="kw">[laser.highlight]</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#FFFF0080"</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="dt">size</span> <span class="op">=</span> <span class="fl">36.0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>In this example, dot, minimal, arrow, ring, and bullseye stay white at size 12. Crosshair changes to green at size 24, and highlight changes to translucent yellow at size 36.</p>
 </section>
 <section id="freeze" class="level2">
@@ -336,10 +411,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><code>typst_prelude</code> accepts a Typst snippet inserted after Dais’s page/text defaults</li>
 </ul>
 <p>Example:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[text_boxes]</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#111111"</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="dt">background</span> <span class="op">=</span> <span class="st">"#FFF7CCDD"</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="dt">typst_prelude</span> <span class="op">=</span> <span class="st">"#set align(horizon)"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[text_boxes]</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#111111"</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="dt">background</span> <span class="op">=</span> <span class="st">"#FFF7CCDD"</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="dt">typst_prelude</span> <span class="op">=</span> <span class="st">"#set align(horizon)"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>The prelude is copied into newly created text boxes and saved with them in <code>.dais</code> sidecars. Existing boxes keep the prelude they were created with until edited in the sidecar.</p>
 </section>
 <section id="sidecar-formats" class="level2">
@@ -372,8 +447,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tbody>
 </table>
 <p>Set the save format in config:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="dt">sidecar_format</span> <span class="op">=</span> <span class="st">"pdfpc"</span>   <span class="co"># "dais" (default) or "pdfpc"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>When loading, Dais checks in order: <code>.dais</code> sidecar → <code>.pdfpc</code> sidecar → embedded PDF metadata. The grouping editor and <code>save_sidecar</code> action both use <code>sidecar_format</code> when choosing what to write.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="dt">sidecar_format</span> <span class="op">=</span> <span class="st">"pdfpc"</span>   <span class="co"># "dais" (default) or "pdfpc"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>When loading, Dais checks in order: <code>.dais</code> sidecar → <code>.pdfpc</code> sidecar → embedded PDF metadata. The grouping editor and <code>save_sidecar</code> action both use <code>sidecar_format</code> when choosing what to write. Set <code>save_slide_timings = false</code>, or run with <code>--time-ignore</code>, to save sidecars without updating the <code>slide_timings</code> data.</p>
 </section>
 <section id="single-monitor-presentation-mode-f5" class="level2">
 <h2 class="anchored" data-anchor-id="single-monitor-presentation-mode-f5">Single-Monitor Presentation Mode (F5)</h2>
