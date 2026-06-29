@@ -93,6 +93,8 @@ enum RemoteCommand {
         #[command(subcommand)]
         command: RemoteTimerCommand,
     },
+    /// Set the speaker notes for the current slide.
+    Notes { text: String },
 }
 
 #[derive(Subcommand, Debug)]
@@ -344,6 +346,10 @@ fn run_remote_cli(remote: &RemoteCli) -> anyhow::Result<()> {
                 RemoteTimerCommand::Reset => "reset",
             };
             let response = dais_remote::client_timer(&endpoint, action)?;
+            println!("{}", response.message);
+        }
+        RemoteCommand::Notes { text } => {
+            let response = dais_remote::client_notes(&endpoint, text)?;
             println!("{}", response.message);
         }
     }

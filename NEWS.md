@@ -4,8 +4,9 @@
 
 - Remote control can run alongside a presentation with `--remote` or `--remote-lan`.
 - Built-in browser remote at `/remote` supports current and next slide previews, notes, timer controls, previous/next navigation, goto slide, blackout, freeze, whiteboard, and laser controls.
-- Presenter console now shows remote pairing URLs, QR codes, pairing code, connected remote clients, and the last remote command.
-- New `dais remote ...` subcommands can query state and send actions, goto, pointer, and timer commands to a running presentation.
+- Speaker notes are editable from the browser remote. The Notes tab has an Edit button that opens the current slide's notes in a textarea; Save writes the change and persists it to the sidecar immediately.
+- Presenter console shows remote pairing URLs, QR codes, pairing code, connected remote clients, and the last remote command.
+- `dais remote ...` subcommands query state and send actions, goto, pointer, timer, and notes commands to a running presentation.
 - Remote settings can be configured under `[remote]` in `config.toml` or project-local `dais.toml`.
 - `--time-ignore` can disable per-slide timing updates when saving sidecars.
 

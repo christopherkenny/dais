@@ -193,6 +193,11 @@ struct TimerRequest {
     action: TimerRemoteAction,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+struct NotesRequest {
+    notes: String,
+}
+
 #[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(rename_all = "lowercase")]
 enum TimerRemoteAction {
@@ -331,6 +336,7 @@ fn remote_router(context: HandlerContext) -> Router {
         .route("/api/v1/commands/goto", post(goto))
         .route("/api/v1/commands/pointer", post(pointer))
         .route("/api/v1/commands/timer", post(timer))
+        .route("/api/v1/commands/notes", post(set_notes))
         .route("/api/v1/slides/current.png", get(current_slide_png))
         .route("/api/v1/slides/next.png", get(next_slide_png))
         .route("/api/v1/slides/{slide}/thumbnail.png", get(thumbnail_png))
@@ -463,6 +469,23 @@ async fn timer(State(context): State<HandlerContext>, Json(body): Json<TimerRequ
             context.status.set_last_command(format!("timer {:?}", body.action));
             preload_from_shared_state(&context);
             Json(ok_response("timer command dispatched")).into_response()
+        }
+        Err(_) => server_error(&anyhow!("presentation engine is not accepting commands")),
+    }
+}
+
+async fn set_notes(
+    State(context): State<HandlerContext>,
+    Json(body): Json<NotesRequest>,
+) -> Response {
+    let send_result = context
+        .sender
+        .send(Command::SetCurrentSlideNotes(body.notes))
+        .and_then(|()| context.sender.send(Command::SaveSidecar));
+    match send_result {
+        Ok(()) => {
+            context.status.set_last_command("set_notes");
+            Json(ok_response("notes updated")).into_response()
         }
         Err(_) => server_error(&anyhow!("presentation engine is not accepting commands")),
     }
@@ -607,6 +630,15 @@ pub fn client_timer(endpoint: &RemoteEndpoint, action: &str) -> Result<CommandRe
         "POST",
         "/api/v1/commands/timer",
         &serde_json::json!({ "action": action }),
+    )
+}
+
+pub fn client_notes(endpoint: &RemoteEndpoint, notes: &str) -> Result<CommandResponse> {
+    client_json_request(
+        endpoint,
+        "POST",
+        "/api/v1/commands/notes",
+        &serde_json::json!({ "notes": notes }),
     )
 }
 

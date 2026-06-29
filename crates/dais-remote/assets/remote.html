@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dais Remote</title>
 <style>
-*{box-sizing:border-box}
+*{box-sizing:border-box}[hidden]{display:none!important}
 html,body{margin:0;min-height:100%;background:#101316;color:#edf2f4;font:15px/1.4 system-ui,-apple-system,Segoe UI,sans-serif}
 body{display:flex;flex-direction:column}
 header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#181d22;border-bottom:1px solid #2a323a}
@@ -40,9 +40,11 @@ button.good{background:#244836;border-color:#3b7556}
 .notes li{margin:.18em 0}
 .notes code{background:#10161d;border:1px solid #303840;border-radius:4px;padding:0 .22em}
 .notesView .notes{min-height:58vh;font-size:20px;line-height:1.55}
+textarea.notesEdit{display:block;width:100%;min-height:58vh;background:#11161b;border:1px solid #3e7df0;border-radius:7px;color:#edf2f4;font:20px/1.55 system-ui,-apple-system,Segoe UI,sans-serif;padding:10px;resize:vertical}
+@media (max-width:720px){textarea.notesEdit{font-size:18px;min-height:62vh}}
 .meta{color:#a7b0b8;font-size:13px}
 input{background:#11161b;border:1px solid #3a4650;border-radius:7px;color:#edf2f4;padding:11px;font:inherit;width:92px}
-@media (max-width:720px){main{gap:8px;padding:8px}.band{padding:8px}.slides{grid-template-columns:1fr;gap:8px}.split{grid-template-columns:1fr}.tabs{gap:6px}.timer{font-size:30px}.row{gap:6px}button{min-height:38px;padding:8px 10px}.nav button{font-size:18px;min-height:48px}.notes{min-height:56px}.notesView .notes{min-height:62vh;font-size:18px}.overview{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}}
+@media (max-width:720px){main{gap:8px;padding:8px}.band{padding:8px}.slides{grid-template-columns:1fr;gap:8px}.split{grid-template-columns:1fr}.tabs{gap:6px}.timer{font-size:30px}.row{gap:6px}button{min-height:38px;padding:8px 10px}.nav button{font-size:18px;min-height:48px}.notes{min-height:56px}.notesView .notes{min-height:62vh;font-size:18px}.overview{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}.notesActions{gap:6px}}
 </style>
 </head>
 <body>
@@ -98,8 +100,16 @@ input{background:#11161b;border:1px solid #3a4650;border-radius:7px;color:#edf2f
   </div>
   <div class="view notesView" id="notesView" hidden>
     <section class="band">
-      <div class="meta">Notes</div>
+      <div class="row" style="justify-content:space-between;margin-bottom:8px">
+        <div class="meta">Notes</div>
+        <div class="row notesActions">
+          <button id="notesEdit" style="min-height:32px;padding:4px 12px;font-size:13px">Edit</button>
+          <button id="notesSave" class="primary" style="min-height:32px;padding:4px 12px;font-size:13px" hidden>Save</button>
+          <button id="notesCancel" style="min-height:32px;padding:4px 12px;font-size:13px" hidden>Cancel</button>
+        </div>
+      </div>
       <div class="notes" id="notes"></div>
+      <textarea class="notesEdit" id="notesEditArea" hidden></textarea>
     </section>
   </div>
   <div class="view" id="overviewView" hidden>
@@ -119,7 +129,7 @@ function withToken(path){
 }
 function withCache(path){const authed=withToken(path);return authed+(authed.includes('?')?'&':'?')+'v='+Date.now();}
 const $=id=>document.getElementById(id);
-let state=null,lastPage=-1,nextPage=-1,pollTimer=null,overviewCount=0,activeView='control',everConnected=false;
+let state=null,lastPage=-1,nextPage=-1,pollTimer=null,overviewCount=0,activeView='control',everConnected=false,notesEditing=false;
 function mmss(seconds){seconds=Math.max(0,seconds|0);const m=Math.floor(seconds/60),s=seconds%60;return m+':'+String(s).padStart(2,'0');}
 function setConn(text,color){$('conn').textContent=text;$('conn').style.color=color;}
 function connectionMessage(error){
@@ -200,7 +210,7 @@ function renderState(nextState){
   everConnected=true;setConn('connected','#8fbf9f');
   $('timer').textContent=mmss(state.timer.display_seconds);
   $('slide').textContent='Slide '+(state.current_logical_slide+1)+' / '+state.total_logical_slides;
-  $('notes').replaceChildren(renderMarkdown(state.current_notes||''));
+  if(!notesEditing)$('notes').replaceChildren(renderMarkdown(state.current_notes||''));
   const flags=[]; if(state.blacked_out)flags.push('blackout'); if(state.frozen)flags.push('frozen'); if(state.whiteboard_active)flags.push('whiteboard'); if(state.laser_active)flags.push('laser');
   $('mode').textContent=flags.join(' ');
   $('blackout').classList.toggle('active',state.blacked_out);
@@ -236,6 +246,36 @@ $('gotoBtn').onclick=()=>{const slide=+$('gotoSlide').value;if(slide>0)gotoSlide
 $('showControl').onclick=()=>showView('control');
 $('showNotes').onclick=()=>showView('notes');
 $('showOverview').onclick=()=>showView('overview');
+function enterNotesEdit(){
+ notesEditing=true;
+ $('notesEditArea').value=state?.current_notes||'';
+ $('notes').hidden=true;
+ $('notesEditArea').hidden=false;
+ $('notesEdit').hidden=true;
+ $('notesSave').hidden=false;
+ $('notesCancel').hidden=false;
+ $('notesEditArea').focus();
+}
+function exitNotesEdit(){
+ notesEditing=false;
+ $('notes').hidden=false;
+ $('notesEditArea').hidden=true;
+ $('notesEdit').hidden=false;
+ $('notesSave').hidden=true;
+ $('notesCancel').hidden=true;
+}
+$('notesEdit').onclick=()=>enterNotesEdit();
+$('notesCancel').onclick=()=>exitNotesEdit();
+$('notesSave').onclick=async()=>{
+ const text=$('notesEditArea').value;
+ $('notesSave').disabled=true;$('notesSave').textContent='Saving…';
+ try{
+  await api('/api/v1/commands/notes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({notes:text})});
+  exitNotesEdit();
+  refresh();
+ }catch(e){$('last').textContent='save failed';}
+ finally{$('notesSave').disabled=false;$('notesSave').textContent='Save';}
+};
 refresh();startEvents();
 </script>
 </body>

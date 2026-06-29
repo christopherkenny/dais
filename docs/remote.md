@@ -55,14 +55,17 @@ It currently shows:
 - Next slide image
 - Current slide number and total
 - Timer state and controls
-- Current slide notes
+- Current slide notes, with inline Edit / Save / Cancel controls
 - Previous and next controls
 - Blackout, freeze, whiteboard, and laser controls
 - Goto slide input
 - Connection state and last-command feedback
 
-Notes are currently view-only in the remote. Notes editing remains a presenter
-console feature.
+Notes can be edited directly in the Notes tab. Click **Edit** to open the
+current slide's notes in a text field, make changes, then click **Save** to
+write them back and persist them to the sidecar immediately. **Cancel**
+discards the draft. Slide changes received from SSE while editing do not
+overwrite the draft.
 
 ## Pairing A Second Device
 
@@ -145,6 +148,7 @@ dais remote timer start
 dais remote timer pause
 dais remote timer toggle
 dais remote timer reset
+dais remote notes "Mention the live demo here."
 ```
 
 Shared connection options:
@@ -170,6 +174,7 @@ All API endpoints are under `/api/v1`.
 | `/api/v1/commands/goto` | `POST` | Jump to a 1-based logical slide |
 | `/api/v1/commands/pointer` | `POST` | Set normalized pointer position |
 | `/api/v1/commands/timer` | `POST` | Start, pause, toggle, or reset the timer |
+| `/api/v1/commands/notes` | `POST` | Set speaker notes for the current slide and save |
 | `/api/v1/slides/current.png` | `GET` | Render the current page as PNG |
 | `/api/v1/slides/next.png` | `GET` | Render the next logical slide as PNG |
 | `/api/v1/slides/<n>/thumbnail.png` | `GET` | Render logical slide `n` as PNG |
@@ -197,6 +202,10 @@ curl -X POST http://127.0.0.1:4317/api/v1/commands/pointer `
 curl -X POST http://127.0.0.1:4317/api/v1/commands/timer `
   -H "Content-Type: application/json" `
   -d '{ "action": "toggle" }'
+
+curl -X POST http://127.0.0.1:4317/api/v1/commands/notes `
+  -H "Content-Type: application/json" `
+  -d '{ "notes": "Mention the live demo here." }'
 ```
 
 Token-protected requests can authenticate with either header:
