@@ -808,6 +808,8 @@ impl PresenterConsole {
                     }
                     ui.add_space(8.0);
                 }
+                ui.separator();
+                ui.label("If a phone cannot connect, Wi-Fi isolation or a firewall may be blocking local device access.");
             });
     }
 
