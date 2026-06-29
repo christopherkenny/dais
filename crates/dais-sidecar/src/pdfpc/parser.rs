@@ -90,6 +90,11 @@ pub fn parse_pdfpc_str(content: &str) -> PresentationMetadata {
                     metadata.last_minutes = Some(minutes);
                 }
             }
+            Some("slide_durations" | "slide_duration" | "slide_target_durations") => {
+                if let Some((slide, seconds)) = parse_indexed_seconds(trimmed) {
+                    metadata.slide_target_durations.insert(slide, seconds);
+                }
+            }
             Some("end_slide" | "end_user_slide") => {
                 if let Ok(page) = trimmed.parse::<usize>() {
                     metadata.end_slide = Some(page.saturating_sub(1));
@@ -112,6 +117,13 @@ pub fn parse_pdfpc_str(content: &str) -> PresentationMetadata {
     metadata
 }
 
+fn parse_indexed_seconds(line: &str) -> Option<(usize, f64)> {
+    let mut parts = line.split_whitespace();
+    let slide = parts.next()?.parse::<usize>().ok()?.saturating_sub(1);
+    let seconds = parts.next()?.parse::<f64>().ok()?;
+    if seconds.is_finite() && seconds > 0.0 { Some((slide, seconds)) } else { None }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -132,6 +144,9 @@ with multiple lines
 4 5
 [duration]
 20
+[slide_durations]
+1 60
+2 90.5
 ";
         let meta = parse_pdfpc_str(content);
         assert_eq!(meta.title.as_deref(), Some("test.pdf"));
@@ -144,6 +159,9 @@ with multiple lines
         assert_eq!(meta.groups[1].start_page, 3);
         assert_eq!(meta.groups[1].end_page, 4);
         assert_eq!(meta.last_minutes, Some(20));
+        assert_eq!(meta.slide_target_durations.len(), 2);
+        assert!((meta.slide_target_durations[&0] - 60.0).abs() < f64::EPSILON);
+        assert!((meta.slide_target_durations[&1] - 90.5).abs() < f64::EPSILON);
     }
 
     #[test]
@@ -189,6 +207,7 @@ Note here
                 n
             },
             slide_timings: std::collections::HashMap::new(),
+            slide_target_durations: std::collections::HashMap::new(),
             slide_annotations: std::collections::HashMap::new(),
             whiteboard_annotations: Vec::new(),
             slide_text_boxes: std::collections::HashMap::new(),
@@ -209,6 +228,7 @@ Note here
         assert_eq!(loaded.notes.len(), 2);
         assert_eq!(loaded.notes[&0], "First slide");
         assert_eq!(loaded.notes[&3], "Fourth slide");
+        assert!(loaded.slide_target_durations.is_empty());
 
         let _ = std::fs::remove_dir_all(dir);
     }

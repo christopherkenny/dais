@@ -90,6 +90,20 @@ impl PresentationEngine {
             warning_threshold,
             ..TimerState::default()
         };
+        state.slide_target_durations = metadata
+            .slide_target_durations
+            .iter()
+            .filter_map(|(&slide, &seconds)| {
+                if slide < state.total_logical_slides && seconds.is_finite() && seconds > 0.0 {
+                    Some((slide, std::time::Duration::from_secs_f64(seconds)))
+                } else {
+                    None
+                }
+            })
+            .fold(vec![None; state.total_logical_slides], |mut targets, (slide, duration)| {
+                targets[slide] = Some(duration);
+                targets
+            });
         state.notes_font_size = config.notes.font_size;
         state.notes_font_size_step = config.notes.font_size_step;
         state.pointer_style = parse_pointer_style(&config.laser.style);
@@ -1193,6 +1207,34 @@ mod tests {
         assert_eq!(groups.len(), 2);
         assert_eq!(groups[0].pages, vec![0, 1, 2]);
         assert_eq!(groups[1].pages, vec![3, 4]);
+    }
+
+    #[test]
+    fn slide_target_durations_follow_logical_slide_groups() {
+        let meta = PresentationMetadata {
+            groups: vec![
+                SlideGroupMeta { start_page: 0, end_page: 2 },
+                SlideGroupMeta { start_page: 3, end_page: 4 },
+            ],
+            slide_target_durations: HashMap::from([(0, 60.0), (1, 90.0), (2, 120.0)]),
+            ..Default::default()
+        };
+        let (mut engine, _, sender) = make_engine_with_metadata(5, &meta);
+
+        assert_eq!(engine.state().total_logical_slides, 2);
+        assert_eq!(
+            engine.state().slide_target_durations,
+            vec![Some(std::time::Duration::from_mins(1)), Some(std::time::Duration::from_secs(90))]
+        );
+
+        sender.send(Command::NextSlide).unwrap();
+        engine.tick();
+        assert_eq!(engine.state().current_logical_slide, 0);
+        assert_eq!(engine.state().current_page, 1);
+        assert_eq!(
+            engine.state().slide_target_durations[engine.state().current_logical_slide],
+            Some(std::time::Duration::from_mins(1))
+        );
     }
 
     #[test]

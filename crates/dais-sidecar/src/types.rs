@@ -18,6 +18,8 @@ pub struct PresentationMetadata {
     pub last_minutes: Option<u32>,
     /// Per-slide timing data (logical slide index → seconds spent).
     pub slide_timings: HashMap<usize, f64>,
+    /// Planned per-slide durations (logical slide index → target seconds).
+    pub slide_target_durations: HashMap<usize, f64>,
     /// Per-page slide annotations (`page_index` → completed strokes).
     pub slide_annotations: HashMap<usize, Vec<InkStrokeMeta>>,
     /// Whiteboard annotations (not tied to any slide).

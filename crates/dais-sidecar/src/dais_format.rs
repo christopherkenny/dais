@@ -25,6 +25,8 @@ struct DaisFile {
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     slide_timings: HashMap<String, f64>,
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    slide_target_durations: HashMap<String, f64>,
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     slide_annotations: HashMap<String, Vec<DaisInkStroke>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     whiteboard_annotations: Vec<DaisInkStroke>,
@@ -58,27 +60,37 @@ struct DaisTextBox {
     typst_prelude: String,
 }
 
+/// `.dais` stores user-facing page and slide references as 1-based numbers.
+/// Convert at the format boundary so engine metadata can stay 0-based.
 impl DaisFile {
     fn from_metadata(meta: &PresentationMetadata) -> Self {
         Self {
             version: 1,
             title: meta.title.clone(),
-            end_slide: meta.end_slide,
+            end_slide: meta.end_slide.map(to_one_based),
             last_minutes: meta.last_minutes,
             groups: meta
                 .groups
                 .iter()
-                .map(|g| DaisGroup { start_page: g.start_page, end_page: g.end_page })
+                .map(|g| DaisGroup {
+                    start_page: to_one_based(g.start_page),
+                    end_page: to_one_based(g.end_page),
+                })
                 .collect(),
-            notes: meta.notes.iter().map(|(k, v)| (k.to_string(), v.clone())).collect(),
-            slide_timings: meta.slide_timings.iter().map(|(k, v)| (k.to_string(), *v)).collect(),
+            notes: one_based_map(&meta.notes),
+            slide_timings: one_based_f64_map(&meta.slide_timings),
+            slide_target_durations: meta
+                .slide_target_durations
+                .iter()
+                .map(|(k, v)| (to_one_based(*k).to_string(), *v))
+                .collect(),
             slide_annotations: meta
                 .slide_annotations
                 .iter()
                 .filter(|(_, strokes)| !strokes.is_empty())
                 .map(|(k, v)| {
                     (
-                        k.to_string(),
+                        to_one_based(*k).to_string(),
                         v.iter()
                             .map(|s| DaisInkStroke {
                                 points: s.points.clone(),
@@ -100,7 +112,7 @@ impl DaisFile {
                 .filter(|(_, boxes)| !boxes.is_empty())
                 .map(|(k, v)| {
                     (
-                        k.to_string(),
+                        to_one_based(*k).to_string(),
                         v.iter()
                             .map(|tb| DaisTextBox {
                                 id: tb.id,
@@ -121,28 +133,38 @@ impl DaisFile {
     fn into_metadata(self) -> PresentationMetadata {
         PresentationMetadata {
             title: self.title,
-            end_slide: self.end_slide,
+            end_slide: self.end_slide.and_then(to_zero_based),
             last_minutes: self.last_minutes,
             groups: self
                 .groups
                 .into_iter()
-                .map(|g| SlideGroupMeta { start_page: g.start_page, end_page: g.end_page })
+                .filter_map(|g| {
+                    Some(SlideGroupMeta {
+                        start_page: to_zero_based(g.start_page)?,
+                        end_page: to_zero_based(g.end_page)?,
+                    })
+                })
                 .collect(),
             notes: self
                 .notes
                 .into_iter()
-                .filter_map(|(k, v)| k.parse::<usize>().ok().map(|idx| (idx, v)))
+                .filter_map(|(k, v)| parse_one_based_key(&k).map(|idx| (idx, v)))
                 .collect(),
             slide_timings: self
                 .slide_timings
                 .into_iter()
-                .filter_map(|(k, v)| k.parse::<usize>().ok().map(|idx| (idx, v)))
+                .filter_map(|(k, v)| parse_one_based_key(&k).map(|idx| (idx, v)))
+                .collect(),
+            slide_target_durations: self
+                .slide_target_durations
+                .into_iter()
+                .filter_map(|(k, v)| parse_one_based_key(&k).map(|idx| (idx, v)))
                 .collect(),
             slide_annotations: self
                 .slide_annotations
                 .into_iter()
                 .filter_map(|(k, v)| {
-                    k.parse::<usize>().ok().map(|idx| {
+                    parse_one_based_key(&k).map(|idx| {
                         (
                             idx,
                             v.into_iter()
@@ -165,7 +187,7 @@ impl DaisFile {
                 .slide_text_boxes
                 .into_iter()
                 .filter_map(|(k, v)| {
-                    k.parse::<usize>().ok().map(|idx| {
+                    parse_one_based_key(&k).map(|idx| {
                         (
                             idx,
                             v.into_iter()
@@ -185,6 +207,26 @@ impl DaisFile {
                 .collect(),
         }
     }
+}
+
+fn to_one_based(index: usize) -> usize {
+    index + 1
+}
+
+fn to_zero_based(index: usize) -> Option<usize> {
+    index.checked_sub(1)
+}
+
+fn parse_one_based_key(key: &str) -> Option<usize> {
+    key.parse::<usize>().ok().and_then(to_zero_based)
+}
+
+fn one_based_map(map: &HashMap<usize, String>) -> HashMap<String, String> {
+    map.iter().map(|(k, v)| (to_one_based(*k).to_string(), v.clone())).collect()
+}
+
+fn one_based_f64_map(map: &HashMap<usize, f64>) -> HashMap<String, f64> {
+    map.iter().map(|(k, v)| (to_one_based(*k).to_string(), *v)).collect()
 }
 
 impl SidecarFormat for DaisFormat {
@@ -235,6 +277,7 @@ mod tests {
         assert!(loaded.end_slide.is_none());
         assert!(loaded.last_minutes.is_none());
         assert!(loaded.slide_timings.is_empty());
+        assert!(loaded.slide_target_durations.is_empty());
 
         let _ = std::fs::remove_file(&path);
     }
@@ -265,6 +308,12 @@ mod tests {
                 t.insert(1, 45.0);
                 t
             },
+            slide_target_durations: {
+                let mut t = HashMap::new();
+                t.insert(0, 60.0);
+                t.insert(1, 90.0);
+                t
+            },
             slide_annotations: HashMap::new(),
             whiteboard_annotations: Vec::new(),
             slide_text_boxes: HashMap::new(),
@@ -287,6 +336,66 @@ mod tests {
         assert_eq!(loaded.slide_timings.len(), 2);
         assert!((loaded.slide_timings[&0] - 12.5).abs() < f64::EPSILON);
         assert!((loaded.slide_timings[&1] - 45.0).abs() < f64::EPSILON);
+        assert_eq!(loaded.slide_target_durations.len(), 2);
+        assert!((loaded.slide_target_durations[&0] - 60.0).abs() < f64::EPSILON);
+        assert!((loaded.slide_target_durations[&1] - 90.0).abs() < f64::EPSILON);
+
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn written_indexes_are_one_based() {
+        let dir = test_dir();
+        let path = dir.join("one_based.dais");
+        let format = DaisFormat;
+
+        let mut notes = HashMap::new();
+        notes.insert(0, "First".to_string());
+        let mut slide_timings = HashMap::new();
+        slide_timings.insert(0, 12.0);
+        let mut slide_target_durations = HashMap::new();
+        slide_target_durations.insert(0, 30.0);
+        let mut slide_annotations = HashMap::new();
+        slide_annotations.insert(
+            0,
+            vec![InkStrokeMeta { points: vec![(0.1, 0.2)], color: [0, 0, 0, 255], width: 2.0 }],
+        );
+        let mut slide_text_boxes = HashMap::new();
+        slide_text_boxes.insert(
+            0,
+            vec![TextBoxMeta {
+                id: 1,
+                rect: (0.0, 0.0, 1.0, 1.0),
+                content: "Box".to_string(),
+                font_size: 12.0,
+                color: [0, 0, 0, 255],
+                background: None,
+                typst_prelude: String::new(),
+            }],
+        );
+
+        let original = PresentationMetadata {
+            end_slide: Some(0),
+            groups: vec![SlideGroupMeta { start_page: 0, end_page: 0 }],
+            notes,
+            slide_timings,
+            slide_target_durations,
+            slide_annotations,
+            slide_text_boxes,
+            ..Default::default()
+        };
+
+        format.write(&path, &original).unwrap();
+        let content = std::fs::read_to_string(&path).unwrap();
+
+        assert!(content.contains("end_slide: 1"));
+        assert!(content.contains("start_page: 1"));
+        assert!(content.contains("end_page: 1"));
+        assert!(content.contains("\"1\": \"First\""));
+        assert!(content.contains("slide_timings: {\n\t\"1\": 12.0"));
+        assert!(content.contains("slide_target_durations: {\n\t\"1\": 30.0"));
+        assert!(content.contains("slide_annotations: {\n\t\"1\": ["));
+        assert!(content.contains("slide_text_boxes: {\n\t\"1\": ["));
 
         let _ = std::fs::remove_file(&path);
     }
@@ -567,6 +676,11 @@ mod tests {
                 t.insert(0, 5.0);
                 t
             },
+            slide_target_durations: {
+                let mut t = HashMap::new();
+                t.insert(0, 30.0);
+                t
+            },
             slide_annotations,
             whiteboard_annotations: vec![InkStrokeMeta {
                 points: vec![(0.5, 0.5)],
@@ -586,6 +700,7 @@ mod tests {
         assert_eq!(loaded.groups.len(), 1);
         assert_eq!(loaded.notes.len(), 1);
         assert_eq!(loaded.slide_timings.len(), 1);
+        assert_eq!(loaded.slide_target_durations.len(), 1);
 
         // Annotations also preserved
         assert_eq!(loaded.slide_annotations.len(), 1);

@@ -106,6 +106,8 @@ pub struct PresentationState {
     pub slide_elapsed: Duration,
     /// Accumulated time spent on each logical slide during this session.
     pub slide_elapsed_by_logical: Vec<Duration>,
+    /// Planned duration target for each logical slide.
+    pub slide_target_durations: Vec<Option<Duration>>,
 
     // -- UI --
     /// Whether the slide overview grid is visible.
@@ -166,6 +168,7 @@ impl PresentationState {
             timer: TimerState::default(),
             slide_elapsed: Duration::ZERO,
             slide_elapsed_by_logical: vec![Duration::ZERO; total_logical_slides],
+            slide_target_durations: vec![None; total_logical_slides],
             overview_visible: false,
             notes_visible: true,
             notes_editing: false,

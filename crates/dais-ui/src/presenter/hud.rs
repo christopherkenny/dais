@@ -205,7 +205,9 @@ impl HudOverlay {
 
             ui.separator();
 
-            super::timer::show_slide_timer(ui, state.slide_elapsed);
+            let target =
+                state.slide_target_durations.get(state.current_logical_slide).copied().flatten();
+            super::timer::show_slide_timer(ui, state.slide_elapsed, target);
 
             // Mode indicators + help button (right-aligned)
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {

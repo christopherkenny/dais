@@ -283,6 +283,26 @@ When loading, Dais checks in order: `.dais` sidecar → `.pdfpc` sidecar → emb
 The grouping editor and `save_sidecar` action both use `sidecar_format` when choosing what to write.
 Set `save_slide_timings = false`, or run with `--time-ignore`, to save sidecars
 without updating the `slide_timings` data.
+In `.dais` files, page and slide references use one-based numbers that match
+the slide numbers shown in the presenter UI.
+Speaker notes are keyed by the one-based first page of the logical slide group.
+
+Per-logical-slide target durations can be assigned in seconds in `.dais`
+sidecars using `slide_target_durations` with one-based logical slide numbers.
+When a logical slide contains multiple PDF pages or build steps, one target
+duration applies to the whole group:
+
+```eon
+slide_target_durations: {
+    "1": 60.0
+    "2": 90.0
+}
+```
+
+Dais also imports target durations from `.pdfpc` sidecars that already contain
+compatible timing sections, but target durations are written only to `.dais`.
+When a slide has a target duration, the presenter slide timer shows
+`elapsed / target` and turns red after the target is exceeded.
 
 ## Single-Monitor Presentation Mode (F5)
 

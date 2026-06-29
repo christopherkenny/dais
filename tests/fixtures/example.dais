@@ -1,23 +1,23 @@
 version: 1
 title: "Quarto Beamer Example"
-end_slide: 5
+end_slide: 6
 last_minutes: 20
 groups: [
   {
-    start_page: 0
-    end_page: 1
+    start_page: 1
+    end_page: 2
   }
   {
-    start_page: 2
-    end_page: 3
-  }
-  {
-    start_page: 4
+    start_page: 3
     end_page: 4
+  }
+  {
+    start_page: 5
+    end_page: 5
   }
 ]
 notes: {
-  "0": "Welcome to the presentation. This is a Quarto deck compiled via Beamer."
-  "2": "Key finding: *our* method outperforms the baseline by 15%."
-  "4": "Thank you for listening. Questions?"
+  "1": "Welcome to the presentation. This is a Quarto deck compiled via Beamer."
+  "3": "Key finding: *our* method outperforms the baseline by 15%."
+  "5": "Thank you for listening. Questions?"
 }

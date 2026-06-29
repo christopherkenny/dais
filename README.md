@@ -12,6 +12,7 @@ Dais is designed for straightforward installation, reliable operation in real pr
 - Multi-monitor presenter view with an audience display and a presenter console with notes, timer, and navigation.
 - Overlay and build-step support for `pdfpc` metadata, Beamer `\pdfpc`, and manual grouping.
 - Presentation tools including a laser pointer, freehand ink, spotlight, and zoom.
+- Per-logical-slide target durations in `.dais` sidecars, with presenter timer color changes when a slide runs over.
 - `.pdfpc` compatibility and a native `.dais` sidecar format.
 - Fully remappable keybindings with presenter-console defaults.
 - Local remote-control API for scripts and external controllers.

@@ -676,7 +676,12 @@ impl PresenterConsole {
 
                 ui.separator();
 
-                timer::show_slide_timer(ui, state.slide_elapsed);
+                let target = state
+                    .slide_target_durations
+                    .get(state.current_logical_slide)
+                    .copied()
+                    .flatten();
+                timer::show_slide_timer(ui, state.slide_elapsed, target);
 
                 ui.separator();
 

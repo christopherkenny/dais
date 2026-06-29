@@ -43,10 +43,19 @@ pub fn show_timer(ui: &mut egui::Ui, timer: &TimerState) -> bool {
 }
 
 /// Render the per-slide elapsed timer.
-pub fn show_slide_timer(ui: &mut egui::Ui, elapsed: std::time::Duration) {
-    ui.label(
-        egui::RichText::new(format!("Slide {}", format_duration(elapsed)))
-            .size(14.0)
-            .color(egui::Color32::LIGHT_GRAY),
-    );
+pub fn show_slide_timer(
+    ui: &mut egui::Ui,
+    elapsed: std::time::Duration,
+    target: Option<std::time::Duration>,
+) {
+    let over_target = target.is_some_and(|duration| elapsed > duration);
+    let color =
+        if over_target { egui::Color32::from_rgb(255, 80, 80) } else { egui::Color32::LIGHT_GRAY };
+    let label = if let Some(target) = target {
+        format!("Slide {} / {}", format_duration(elapsed), format_duration(target))
+    } else {
+        format!("Slide {}", format_duration(elapsed))
+    };
+
+    ui.label(egui::RichText::new(label).size(14.0).color(color));
 }

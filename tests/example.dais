@@ -1,10 +1,6 @@
 version: 1
 groups: [
 	{
-		start_page: 0
-		end_page: 0
-	}
-	{
 		start_page: 1
 		end_page: 1
 	}
@@ -26,26 +22,26 @@ groups: [
 	}
 	{
 		start_page: 6
-		end_page: 8
+		end_page: 6
 	}
 	{
-		start_page: 9
+		start_page: 7
 		end_page: 9
 	}
 	{
 		start_page: 10
-		end_page: 11
+		end_page: 10
 	}
 	{
-		start_page: 12
+		start_page: 11
 		end_page: 12
 	}
 	{
 		start_page: 13
-		end_page: 14
+		end_page: 13
 	}
 	{
-		start_page: 15
+		start_page: 14
 		end_page: 15
 	}
 	{
@@ -104,20 +100,24 @@ groups: [
 		start_page: 29
 		end_page: 29
 	}
+	{
+		start_page: 30
+		end_page: 30
+	}
 ]
 notes: {
-	"2": "Example comment made via the *remote* feature!"
-	"0": "Some notes. We can write *new* comments as we need.  **Fancy**. More?"
-	"4": "How hard would it be to text box writing in the whiteboard? disable question mark while in notes."
+	"3": "Example comment made via the *remote* feature!"
+	"1": "Some notes. We can write *new* comments as we need.  **Fancy**. More?"
+	"5": "How hard would it be to text box writing in the whiteboard? disable question mark while in notes."
 }
 slide_timings: {
-	"3": 8.6779005
-	"1": 0.7021761
-	"2": 0.9371594
-	"0": 21.598485
+	"4": 8.6779005
+	"2": 0.7021761
+	"3": 0.9371594
+	"1": 21.598485
 }
 slide_annotations: {
-	"3": [
+	"4": [
 		{
 			points: [
 				[0.8323699, 0.5028057]
@@ -147,7 +147,7 @@ slide_annotations: {
 	]
 }
 slide_text_boxes: {
-	"0": [
+	"1": [
 		{
 			id: 1
 			rect: [0.8047494, 0.32820296, 0.06926124, 0.050425053]
