@@ -108,7 +108,7 @@ See [docs/remote.md](docs/remote.md) for the browser remote, REST API, CLI remot
 
 ## Architecture
 
-Dais is organized as a 7-crate Cargo workspace:
+Dais is organized as an 8-crate Cargo workspace:
 
 | Crate | Role |
 |---|---|
@@ -118,6 +118,7 @@ Dais is organized as a 7-crate Cargo workspace:
 | `dais-document` | `DocumentSource` trait, hayro PDF renderer, and page cache |
 | `dais-sidecar` | `.pdfpc` parser/writer, metadata extraction |
 | `dais-platform` | Platform-specific monitor enumeration |
+| `dais-remote` | HTTP remote-control server, browser remote, and REST API |
 | `dais-ui` | egui UI for the presenter console, audience window, and grouping editor |
 
 Key architectural decisions:
