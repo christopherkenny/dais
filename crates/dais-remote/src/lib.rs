@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::convert::Infallible;
 use std::net::{IpAddr, SocketAddr};
 use std::sync::{Arc, Mutex, RwLock};
-use std::thread::{self, JoinHandle};
+use std::thread;
 use std::time::Duration;
 
 use anyhow::{Context, Result, anyhow};
@@ -87,7 +87,7 @@ pub struct RemoteServer {
     urls: Vec<String>,
     status: RemoteStatusHandle,
     shutdown: Option<oneshot::Sender<()>>,
-    handle: Option<JoinHandle<()>>,
+    _handle: thread::JoinHandle<()>,
 }
 
 impl RemoteServer {
@@ -121,9 +121,8 @@ impl Drop for RemoteServer {
         if let Some(shutdown) = self.shutdown.take() {
             let _ = shutdown.send(());
         }
-        if let Some(handle) = self.handle.take() {
-            let _ = handle.join();
-        }
+        // Do not join here: active browser remotes can hold SSE connections open,
+        // and the presenter console must remain authoritative over app shutdown.
     }
 }
 
@@ -297,7 +296,7 @@ pub fn start_server(
         urls,
         status,
         shutdown: Some(shutdown_tx),
-        handle: Some(handle),
+        _handle: handle,
     })
 }
 
