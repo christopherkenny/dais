@@ -191,7 +191,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><strong>macOS:</strong> <code>~/Library/Application Support/dais/config.toml</code></li>
 <li><strong>Linux:</strong> <code>~/.config/dais/config.toml</code></li>
 </ul>
-<p>If a config layer doesn’t exist, Dais skips it. All settings are optional.</p>
+<p>If a config layer doesn’t exist, Dais skips it. All settings are optional. Run with <code>--portable</code> to skip the machine-wide config layer entirely. This is useful when running Dais from a USB stick or copied folder on a machine that may already have its own Dais settings. Project-local <code>dais.toml</code> and explicit <code>--config &lt;path&gt;</code> files are still loaded.</p>
 <section id="full-default-configuration" class="level2">
 <h2 class="anchored" data-anchor-id="full-default-configuration">Full Default Configuration</h2>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dt">sidecar_format</span> <span class="op">=</span> <span class="st">"dais"</span>        <span class="co"># "dais" (default) or "pdfpc"</span></span>
