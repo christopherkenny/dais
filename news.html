@@ -101,6 +101,10 @@ ul.task-list li input[type="checkbox"] {
 <span class="menu-text">Configuration</span></a>
   </li>  
   <li class="nav-item">
+    <a class="nav-link" href="./notes.html"> 
+<span class="menu-text">Notes</span></a>
+  </li>  
+  <li class="nav-item">
     <a class="nav-link" href="./keybindings.html"> 
 <span class="menu-text">Keybindings</span></a>
   </li>  
@@ -168,6 +172,7 @@ ul.task-list li input[type="checkbox"] {
 <li>Slides are annotatable from the browser remote. The Draw tab shows the current slide with a canvas overlay; draw with a finger, mouse, or Apple Pencil and strokes are sent to the presenter screen and saved to the sidecar. Includes a six-color palette, three width presets, and a clear button.</li>
 <li>Presenter console shows remote pairing URLs, QR codes, pairing code, connected remote clients, and the last remote command.</li>
 <li>Per-logical-slide target durations can be set in <code>.dais</code> sidecars; the presenter slide timer shows <code>elapsed / target</code> and turns red when a slide exceeds its target.</li>
+<li><code>--notes &lt;path&gt;</code> can use a Markdown file as the speaker-notes source and save edits back to that file.</li>
 <li><code>dais remote ...</code> subcommands query state and send actions, goto, pointer, timer, and notes commands to a running presentation.</li>
 <li>Remote settings can be configured under <code>[remote]</code> in <code>config.toml</code> or project-local <code>dais.toml</code>.</li>
 <li><code>--portable</code> skips OS user config for USB or copied-folder runs while still loading project-local and explicit config files.</li>

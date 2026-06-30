@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>keybindings – Dais</title>
+<title>notes – Dais</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -136,11 +136,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text">Configuration</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./notes.html"> 
+    <a class="nav-link active" href="./notes.html" aria-current="page"> 
 <span class="menu-text">Notes</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link active" href="./keybindings.html" aria-current="page"> 
+    <a class="nav-link" href="./keybindings.html"> 
 <span class="menu-text">Keybindings</span></a>
   </li>  
   <li class="nav-item">
@@ -180,222 +180,101 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 
-<section id="keybinding-reference" class="level1">
-<h1>Keybinding Reference</h1>
-<p>All keybindings are remappable via the <code>[keybindings]</code> section in <code>config.toml</code>. The defaults are designed to feel familiar for presenter-console workflows.</p>
-<section id="default-keybindings" class="level2">
-<h2 class="anchored" data-anchor-id="default-keybindings">Default Keybindings</h2>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 33%">
-<col style="width: 33%">
-<col style="width: 33%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Action</th>
-<th>Default Key(s)</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><code>next_slide</code></td>
-<td>Right, Space, Down, PageDown</td>
-<td>Advance to the next build step, or the next logical slide if the current slide is complete</td>
-</tr>
-<tr class="even">
-<td><code>previous_slide</code></td>
-<td>Left, Up, PageUp</td>
-<td>Go back to the previous build step, or the previous logical slide if already at the start</td>
-</tr>
-<tr class="odd">
-<td><code>next_overlay</code></td>
-<td>Shift+Right, Shift+Down</td>
-<td>Next PDF page (overlay step)</td>
-</tr>
-<tr class="even">
-<td><code>previous_overlay</code></td>
-<td>Shift+Left, Shift+Up</td>
-<td>Previous PDF page (overlay step)</td>
-</tr>
-<tr class="odd">
-<td><code>first_slide</code></td>
-<td>Home</td>
-<td>Jump to first slide</td>
-</tr>
-<tr class="even">
-<td><code>last_slide</code></td>
-<td>End</td>
-<td>Jump to last slide</td>
-</tr>
-<tr class="odd">
-<td><code>go_to_slide</code></td>
-<td>G then number then Enter</td>
-<td>Jump to slide by number</td>
-</tr>
-<tr class="even">
-<td><code>toggle_freeze</code></td>
-<td>F</td>
-<td>Freeze/unfreeze audience display</td>
-</tr>
-<tr class="odd">
-<td><code>toggle_blackout</code></td>
-<td>B, . (period)</td>
-<td>Black out audience display</td>
-</tr>
-<tr class="even">
-<td><code>toggle_whiteboard</code></td>
-<td>W</td>
-<td>Toggle whiteboard (white drawing canvas)</td>
-</tr>
-<tr class="odd">
-<td><code>toggle_laser</code></td>
-<td>L</td>
-<td>Toggle laser pointer</td>
-</tr>
-<tr class="even">
-<td><code>cycle_laser_style</code></td>
-<td>Ctrl+L</td>
-<td>Cycle laser style: dot, minimal, crosshair, arrow, ring, bullseye, highlight</td>
-</tr>
-<tr class="odd">
-<td><code>toggle_ink</code></td>
-<td>D</td>
-<td>Toggle freehand drawing</td>
-</tr>
-<tr class="even">
-<td><code>clear_ink</code></td>
-<td>C</td>
-<td>Clear all ink on current slide</td>
-</tr>
-<tr class="odd">
-<td><code>cycle_ink_color</code></td>
-<td>Ctrl+D</td>
-<td>Cycle pen color</td>
-</tr>
-<tr class="even">
-<td><code>cycle_ink_width</code></td>
-<td>Shift+D</td>
-<td>Cycle pen width</td>
-</tr>
-<tr class="odd">
-<td><code>toggle_spotlight</code></td>
-<td>S</td>
-<td>Toggle spotlight mode</td>
-</tr>
-<tr class="even">
-<td><code>toggle_zoom</code></td>
-<td>Z</td>
-<td>Toggle zoom mode</td>
-</tr>
-<tr class="odd">
-<td><code>toggle_overview</code></td>
-<td>O</td>
-<td>Toggle slide overview grid</td>
-</tr>
-<tr class="even">
-<td><code>toggle_notes</code></td>
-<td>N</td>
-<td>Toggle notes panel visibility</td>
-</tr>
-<tr class="odd">
-<td><code>toggle_notes_edit</code></td>
-<td>Ctrl+N</td>
-<td>Toggle inline notes editing</td>
-</tr>
-<tr class="even">
-<td><code>start_pause_timer</code></td>
-<td>T</td>
-<td>Start/pause timer</td>
-</tr>
-<tr class="odd">
-<td><code>reset_timer</code></td>
-<td>Shift+T</td>
-<td>Reset timer</td>
-</tr>
-<tr class="even">
-<td><code>increment_notes_font</code></td>
-<td>+, Shift+=</td>
-<td>Increase notes font size</td>
-</tr>
-<tr class="odd">
-<td><code>decrement_notes_font</code></td>
-<td>-</td>
-<td>Decrease notes font size</td>
-</tr>
-<tr class="even">
-<td><code>toggle_screen_share</code></td>
-<td>Shift+S</td>
-<td>Toggle screen-share mode</td>
-</tr>
-<tr class="odd">
-<td><code>toggle_presentation_mode</code></td>
-<td>F5</td>
-<td>Toggle the active single-monitor presentation surface</td>
-</tr>
-<tr class="even">
-<td><code>swap_displays</code></td>
-<td>F6</td>
-<td>Swap the presenter and audience monitors for the current session</td>
-</tr>
-<tr class="odd">
-<td><code>toggle_text_box_mode</code></td>
-<td>X</td>
-<td>Toggle text box placement mode</td>
-</tr>
-<tr class="even">
-<td><code>quit</code></td>
-<td>Q, Escape</td>
-<td>Quit presentation (exits HUD first)</td>
-</tr>
-<tr class="odd">
-<td><code>save_sidecar</code></td>
-<td>Ctrl+S</td>
-<td>Save sidecar file</td>
-</tr>
-</tbody>
-</table>
+<section id="markdown-notes" class="level1">
+<h1>Markdown Notes</h1>
+<p>Use <code>--notes &lt;path&gt;</code> to keep speaker notes in a separate Markdown file:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>dais <span class="op">--</span>notes talk_notes<span class="op">.</span><span class="fu">md</span> talk<span class="op">.</span><span class="fu">pdf</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The Markdown file becomes the notes source for the presentation. Dais still loads sidecars for slide grouping, timings, annotations, text boxes, and other metadata, but notes from the Markdown file replace sidecar notes for matching logical slides.</p>
+<p>This is useful when notes are generated by another tool, edited by hand, or reviewed in Git.</p>
+<section id="basic-format" class="level2">
+<h2 class="anchored" data-anchor-id="basic-format">Basic Format</h2>
+<p>Each top-level Markdown heading starts notes for one logical slide:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu"># Motivation</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>Opening notes.</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu"># Prior Work</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>Mention the comparison.</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="fu"># Main Result</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>Slow down here.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Without explicit slide numbers, Dais assigns sections in order. The first heading maps to slide 1, the second to slide 2, the third to slide 3, and so on. The heading text is only a label for the notes file; it does not need to match the slide title in the PDF.</p>
 </section>
-<section id="custom-keybindings" class="level2">
-<h2 class="anchored" data-anchor-id="custom-keybindings">Custom Keybindings</h2>
-<p>Override any binding in <code>config.toml</code>:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[keybindings]</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Replace the defaults for an action entirely</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="dt">next_slide</span> <span class="op">=</span> <span class="op">[</span><span class="st">"j"</span><span class="op">,</span> <span class="st">"Return"</span><span class="op">]</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="dt">previous_slide</span> <span class="op">=</span> <span class="op">[</span><span class="st">"k"</span><span class="op">]</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Single key binding</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="dt">toggle_laser</span> <span class="op">=</span> <span class="op">[</span><span class="st">"p"</span><span class="op">]</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Cycle the active laser style</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="dt">cycle_laser_style</span> <span class="op">=</span> <span class="op">[</span><span class="st">"Ctrl+l"</span><span class="op">]</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Modifier combos</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="dt">save_sidecar</span> <span class="op">=</span> <span class="op">[</span><span class="st">"Ctrl+Shift+s"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>When you define a binding for an action, it <strong>replaces all defaults</strong> for that action. Unmentioned actions keep their defaults.</p>
+<section id="slide-numbers" class="level2">
+<h2 class="anchored" data-anchor-id="slide-numbers">Slide Numbers</h2>
+<p>Add <code>{slide=N}</code> to a top-level heading when a section belongs to a specific one-based logical slide:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu"># Motivation</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>Opening notes.</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu"># Prior Work</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>Mention the comparison.</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="fu"># Main Result {slide=4}</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>Slow down here.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This maps <code>Motivation</code> to slide 1, <code>Prior Work</code> to slide 2, leaves slide 3 without notes, and maps <code>Main Result</code> to slide 4.</p>
+<p>After an explicit slide number, automatic numbering continues from the next slide:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu"># Backup Context {slide=12}</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>Notes for slide 12.</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu"># Extra Detail</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>Notes for slide 13.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Use explicit slide numbers to skip slides or to keep generated notes stable when slides are inserted, hidden, or reordered.</p>
 </section>
-<section id="modifier-keys" class="level2">
-<h2 class="anchored" data-anchor-id="modifier-keys">Modifier Keys</h2>
+<section id="headings-inside-notes" class="level2">
+<h2 class="anchored" data-anchor-id="headings-inside-notes">Headings Inside Notes</h2>
+<p>Only top-level headings (<code># Heading</code>) start a new slide note. Lower-level headings stay inside the current note:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu"># Main Result {slide=4}</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">## Setup</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>Explain assumptions.</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="fu">## Punchline</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>State the result clearly.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Here, <code>## Setup</code> and <code>## Punchline</code> are part of the slide 4 notes.</p>
+</section>
+<section id="rules" class="level2">
+<h2 class="anchored" data-anchor-id="rules">Rules</h2>
 <ul>
-<li><code>Shift</code> — Shift key</li>
-<li><code>Ctrl</code> / <code>Control</code> / <code>Cmd</code> / <code>Command</code> — Ctrl on Windows/Linux, Cmd on macOS</li>
-<li><code>Alt</code> / <code>Option</code> — Alt on Windows/Linux, Option on macOS</li>
+<li>Slide numbers are one-based logical slide numbers.</li>
+<li>A top-level heading may contain any title text before <code>{slide=N}</code>.</li>
+<li>Slides may be omitted.</li>
+<li>Each slide can have at most one note section.</li>
+<li>Note sections cannot refer to slide 0 or to slides past the end of the presentation.</li>
 </ul>
-<p>Combine with <code>+</code>: <code>Shift+Right</code>, <code>Ctrl+s</code>, <code>Ctrl+Shift+s</code></p>
 </section>
-<section id="remote-actions" class="level2">
-<h2 class="anchored" data-anchor-id="remote-actions">Remote Actions</h2>
-<p>The remote API uses an allowlist of the same action names as this keybinding reference for simple presenter-control commands. For example:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>dais remote action next_slide</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>dais remote action toggle_blackout</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>dais remote action toggle_laser</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Parameterized controls use dedicated remote commands:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>dais remote goto <span class="dv">12</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="dt">dais</span> remote pointer <span class="dv">0.5</span> <span class="dv">0.5</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="dt">dais</span> remote timer reset</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>This keeps external controllers generic: Stream Deck profiles, scripts, phone controls, or experimental devices can call the same stable action API without being built into Dais itself.</p>
-<p>Not every keybinding action is remote-dispatchable. Local-only or editing actions such as quit, save sidecar, notes editing, notes font changes, and text box mode stay inside the presenter console.</p>
+<section id="saving" class="level2">
+<h2 class="anchored" data-anchor-id="saving">Saving</h2>
+<p>When <code>--notes &lt;path&gt;</code> is active, note edits made in Dais save back to the Markdown file.</p>
+<p>Dais preserves the structure of the file where possible:</p>
+<ul>
+<li><p>Existing note headings keep their title text and <code>{slide=N}</code> marker.</p></li>
+<li><p>Only note bodies are replaced.</p></li>
+<li><p>Front matter, comments, blank lines, ordinary text outside note sections, and section order are preserved.</p></li>
+<li><p>When notes are added for a slide with no existing section, Dais appends a new section:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu"># Slide 7 {slide=7}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p>When notes are cleared, Dais leaves the heading in place with an empty body.</p></li>
+</ul>
+<p>Sidecar saves continue to write non-note presentation metadata. With <code>--notes &lt;path&gt;</code>, the Markdown file remains the source of truth for notes.</p>
+</section>
+<section id="errors" class="level2">
+<h2 class="anchored" data-anchor-id="errors">Errors</h2>
+<p>Dais refuses to save the Markdown notes file when doing so could corrupt or mis-map notes. This includes:</p>
+<ul>
+<li>A malformed <code>{slide=N}</code> marker.</li>
+<li>Duplicate sections for the same slide.</li>
+<li>A section mapped outside the presentation’s logical slide range.</li>
+<li>A read or write error for the notes file.</li>
+</ul>
+<p>When a save fails, Dais keeps the edited notes in the running presentation and reports the error so the file can be fixed.</p>
 
 
 </section>
@@ -810,7 +689,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>   
     <div class="nav-footer-center">
       &nbsp;
-    <div class="toc-actions"><ul><li><a href="https://github.com/christopherkenny/dais/blob/main/keybindings.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/christopherkenny/dais/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div>
+    <div class="toc-actions"><ul><li><a href="https://github.com/christopherkenny/dais/blob/main/notes.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/christopherkenny/dais/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div>
     <div class="nav-footer-right">
 <p>Built with <a href="https://quarto.org/">Quarto</a>.</p>
 </div>
