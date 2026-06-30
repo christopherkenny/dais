@@ -183,6 +183,8 @@ ul.task-list li input[type="checkbox"] {
 <li><code>--time-ignore</code> can disable per-slide timing updates when saving sidecars.</li>
 <li><code>dais export ... --out ...</code> writes a new PDF with saved Dais ink annotations and Typst text boxes composed over the original PDF pages, with options for SVG/PNG output, layer selection, whiteboard export, handout export that collapses incremental build pages, and recurring defaults under <code>[export]</code>.</li>
 <li>Dual-monitor presentations can swap the presenter and audience screens instantly with <code>F6</code> or the remappable <code>swap_displays</code> action, without changing config.</li>
+<li>Ink toolbar now has a unified pen-type selector: Pen, Highlighter, and Eraser. Pen and Highlighter maintain independent color and width settings.</li>
+<li>Highlighter presets are configurable via <code>[ink] highlighter_colors</code> (RGBA hex strings) and <code>[ink] highlighter_width</code> in <code>dais.toml</code>.</li>
 </ul>
 </section>
 <section id="bug-fixes" class="level2">
