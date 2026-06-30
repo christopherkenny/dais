@@ -18,11 +18,6 @@
 - Ink toolbar now has a unified pen-type selector: Pen, Highlighter, and Eraser. Pen and Highlighter maintain independent color and width settings.
 - Highlighter presets are configurable via `[ink] highlighter_colors` (RGBA hex strings) and `[ink] highlighter_width` in `dais.toml`.
 
-## Bug fixes
-
-- Remote LAN mode now accepts valid IP-literal hosts when bound to `0.0.0.0`.
-- Custom remote tokens are restricted to URL-safe characters so browser pairing links work reliably.
-
 # dais 0.1.1
 
 ## New features
