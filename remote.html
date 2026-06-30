@@ -526,11 +526,11 @@ swap_displays</code></pre>
 <section id="server-sent-events" class="level2">
 <h2 class="anchored" data-anchor-id="server-sent-events">Server-Sent Events</h2>
 <p><code>GET /api/v1/events</code> provides a browser-friendly event stream. The built-in web remote uses it to update state without polling.</p>
-<p>This is intentionally simpler than WebSocket support. REST plus server-sent events is enough for the first second-device workflow while preserving a path to WebSockets later if richer bidirectional UI needs appear.</p>
+<p>This is intentionally simpler than WebSocket support. REST plus server-sent events is enough for the current second-device workflow while preserving a path to WebSockets later if richer bidirectional UI needs appear.</p>
 </section>
 <section id="external-controllers" class="level2">
 <h2 class="anchored" data-anchor-id="external-controllers">External Controllers</h2>
-<p>External controllers should call the stable action API rather than adding device-specific code to Dais.</p>
+<p>External controllers call the stable action API rather than adding device-specific code to Dais.</p>
 <p>Good fits include:</p>
 <ul>
 <li>Stream Deck profiles</li>
