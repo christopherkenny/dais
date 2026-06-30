@@ -140,6 +140,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text">Notes</span></a>
   </li>  
   <li class="nav-item">
+    <a class="nav-link" href="./export.html"> 
+<span class="menu-text">Export</span></a>
+  </li>  
+  <li class="nav-item">
     <a class="nav-link" href="./keybindings.html"> 
 <span class="menu-text">Keybindings</span></a>
   </li>  
@@ -227,7 +231,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--edit</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>           <span class="co"># Open the slide grouping editor</span></span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--config</span> <span class="op">&lt;</span>path<span class="op">&gt;</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>  <span class="co"># Use a specific config file</span></span>
 <span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--time-ignore</span> <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span>    <span class="co"># Do not update slide timing data on save</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--test-input</span>                <span class="co"># Diagnostic mode for clicker/remote setup</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> <span class="at">--test-input</span>                <span class="co"># Diagnostic mode for clicker/remote setup</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="ex">dais</span> export <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span> --out <span class="op">&lt;</span>file.pdf<span class="op">&gt;</span> <span class="pp">[--</span><span class="ss">handout</span><span class="pp">]</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>                                  <span class="co"># Export a copy with annotations and text boxes applied</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="display-modes" class="level2">
 <h2 class="anchored" data-anchor-id="display-modes">Display Modes</h2>
