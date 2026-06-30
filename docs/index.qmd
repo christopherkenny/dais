@@ -84,6 +84,7 @@ The binary will be at `target/release/dais`, or `dais.exe` on Windows.
 ## Documentation
 
 - [Configuration](configuration.md)
+- [Markdown Notes](notes.md)
 - [Keybindings](keybindings.md)
 - [Clicker & Remote Setup](clicker-setup.md)
 - [Remote Control](remote.md)

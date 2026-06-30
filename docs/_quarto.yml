@@ -16,6 +16,8 @@ website:
         href: index.qmd
       - text: Configuration
         href: configuration.md
+      - text: Notes
+        href: notes.md
       - text: Keybindings
         href: keybindings.md
       - text: Clickers

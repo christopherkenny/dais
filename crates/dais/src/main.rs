@@ -17,6 +17,10 @@ struct Cli {
     #[arg(long)]
     config: Option<String>,
 
+    /// Path to a Markdown speaker notes file to use as the notes source.
+    #[arg(long)]
+    notes: Option<String>,
+
     /// Skip the OS user config directory for a portable, folder-local run.
     #[arg(long)]
     portable: bool,
@@ -168,13 +172,8 @@ fn main() -> anyhow::Result<()> {
     let receiver = bus.into_receiver();
 
     // Create presentation engine
-    let (engine, shared_state) = dais_engine::engine::PresentationEngine::new(
-        page_count,
-        &metadata,
-        &config,
-        receiver,
-        Path::new(&pdf_path).to_path_buf(),
-    );
+    let (engine, shared_state) =
+        create_engine(page_count, &metadata, &config, receiver, Path::new(&pdf_path), &cli)?;
 
     // Sync engine state for screen-share
     if is_screen_share {
@@ -245,6 +244,38 @@ fn load_effective_config(cli: &Cli, pdf_path: &Path) -> dais_core::config::Confi
         config.save_slide_timings = false;
     }
     config
+}
+
+fn create_engine(
+    page_count: usize,
+    metadata: &dais_sidecar::types::PresentationMetadata,
+    config: &dais_core::config::Config,
+    receiver: dais_core::bus::CommandReceiver,
+    pdf_path: &Path,
+    cli: &Cli,
+) -> anyhow::Result<(
+    dais_engine::engine::PresentationEngine,
+    std::sync::Arc<std::sync::RwLock<dais_core::state::PresentationState>>,
+)> {
+    if let Some(notes_path) = &cli.notes {
+        return dais_engine::engine::PresentationEngine::new_with_notes(
+            page_count,
+            metadata,
+            config,
+            receiver,
+            pdf_path.to_path_buf(),
+            Path::new(notes_path),
+        )
+        .map_err(|e| anyhow::anyhow!("Failed to load Markdown notes: {e}"));
+    }
+
+    Ok(dais_engine::engine::PresentationEngine::new(
+        page_count,
+        metadata,
+        config,
+        receiver,
+        pdf_path.to_path_buf(),
+    ))
 }
 
 fn remote_toasts(server: Option<&dais_remote::RemoteServer>) -> Vec<String> {
@@ -497,6 +528,14 @@ mod tests {
         let cli = Cli::try_parse_from(["dais", "--portable", "slides.pdf"]).unwrap();
 
         assert!(cli.portable);
+        assert_eq!(cli.pdf_path.as_deref(), Some("slides.pdf"));
+    }
+
+    #[test]
+    fn parses_notes_flag() {
+        let cli = Cli::try_parse_from(["dais", "--notes", "talk_notes.md", "slides.pdf"]).unwrap();
+
+        assert_eq!(cli.notes.as_deref(), Some("talk_notes.md"));
         assert_eq!(cli.pdf_path.as_deref(), Some("slides.pdf"));
     }
 

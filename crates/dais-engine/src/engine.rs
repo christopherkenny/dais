@@ -9,6 +9,7 @@ use dais_core::state::{
     ActivePen, InkStroke, PointerAppearance, PointerAppearances, PointerStyle, PresentationState,
     TextBox, TimerState, ZoomRegion,
 };
+use dais_sidecar::markdown_notes::MarkdownNotesDocument;
 use dais_sidecar::types::{InkStrokeMeta, PresentationMetadata, TextBoxMeta};
 
 /// Fallback color presets appended when the user configures fewer than 4 colors.
@@ -54,6 +55,8 @@ pub struct PresentationEngine {
     metadata: PresentationMetadata,
     /// Whether sidecar saves should update per-slide timing data.
     save_slide_timings: bool,
+    /// External Markdown notes document used as the source of truth, if active.
+    markdown_notes: Option<MarkdownNotesDocument>,
 }
 
 impl PresentationEngine {
@@ -67,8 +70,36 @@ impl PresentationEngine {
         receiver: CommandReceiver,
         pdf_path: std::path::PathBuf,
     ) -> (Self, Arc<RwLock<PresentationState>>) {
+        Self::new_impl(total_pages, metadata, config, receiver, pdf_path, None)
+    }
+
+    /// Create a new engine using an external Markdown notes file as the notes source.
+    pub fn new_with_notes(
+        total_pages: usize,
+        metadata: &PresentationMetadata,
+        config: &Config,
+        receiver: CommandReceiver,
+        pdf_path: std::path::PathBuf,
+        notes_path: &std::path::Path,
+    ) -> Result<(Self, Arc<RwLock<PresentationState>>), dais_sidecar::format::SidecarError> {
+        let slide_groups = build_slide_groups(total_pages, metadata);
+        let markdown_notes = MarkdownNotesDocument::read(notes_path, slide_groups.len())?;
+        Ok(Self::new_impl(total_pages, metadata, config, receiver, pdf_path, Some(markdown_notes)))
+    }
+
+    fn new_impl(
+        total_pages: usize,
+        metadata: &PresentationMetadata,
+        config: &Config,
+        receiver: CommandReceiver,
+        pdf_path: std::path::PathBuf,
+        markdown_notes: Option<MarkdownNotesDocument>,
+    ) -> (Self, Arc<RwLock<PresentationState>>) {
         let slide_groups = build_slide_groups(total_pages, metadata);
         let mut state = PresentationState::new(total_pages, slide_groups);
+        if let Some(notes) = &markdown_notes {
+            apply_markdown_notes(&mut state, notes);
+        }
 
         // Apply config to initial state
         let duration = match (config.timer.mode, config.timer.duration_minutes) {
@@ -158,6 +189,7 @@ impl PresentationEngine {
                 },
                 metadata: metadata.clone(),
                 save_slide_timings: config.save_slide_timings,
+                markdown_notes,
             },
             shared_state,
         )
@@ -701,7 +733,11 @@ impl PresentationEngine {
 
         let mut metadata = self.metadata.clone();
         metadata.groups = groups;
-        metadata.notes = notes;
+        metadata.notes = if self.markdown_notes.is_some() {
+            std::collections::HashMap::new()
+        } else {
+            notes.clone()
+        };
 
         if self.save_slide_timings {
             // Persist per-slide timing data (logical slide index -> seconds).
@@ -782,6 +818,13 @@ impl PresentationEngine {
         match format.write(&sidecar_path, &metadata) {
             Ok(()) => tracing::info!("Saved sidecar to {}", sidecar_path.display()),
             Err(e) => tracing::error!("Failed to save sidecar: {e}"),
+        }
+
+        if let Some(markdown_notes) = &self.markdown_notes {
+            match markdown_notes.write_notes(&notes_by_logical_slide(&self.state)) {
+                Ok(()) => tracing::info!("Saved Markdown notes"),
+                Err(e) => tracing::error!("Failed to save Markdown notes: {e}"),
+            }
         }
     }
 
@@ -927,6 +970,27 @@ fn build_slide_groups(total_pages: usize, metadata: &PresentationMetadata) -> Ve
     groups
 }
 
+fn apply_markdown_notes(state: &mut PresentationState, notes: &MarkdownNotesDocument) {
+    let notes_by_slide = notes.notes_by_slide();
+    for group in &mut state.slide_groups {
+        group.notes = notes_by_slide.get(&group.logical_index).cloned();
+    }
+    state.current_notes =
+        state.slide_groups.get(state.current_logical_slide).and_then(|group| group.notes.clone());
+}
+
+fn notes_by_logical_slide(state: &PresentationState) -> std::collections::HashMap<usize, String> {
+    state
+        .slide_groups
+        .iter()
+        .filter_map(|group| {
+            group.notes.as_ref().and_then(|notes| {
+                (!notes.trim().is_empty()).then_some((group.logical_index, notes.clone()))
+            })
+        })
+        .collect()
+}
+
 /// Parse a hex color string like "#FF0000" or "FF0000" to RGBA.
 fn parse_hex_color(color_str: &str) -> Option<[u8; 4]> {
     let hex = color_str.strip_prefix('#').unwrap_or(color_str);
@@ -1048,6 +1112,8 @@ mod tests {
     use dais_core::bus::CommandBus;
     use dais_sidecar::types::SlideGroupMeta;
     use std::collections::HashMap;
+    use std::path::PathBuf;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     fn make_engine(
         total_pages: usize,
@@ -1086,6 +1152,38 @@ mod tests {
             receiver,
             std::path::PathBuf::from("test.pdf"),
         );
+        (engine, shared, sender)
+    }
+
+    fn temp_test_dir(name: &str) -> PathBuf {
+        let suffix = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time should be after unix epoch")
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!("dais_engine_{name}_{suffix}"));
+        std::fs::create_dir_all(&dir).expect("should create temp test dir");
+        dir
+    }
+
+    fn make_engine_with_markdown_notes(
+        total_pages: usize,
+        metadata: &PresentationMetadata,
+        pdf_path: PathBuf,
+        notes_path: &std::path::Path,
+    ) -> (PresentationEngine, Arc<RwLock<PresentationState>>, dais_core::bus::CommandSender) {
+        let config = Config { save_slide_timings: false, ..Config::default() };
+        let bus = CommandBus::new();
+        let sender = bus.sender();
+        let receiver = bus.into_receiver();
+        let (engine, shared) = PresentationEngine::new_with_notes(
+            total_pages,
+            metadata,
+            &config,
+            receiver,
+            pdf_path,
+            notes_path,
+        )
+        .expect("markdown notes should load");
         (engine, shared, sender)
     }
 
@@ -2017,6 +2115,56 @@ mod tests {
         engine.tick();
         assert_eq!(engine.state().current_notes, None);
         assert_eq!(engine.state().slide_groups[0].notes, None);
+    }
+
+    #[test]
+    fn markdown_notes_override_sidecar_notes() {
+        let dir = temp_test_dir("markdown_notes_override");
+        let notes_path = dir.join("talk_notes.md");
+        std::fs::write(&notes_path, "# From Markdown\n\nMarkdown note.\n")
+            .expect("should write notes");
+        let mut sidecar_notes = HashMap::new();
+        sidecar_notes.insert(0, "Sidecar note.".to_string());
+        let meta = PresentationMetadata { notes: sidecar_notes, ..Default::default() };
+
+        let (engine, _, _) =
+            make_engine_with_markdown_notes(1, &meta, dir.join("talk.pdf"), &notes_path);
+
+        assert_eq!(engine.state().current_notes.as_deref(), Some("Markdown note."));
+
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn markdown_notes_save_back_to_markdown_and_not_sidecar_notes() {
+        use dais_sidecar::dais_format::DaisFormat;
+        use dais_sidecar::format::SidecarFormat;
+
+        let dir = temp_test_dir("markdown_notes_save");
+        let pdf_path = dir.join("talk.pdf");
+        let notes_path = dir.join("talk_notes.md");
+        std::fs::write(&notes_path, "# First\n\nOld first.\n\n# Second\n\nOld second.\n")
+            .expect("should write notes");
+
+        let (mut engine, _, sender) = make_engine_with_markdown_notes(
+            2,
+            &PresentationMetadata::default(),
+            pdf_path.clone(),
+            &notes_path,
+        );
+
+        sender.send(Command::SetCurrentSlideNotes("Edited first.".to_string())).unwrap();
+        sender.send(Command::SaveSidecar).unwrap();
+        engine.tick();
+
+        let markdown = std::fs::read_to_string(&notes_path).expect("should read saved markdown");
+        assert!(markdown.contains("# First\n\nEdited first.\n"));
+        assert!(markdown.contains("# Second\n\nOld second.\n"));
+
+        let sidecar = DaisFormat.read(&pdf_path.with_extension("dais")).unwrap();
+        assert!(sidecar.notes.is_empty());
+
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]

@@ -7,6 +7,7 @@
 
 pub mod dais_format;
 pub mod format;
+pub mod markdown_notes;
 pub mod metadata;
 pub mod pdfpc;
 pub mod types;
