@@ -17,6 +17,10 @@ struct Cli {
     #[arg(long)]
     config: Option<String>,
 
+    /// Skip the OS user config directory for a portable, folder-local run.
+    #[arg(long)]
+    portable: bool,
+
     /// Force single-monitor mode.
     #[arg(long)]
     single: bool,
@@ -234,7 +238,9 @@ fn main() -> anyhow::Result<()> {
 
 fn load_effective_config(cli: &Cli, pdf_path: &Path) -> dais_core::config::Config {
     let explicit_config = cli.config.as_deref().map(Path::new);
-    let mut config = dais_core::config::load_config_for(pdf_path, explicit_config);
+    let options = dais_core::config::ConfigLoadOptions { portable: cli.portable };
+    let mut config =
+        dais_core::config::load_config_for_with_options(pdf_path, explicit_config, options);
     if cli.time_ignore {
         config.save_slide_timings = false;
     }
@@ -410,9 +416,17 @@ fn run_test_input(cli: &Cli) -> anyhow::Result<()> {
     // Load config if a PDF path or explicit config was provided, otherwise use defaults.
     let config = if let Some(ref pdf_path) = cli.pdf_path {
         let explicit_config = cli.config.as_deref().map(Path::new);
-        dais_core::config::load_config_for(Path::new(pdf_path), explicit_config)
+        dais_core::config::load_config_for_with_options(
+            Path::new(pdf_path),
+            explicit_config,
+            dais_core::config::ConfigLoadOptions { portable: cli.portable },
+        )
     } else if let Some(ref config_path) = cli.config {
-        dais_core::config::load_config_for(Path::new("."), Some(Path::new(config_path)))
+        dais_core::config::load_config_for_with_options(
+            Path::new("."),
+            Some(Path::new(config_path)),
+            dais_core::config::ConfigLoadOptions { portable: cli.portable },
+        )
     } else {
         dais_core::config::Config::default()
     };
@@ -475,6 +489,14 @@ mod tests {
         let cli = Cli::try_parse_from(["dais", "--time-ignore", "slides.pdf"]).unwrap();
 
         assert!(cli.time_ignore);
+        assert_eq!(cli.pdf_path.as_deref(), Some("slides.pdf"));
+    }
+
+    #[test]
+    fn parses_portable_flag() {
+        let cli = Cli::try_parse_from(["dais", "--portable", "slides.pdf"]).unwrap();
+
+        assert!(cli.portable);
         assert_eq!(cli.pdf_path.as_deref(), Some("slides.pdf"));
     }
 

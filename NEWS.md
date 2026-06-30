@@ -10,6 +10,7 @@
 - Per-logical-slide target durations can be set in `.dais` sidecars; the presenter slide timer shows `elapsed / target` and turns red when a slide exceeds its target.
 - `dais remote ...` subcommands query state and send actions, goto, pointer, timer, and notes commands to a running presentation.
 - Remote settings can be configured under `[remote]` in `config.toml` or project-local `dais.toml`.
+- `--portable` skips OS user config for USB or copied-folder runs while still loading project-local and explicit config files.
 - `--time-ignore` can disable per-slide timing updates when saving sidecars.
 - Dual-monitor presentations can swap the presenter and audience screens instantly with `F6` or the remappable `swap_displays` action, without changing config.
 

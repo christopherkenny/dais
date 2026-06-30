@@ -42,6 +42,7 @@ dais --single <file.pdf>         # Single-monitor mode (no audience window)
 dais --screen-share <file.pdf>   # Screen-share mode (audience as normal window)
 dais --edit <file.pdf>           # Open the slide grouping editor
 dais --config <path> <file.pdf>  # Use a specific config file
+dais --portable <file.pdf>       # Skip OS user config for portable/USB use
 dais --time-ignore <file.pdf>    # Do not update slide timing data on save
 dais --test-input                # Diagnostic mode for clicker/remote setup
 dais --remote <file.pdf>         # Start the local remote-control API and web remote
@@ -93,6 +94,8 @@ The binary will be at `target/release/dais` (or `dais.exe` on Windows).
 
 Dais also reads a project-local `dais.toml` next to the PDF you open, and `--config <path>`
 can override both.
+Use `--portable` to skip the OS user config layer while still reading project-local
+and explicit config files.
 
 See [docs/configuration.md](docs/configuration.md) for the full reference.
 

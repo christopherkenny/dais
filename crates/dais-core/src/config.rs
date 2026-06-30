@@ -444,6 +444,13 @@ pub fn project_config_path(pdf_path: &Path) -> Option<PathBuf> {
     pdf_path.parent().map(|dir| dir.join("dais.toml"))
 }
 
+/// Options controlling how layered configuration is loaded.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ConfigLoadOptions {
+    /// Skip the platform user config directory for USB-portable runs.
+    pub portable: bool,
+}
+
 /// Load layered config for a document.
 ///
 /// Precedence:
@@ -455,10 +462,34 @@ pub fn project_config_path(pdf_path: &Path) -> Option<PathBuf> {
 /// Missing or invalid config files are logged and ignored; this function always
 /// returns a usable configuration by falling back to defaults.
 pub fn load_config_for(pdf_path: &Path, explicit_config: Option<&Path>) -> Config {
+    load_config_for_with_options(pdf_path, explicit_config, ConfigLoadOptions::default())
+}
+
+/// Load layered config for a document with additional mode options.
+///
+/// In portable mode, Dais skips the machine-wide config layer so a copied binary
+/// and project folder behave consistently on machines that may already have
+/// user-level Dais settings.
+pub fn load_config_for_with_options(
+    pdf_path: &Path,
+    explicit_config: Option<&Path>,
+    options: ConfigLoadOptions,
+) -> Config {
+    load_config_from_paths(pdf_path, config_path().as_deref(), explicit_config, options)
+}
+
+fn load_config_from_paths(
+    pdf_path: &Path,
+    machine_config: Option<&Path>,
+    explicit_config: Option<&Path>,
+    options: ConfigLoadOptions,
+) -> Config {
     let mut config = Config::default();
 
-    if let Some(path) = config_path() {
-        merge_config_file(&mut config, &path);
+    if options.portable {
+        tracing::debug!("Portable mode enabled; skipping machine-wide config");
+    } else if let Some(path) = machine_config {
+        merge_config_file(&mut config, path);
     } else {
         tracing::warn!("Could not determine config directory, using defaults");
     }
@@ -669,6 +700,17 @@ fn apply_pointer_style_config(config: &mut PointerStyleConfig, partial: PartialP
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn temp_config_dir(name: &str) -> PathBuf {
+        let suffix = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time should be after unix epoch")
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!("dais_config_test_{name}_{suffix}"));
+        std::fs::create_dir_all(&dir).expect("should create temp config test dir");
+        dir
+    }
 
     #[test]
     fn partial_config_overrides_selected_fields() {
@@ -812,5 +854,56 @@ mod tests {
 
         assert_eq!(config.timer.duration_minutes, None);
         assert_eq!(config.timer.warning_minutes, None);
+    }
+
+    #[test]
+    fn portable_config_skips_machine_config() {
+        let dir = temp_config_dir("portable_skips_machine");
+        let machine_config = dir.join("machine.toml");
+        let pdf_path = dir.join("slides.pdf");
+        std::fs::write(&machine_config, "[display]\nmode = \"screen-share\"\n")
+            .expect("should write machine config");
+
+        let regular = load_config_from_paths(
+            &pdf_path,
+            Some(&machine_config),
+            None,
+            ConfigLoadOptions { portable: false },
+        );
+        let portable = load_config_from_paths(
+            &pdf_path,
+            Some(&machine_config),
+            None,
+            ConfigLoadOptions { portable: true },
+        );
+
+        assert_eq!(regular.display.mode, "screen-share");
+        assert_eq!(portable.display.mode, "dual");
+
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn portable_config_still_loads_project_and_explicit_config() {
+        let dir = temp_config_dir("portable_keeps_project_explicit");
+        let explicit_config = dir.join("explicit.toml");
+        let pdf_dir = dir.join("talk");
+        std::fs::create_dir_all(&pdf_dir).expect("should create pdf dir");
+        let pdf_path = pdf_dir.join("slides.pdf");
+        std::fs::write(pdf_dir.join("dais.toml"), "[display]\nmode = \"single\"\n")
+            .expect("should write project config");
+        std::fs::write(&explicit_config, "[display]\nmode = \"screen-share\"\n")
+            .expect("should write explicit config");
+
+        let config = load_config_from_paths(
+            &pdf_path,
+            None,
+            Some(&explicit_config),
+            ConfigLoadOptions { portable: true },
+        );
+
+        assert_eq!(config.display.mode, "screen-share");
+
+        let _ = std::fs::remove_dir_all(dir);
     }
 }

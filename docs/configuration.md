@@ -14,6 +14,10 @@ The machine-wide config lives at:
 - **Linux:** `~/.config/dais/config.toml`
 
 If a config layer doesn't exist, Dais skips it. All settings are optional.
+Run with `--portable` to skip the machine-wide config layer entirely. This is
+useful when running Dais from a USB stick or copied folder on a machine that may
+already have its own Dais settings. Project-local `dais.toml` and explicit
+`--config <path>` files are still loaded.
 
 ## Full Default Configuration
 
