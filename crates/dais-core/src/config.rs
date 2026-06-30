@@ -29,6 +29,8 @@ pub struct Config {
     pub clicker: ClickerConfig,
     /// Local HTTP remote-control API configuration.
     pub remote: RemoteConfig,
+    /// Annotated export defaults.
+    pub export: ExportConfig,
     /// Sidecar save format: `"dais"` or `"pdfpc"`.
     pub sidecar_format: String,
     /// Whether to persist per-slide timing data when saving sidecars.
@@ -48,6 +50,7 @@ struct PartialConfig {
     keybindings: Option<HashMap<String, Vec<String>>>,
     clicker: Option<PartialClickerConfig>,
     remote: Option<PartialRemoteConfig>,
+    export: Option<PartialExportConfig>,
     sidecar_format: Option<String>,
     save_slide_timings: Option<bool>,
 }
@@ -290,6 +293,29 @@ struct PartialNotesConfig {
     font_size_step: Option<f32>,
 }
 
+/// Annotated export defaults.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ExportConfig {
+    /// Output format: "pdf", "svg", or "png".
+    pub format: String,
+    /// Layers to include: "all", "background", "ink", "text", or "overlays".
+    pub layers: String,
+    /// Export one page per logical slide using the final build page of each group.
+    pub handout: bool,
+    /// Whiteboard export behavior: "none", "append", or "only".
+    pub whiteboard: String,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(default)]
+struct PartialExportConfig {
+    format: Option<String>,
+    layers: Option<String>,
+    handout: Option<bool>,
+    whiteboard: Option<String>,
+}
+
 impl Default for Config {
     fn default() -> Self {
         Self {
@@ -303,6 +329,7 @@ impl Default for Config {
             keybindings: HashMap::new(),
             clicker: ClickerConfig::default(),
             remote: RemoteConfig::default(),
+            export: ExportConfig::default(),
             sidecar_format: "dais".to_string(),
             save_slide_timings: true,
         }
@@ -442,6 +469,17 @@ pub fn config_path() -> Option<PathBuf> {
 /// Resolve a project-local config path for a PDF.
 pub fn project_config_path(pdf_path: &Path) -> Option<PathBuf> {
     pdf_path.parent().map(|dir| dir.join("dais.toml"))
+}
+
+impl Default for ExportConfig {
+    fn default() -> Self {
+        Self {
+            format: "pdf".to_string(),
+            layers: "all".to_string(),
+            handout: false,
+            whiteboard: "none".to_string(),
+        }
+    }
 }
 
 /// Options controlling how layered configuration is loaded.
@@ -615,11 +653,30 @@ fn apply_partial_config(config: &mut Config, partial: PartialConfig) {
         apply_remote_config(&mut config.remote, remote);
     }
 
+    if let Some(export) = partial.export {
+        apply_export_config(&mut config.export, export);
+    }
+
     if let Some(sidecar_format) = partial.sidecar_format {
         config.sidecar_format = sidecar_format;
     }
     if let Some(save_slide_timings) = partial.save_slide_timings {
         config.save_slide_timings = save_slide_timings;
+    }
+}
+
+fn apply_export_config(config: &mut ExportConfig, partial: PartialExportConfig) {
+    if let Some(format) = partial.format {
+        config.format = format;
+    }
+    if let Some(layers) = partial.layers {
+        config.layers = layers;
+    }
+    if let Some(handout) = partial.handout {
+        config.handout = handout;
+    }
+    if let Some(whiteboard) = partial.whiteboard {
+        config.whiteboard = whiteboard;
     }
 }
 
@@ -761,6 +818,27 @@ mod tests {
         assert_eq!(config.text_boxes.color, "#112233");
         assert_eq!(config.text_boxes.background, "#445566AA");
         assert_eq!(config.text_boxes.typst_prelude, "#set align(horizon)");
+    }
+
+    #[test]
+    fn partial_config_overrides_export_defaults() {
+        let mut config = Config::default();
+        let partial = PartialConfig {
+            export: Some(PartialExportConfig {
+                format: Some("svg".to_string()),
+                layers: Some("ink".to_string()),
+                handout: Some(true),
+                whiteboard: Some("append".to_string()),
+            }),
+            ..Default::default()
+        };
+
+        apply_partial_config(&mut config, partial);
+
+        assert_eq!(config.export.format, "svg");
+        assert_eq!(config.export.layers, "ink");
+        assert!(config.export.handout);
+        assert_eq!(config.export.whiteboard, "append");
     }
 
     #[test]

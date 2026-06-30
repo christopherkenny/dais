@@ -13,6 +13,7 @@
 - Remote settings can be configured under `[remote]` in `config.toml` or project-local `dais.toml`.
 - `--portable` skips OS user config for USB or copied-folder runs while still loading project-local and explicit config files.
 - `--time-ignore` can disable per-slide timing updates when saving sidecars.
+- `dais export ... --out ...` writes a new PDF with saved Dais ink annotations and Typst text boxes composed over the original PDF pages, with options for SVG/PNG output, layer selection, whiteboard export, handout export that collapses incremental build pages, and recurring defaults under `[export]`.
 - Dual-monitor presentations can swap the presenter and audience screens instantly with `F6` or the remappable `swap_displays` action, without changing config.
 
 ## Bug fixes

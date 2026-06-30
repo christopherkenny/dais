@@ -18,6 +18,8 @@ website:
         href: configuration.md
       - text: Notes
         href: notes.md
+      - text: Export
+        href: export.md
       - text: Keybindings
         href: keybindings.md
       - text: Clickers

@@ -46,6 +46,8 @@ dais --notes <path> <file.pdf>   # Use a Markdown speaker notes file
 dais --portable <file.pdf>       # Skip OS user config for portable/USB use
 dais --time-ignore <file.pdf>    # Do not update slide timing data on save
 dais --test-input                # Diagnostic mode for clicker/remote setup
+dais export <file.pdf> --out <file.pdf> [--handout]
+                                  # Export a copy with annotations and text boxes applied
 dais --remote <file.pdf>         # Start the local remote-control API and web remote
 dais --remote-lan <file.pdf>     # Start the web remote for phone/tablet pairing
 dais remote action next_slide    # Control a running presentation

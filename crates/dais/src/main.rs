@@ -1,6 +1,7 @@
 use std::path::Path;
 
-use clap::{Parser, Subcommand};
+use anyhow::Context;
+use clap::{ArgAction, Parser, Subcommand, ValueEnum};
 use dais_ui::display_mode::{DisplayHints, DisplayMode};
 
 /// Dais — A native PDF presenter console.
@@ -66,6 +67,73 @@ struct Cli {
 enum CliCommand {
     /// Send commands to a running Dais remote API.
     Remote(RemoteCli),
+    /// Export presentation assets.
+    Export(ExportCli),
+}
+
+#[derive(Parser, Debug)]
+struct ExportCli {
+    /// Path to the PDF file to export.
+    pdf_path: String,
+
+    /// Output file path for PDF, or output directory for SVG/PNG.
+    #[arg(long)]
+    out: String,
+
+    /// Output format. Defaults to the --out extension when possible, otherwise PDF.
+    #[arg(long, value_enum)]
+    format: Option<ExportFormatArg>,
+
+    /// Content layers to include.
+    #[arg(long, value_enum)]
+    layers: Option<ExportLayersArg>,
+
+    /// Export one page per logical slide by using the final build page of each group.
+    #[arg(long, action = ArgAction::SetTrue, conflicts_with = "no_handout")]
+    handout: bool,
+
+    /// Disable handout export even when it is enabled in config.
+    #[arg(long = "no-handout", action = ArgAction::SetTrue)]
+    no_handout: bool,
+
+    /// Whiteboard export behavior.
+    #[arg(long, value_enum)]
+    whiteboard: Option<WhiteboardArg>,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+enum ExportFormatArg {
+    Pdf,
+    Svg,
+    Png,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+enum ExportLayersArg {
+    Background,
+    Ink,
+    Text,
+    Overlays,
+    All,
+}
+
+impl std::fmt::Display for ExportLayersArg {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", format!("{self:?}").to_lowercase())
+    }
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+enum WhiteboardArg {
+    None,
+    Append,
+    Only,
+}
+
+impl std::fmt::Display for WhiteboardArg {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", format!("{self:?}").to_lowercase())
+    }
 }
 
 #[derive(Parser, Debug)]
@@ -120,6 +188,10 @@ fn main() -> anyhow::Result<()> {
 
     if let Some(CliCommand::Remote(remote)) = &cli.command {
         return run_remote_cli(remote);
+    }
+
+    if let Some(CliCommand::Export(export)) = &cli.command {
+        return run_export_cli(&cli, export);
     }
 
     if cli.test_input {
@@ -394,6 +466,184 @@ fn run_remote_cli(remote: &RemoteCli) -> anyhow::Result<()> {
     Ok(())
 }
 
+fn run_export_cli(cli: &Cli, export: &ExportCli) -> anyhow::Result<()> {
+    run_export_annotated(cli, export)
+}
+
+fn run_export_annotated(cli: &Cli, export: &ExportCli) -> anyhow::Result<()> {
+    use dais_document::source::DocumentSource;
+
+    let pdf_path = Path::new(&export.pdf_path);
+    let out_path = Path::new(&export.out);
+    tracing::info!("Exporting presentation: {} -> {}", pdf_path.display(), out_path.display());
+    let config = load_effective_config(cli, pdf_path);
+
+    let doc = dais_document::pdf_hayro::HayroDocument::open(pdf_path)?;
+    let embedded_pdfpc = doc.embedded_metadata().and_then(|m| m.pdfpc_data);
+    let (metadata, meta_source) =
+        dais_sidecar::metadata::load_metadata(pdf_path, embedded_pdfpc.as_deref());
+    tracing::info!("Metadata source: {meta_source:?}");
+
+    let settings = resolve_export_settings(export, out_path, &config)?;
+    let artifacts = dais_document::typst_export::export_annotated(
+        dais_document::typst_export::AnnotatedExport {
+            pdf_path,
+            metadata: &metadata,
+            format: settings.format.into(),
+            layers: settings.layers.into(),
+            handout: settings.handout,
+            whiteboard: settings.whiteboard.into(),
+        },
+    )?;
+    write_export_artifacts(out_path, settings.format, &artifacts)?;
+    Ok(())
+}
+
+#[derive(Debug, Clone, Copy)]
+struct ExportSettings {
+    format: ExportFormatArg,
+    layers: ExportLayersArg,
+    handout: bool,
+    whiteboard: WhiteboardArg,
+}
+
+fn resolve_export_settings(
+    export: &ExportCli,
+    out_path: &Path,
+    config: &dais_core::config::Config,
+) -> anyhow::Result<ExportSettings> {
+    Ok(ExportSettings {
+        format: resolve_export_format(export.format, out_path, &config.export.format)?,
+        layers: match export.layers {
+            Some(layers) => layers,
+            None => parse_export_layers(&config.export.layers)?,
+        },
+        handout: if export.handout {
+            true
+        } else if export.no_handout {
+            false
+        } else {
+            config.export.handout
+        },
+        whiteboard: match export.whiteboard {
+            Some(whiteboard) => whiteboard,
+            None => parse_whiteboard_export(&config.export.whiteboard)?,
+        },
+    })
+}
+
+fn resolve_export_format(
+    format: Option<ExportFormatArg>,
+    out_path: &Path,
+    configured_format: &str,
+) -> anyhow::Result<ExportFormatArg> {
+    if let Some(format) = format {
+        return Ok(format);
+    }
+    match out_path.extension().and_then(|ext| ext.to_str()) {
+        Some(ext) if ext.eq_ignore_ascii_case("pdf") => Ok(ExportFormatArg::Pdf),
+        Some(ext) if ext.eq_ignore_ascii_case("svg") => Ok(ExportFormatArg::Svg),
+        Some(ext) if ext.eq_ignore_ascii_case("png") => Ok(ExportFormatArg::Png),
+        _ => parse_export_format(configured_format),
+    }
+}
+
+fn parse_export_format(value: &str) -> anyhow::Result<ExportFormatArg> {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "pdf" => Ok(ExportFormatArg::Pdf),
+        "svg" => Ok(ExportFormatArg::Svg),
+        "png" => Ok(ExportFormatArg::Png),
+        other => anyhow::bail!("Unsupported export.format value '{other}'; use pdf, svg, or png"),
+    }
+}
+
+fn parse_export_layers(value: &str) -> anyhow::Result<ExportLayersArg> {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "background" => Ok(ExportLayersArg::Background),
+        "ink" => Ok(ExportLayersArg::Ink),
+        "text" => Ok(ExportLayersArg::Text),
+        "overlays" => Ok(ExportLayersArg::Overlays),
+        "all" => Ok(ExportLayersArg::All),
+        other => anyhow::bail!(
+            "Unsupported export.layers value '{other}'; use background, ink, text, overlays, or all"
+        ),
+    }
+}
+
+fn parse_whiteboard_export(value: &str) -> anyhow::Result<WhiteboardArg> {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "none" => Ok(WhiteboardArg::None),
+        "append" => Ok(WhiteboardArg::Append),
+        "only" => Ok(WhiteboardArg::Only),
+        other => {
+            anyhow::bail!(
+                "Unsupported export.whiteboard value '{other}'; use none, append, or only"
+            )
+        }
+    }
+}
+
+fn write_export_artifacts(
+    out_path: &Path,
+    format: ExportFormatArg,
+    artifacts: &[dais_document::typst_export::ExportArtifact],
+) -> anyhow::Result<()> {
+    match format {
+        ExportFormatArg::Pdf => {
+            let artifact = artifacts
+                .first()
+                .ok_or_else(|| anyhow::anyhow!("PDF export produced no output"))?;
+            std::fs::write(out_path, &artifact.bytes)
+                .with_context(|| format!("Failed to write PDF to {}", out_path.display()))?;
+            println!("Wrote PDF to {}", out_path.display());
+        }
+        ExportFormatArg::Svg | ExportFormatArg::Png => {
+            std::fs::create_dir_all(out_path).with_context(|| {
+                format!("Failed to create output directory {}", out_path.display())
+            })?;
+            for artifact in artifacts {
+                let path = out_path.join(&artifact.name);
+                std::fs::write(&path, &artifact.bytes)
+                    .with_context(|| format!("Failed to write {}", path.display()))?;
+            }
+            println!("Wrote {} files to {}", artifacts.len(), out_path.display());
+        }
+    }
+    Ok(())
+}
+
+impl From<ExportFormatArg> for dais_document::typst_export::ExportFormat {
+    fn from(value: ExportFormatArg) -> Self {
+        match value {
+            ExportFormatArg::Pdf => Self::Pdf,
+            ExportFormatArg::Svg => Self::Svg,
+            ExportFormatArg::Png => Self::Png,
+        }
+    }
+}
+
+impl From<ExportLayersArg> for dais_document::typst_export::ExportLayers {
+    fn from(value: ExportLayersArg) -> Self {
+        match value {
+            ExportLayersArg::Background => Self::Background,
+            ExportLayersArg::Ink => Self::Ink,
+            ExportLayersArg::Text => Self::Text,
+            ExportLayersArg::Overlays => Self::Overlays,
+            ExportLayersArg::All => Self::All,
+        }
+    }
+}
+
+impl From<WhiteboardArg> for dais_document::typst_export::WhiteboardExport {
+    fn from(value: WhiteboardArg) -> Self {
+        match value {
+            WhiteboardArg::None => Self::None,
+            WhiteboardArg::Append => Self::Append,
+            WhiteboardArg::Only => Self::Only,
+        }
+    }
+}
+
 /// Run the grouping editor as a standalone eframe app.
 fn run_grouping_editor(
     doc: dais_document::pdf_hayro::HayroDocument,
@@ -521,6 +771,155 @@ mod tests {
 
         assert!(cli.time_ignore);
         assert_eq!(cli.pdf_path.as_deref(), Some("slides.pdf"));
+    }
+
+    #[test]
+    fn parses_export_subcommand() {
+        let cli =
+            Cli::try_parse_from(["dais", "export", "slides.pdf", "--out", "slides-annotated.pdf"])
+                .unwrap();
+
+        let Some(CliCommand::Export(export)) = cli.command else {
+            panic!("expected export subcommand");
+        };
+        assert_eq!(export.pdf_path, "slides.pdf");
+        assert_eq!(export.out, "slides-annotated.pdf");
+        assert!(export.format.is_none());
+        assert!(export.layers.is_none());
+        assert!(!export.handout);
+        assert!(!export.no_handout);
+        assert!(export.whiteboard.is_none());
+    }
+
+    #[test]
+    fn parses_export_options() {
+        let cli = Cli::try_parse_from([
+            "dais",
+            "export",
+            "slides.pdf",
+            "--out",
+            "exported",
+            "--format",
+            "svg",
+            "--layers",
+            "ink",
+            "--handout",
+            "--whiteboard",
+            "append",
+        ])
+        .unwrap();
+
+        let Some(CliCommand::Export(export)) = cli.command else {
+            panic!("expected export subcommand");
+        };
+        assert!(matches!(export.format, Some(ExportFormatArg::Svg)));
+        assert!(matches!(export.layers, Some(ExportLayersArg::Ink)));
+        assert!(export.handout);
+        assert!(!export.no_handout);
+        assert!(matches!(export.whiteboard, Some(WhiteboardArg::Append)));
+    }
+
+    #[test]
+    fn resolves_export_config_defaults_with_cli_overrides() {
+        let export = ExportCli {
+            pdf_path: "slides.pdf".to_string(),
+            out: "exported".to_string(),
+            format: None,
+            layers: Some(ExportLayersArg::Ink),
+            handout: false,
+            no_handout: true,
+            whiteboard: None,
+        };
+        let mut config = dais_core::config::Config::default();
+        config.export.format = "svg".to_string();
+        config.export.layers = "all".to_string();
+        config.export.handout = true;
+        config.export.whiteboard = "append".to_string();
+
+        let settings = resolve_export_settings(&export, Path::new(&export.out), &config).unwrap();
+
+        assert!(matches!(settings.format, ExportFormatArg::Svg));
+        assert!(matches!(settings.layers, ExportLayersArg::Ink));
+        assert!(!settings.handout);
+        assert!(matches!(settings.whiteboard, WhiteboardArg::Append));
+    }
+
+    #[test]
+    fn export_annotated_writes_pdf() {
+        use dais_sidecar::dais_format::DaisFormat;
+        use dais_sidecar::format::SidecarFormat;
+
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let source_pdf = root.join("tests/fixtures/test.pdf");
+        let unique =
+            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
+        let dir = std::env::temp_dir().join(format!("dais_export_test_{unique}"));
+        std::fs::create_dir_all(&dir).unwrap();
+        let pdf_path = dir.join("talk.pdf");
+        let out_path = dir.join("talk-annotated.pdf");
+        std::fs::copy(&source_pdf, &pdf_path).unwrap();
+
+        let mut annotations = std::collections::HashMap::new();
+        annotations.insert(
+            0,
+            vec![dais_sidecar::types::InkStrokeMeta {
+                points: vec![(0.1, 0.1), (0.9, 0.9)],
+                color: [255, 0, 0, 255],
+                width: 3.0,
+            }],
+        );
+        let mut text_boxes = std::collections::HashMap::new();
+        text_boxes.insert(
+            0,
+            vec![dais_sidecar::types::TextBoxMeta {
+                id: 1,
+                rect: (0.2, 0.2, 0.4, 0.2),
+                content: "Exported".to_string(),
+                font_size: 18.0,
+                color: [0, 0, 0, 255],
+                background: Some([255, 255, 255, 180]),
+                typst_prelude: String::new(),
+            }],
+        );
+        let metadata = dais_sidecar::types::PresentationMetadata {
+            slide_annotations: annotations,
+            slide_text_boxes: text_boxes,
+            ..Default::default()
+        };
+        DaisFormat.write(&pdf_path.with_extension("dais"), &metadata).unwrap();
+
+        let export = ExportCli {
+            pdf_path: pdf_path.to_string_lossy().into_owned(),
+            out: out_path.to_string_lossy().into_owned(),
+            format: None,
+            layers: None,
+            handout: false,
+            no_handout: false,
+            whiteboard: None,
+        };
+        let cli = Cli {
+            command: None,
+            pdf_path: None,
+            config: None,
+            notes: None,
+            portable: false,
+            single: false,
+            screen_share: false,
+            edit: false,
+            test_input: false,
+            time_ignore: false,
+            remote: false,
+            remote_lan: false,
+            remote_host: None,
+            remote_port: None,
+        };
+        run_export_annotated(&cli, &export).unwrap();
+
+        let bytes = std::fs::read(&out_path).unwrap();
+        assert!(bytes.starts_with(b"%PDF"));
+        assert!(bytes.len() > 1000);
+
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]

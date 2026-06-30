@@ -10,3 +10,6 @@ pub mod typst_renderer;
 
 #[cfg(feature = "hayro")]
 pub mod pdf_hayro;
+
+#[cfg(feature = "hayro")]
+pub mod typst_export;

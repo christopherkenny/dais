@@ -72,6 +72,12 @@ host = "127.0.0.1"              # Loopback by default; set explicitly for LAN us
 port = 4317                     # Use 0 to ask the OS for a free port
 token = ""                      # Empty = generate; custom tokens may use A-Z, a-z, 0-9
 allow_unauthenticated_loopback = true
+
+[export]
+format = "pdf"                  # "pdf", "svg", or "png"
+layers = "all"                  # "all", "background", "overlays", "ink", or "text"
+handout = false                 # One final build page per logical slide
+whiteboard = "none"             # "none", "append", or "only"
 ```
 
 ## Project-Local Config
@@ -288,6 +294,27 @@ typst_prelude = "#set align(horizon)"
 
 The prelude is copied into newly created text boxes and saved with them in `.dais` sidecars.
 Existing boxes keep the prelude they were created with until edited in the sidecar.
+
+## Export Defaults
+
+Dais can store recurring annotated export choices in the same layered TOML config used by presentation mode.
+Command-line export flags override these defaults for a single run.
+
+```toml
+[export]
+format = "pdf"
+layers = "all"
+handout = true
+whiteboard = "append"
+```
+
+With those defaults, this command writes an annotated after-class handout using the saved ink, text boxes, and whiteboard:
+
+```powershell
+dais export lecture.pdf --out lecture-annotated.pdf
+```
+
+Use `--no-handout` to export every PDF page even when `handout = true` is set in config.
 
 ## Sidecar Formats
 
