@@ -1,7 +1,6 @@
 //! Document source abstraction and PDF rendering for Dais.
 //!
-//! Defines the [`source::DocumentSource`] trait used by the Hayro-backed PDF renderer
-//! and related render pipeline components.
+//! Defines the [`source::DocumentSource`] trait used by the Hayro-backed PDF renderer and related render pipeline components.
 
 pub mod cache;
 pub mod page;

@@ -1,13 +1,14 @@
 # Clicker & Remote Setup
 
-Dais reads clickers as keyboard input. Most USB presenter remotes send standard keys such as `PageDown`, `PageUp`, and `F5`, so they work through the normal keybinding system.
+Dais reads clickers as keyboard input.
+Most USB presenter remotes send standard keys such as `PageDown`, `PageUp`, and `F5`, so they work through the normal keybinding system.
 
-For browser remotes, REST/CLI control, Stream Deck profiles, and other networked
-controllers, see [remote.md](remote.md).
+For browser remotes, REST/CLI control, Stream Deck profiles, and other networked controllers, see [remote.md](remote.md).
 
 ## How Clicker Profiles Work
 
-A **clicker profile** is a named mapping from key names to Dais action names. Dais ships with a built-in `default` profile and also supports custom profiles in config.
+A **clicker profile** is a named mapping from key names to Dais action names.
+Dais ships with a built-in `default` profile and also supports custom profiles in config.
 
 The active profile is set with `clicker.profile` in your `config.toml` or `dais.toml`.
 
@@ -27,7 +28,8 @@ These overlap with the default keybindings, so most clickers work without any co
 
 ## Common Presenters
 
-Most generic USB presenters send `PageDown` and `PageUp`. If yours sends different keys, use `--test-input` to discover the actual key names, then create a custom profile.
+Most generic USB presenters send `PageDown` and `PageUp`.
+If yours sends different keys, use `--test-input` to discover the actual key names, then create a custom profile.
 
 ## Creating a Custom Profile
 
@@ -44,7 +46,8 @@ PageDown = "next_slide"
 PageUp = "previous_slide"
 ```
 
-Each entry maps a key name (as shown by `--test-input`) to a Dais action name. See [keybindings.md](keybindings.md) for the full list of action names.
+Each entry maps a key name (as shown by `--test-input`) to a Dais action name.
+See [keybindings.md](keybindings.md) for the full list of action names.
 
 You can define multiple profiles and switch between them by changing `clicker.profile`:
 
@@ -76,7 +79,9 @@ This opens a small window that displays:
 - Any active modifiers (`Shift`, `Ctrl`, `Alt`)
 - Which action the key currently maps to
 
-Press each button on your clicker and note the key names. Use these names when building a custom profile. Press Escape or click "Exit" to close.
+Press each button on your clicker and note the key names.
+Use these names when building a custom profile.
+Press Escape or click "Exit" to close.
 
 You can also load a specific config to test against:
 
@@ -87,13 +92,16 @@ dais --test-input --config path/to/dais.toml
 ## Troubleshooting
 
 **Clicker buttons do nothing:**
-Run `--test-input` to verify that Dais receives the key events. Some clickers need their USB receiver connected before launch.
+Run `--test-input` to verify that Dais receives the key events.
+Some clickers need their USB receiver connected before launch.
 
 **Wrong action fires:**
 Check the key name with `--test-input`, then remap it in a custom clicker profile or in `[keybindings]`.
 
 **Clicker works in other apps but not Dais:**
-Some clickers send mouse clicks or custom HID events instead of keyboard events. Dais only responds to keyboard events.
+Some clickers send mouse clicks or custom HID events instead of keyboard events.
+Dais only responds to keyboard events.
 
 **Bluetooth clickers disconnect:**
-This is usually an OS-level pairing issue. Some Bluetooth presenters work more reliably through their bundled USB receiver than through native Bluetooth.
+This is usually an OS-level pairing issue.
+Some Bluetooth presenters work more reliably through their bundled USB receiver than through native Bluetooth.

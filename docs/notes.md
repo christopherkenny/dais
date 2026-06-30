@@ -111,10 +111,8 @@ Dais preserves the structure of the file where possible:
 
 - Existing note headings keep their title text and `{slide=N}` marker.
 - Only note bodies are replaced.
-- Front matter, comments, blank lines, ordinary text outside note sections, and
-  section order are preserved.
-- When notes are added for a slide with no existing section, Dais appends a new
-  section:
+- Front matter, comments, blank lines, ordinary text outside note sections, and section order are preserved.
+- When notes are added for a slide with no existing section, Dais appends a new section:
 
   ```markdown
   # Slide 7 {slide=7}

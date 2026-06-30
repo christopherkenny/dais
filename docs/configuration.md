@@ -13,11 +13,11 @@ The machine-wide config lives at:
 - **macOS:** `~/Library/Application Support/dais/config.toml`
 - **Linux:** `~/.config/dais/config.toml`
 
-If a config layer doesn't exist, Dais skips it. All settings are optional.
-Run with `--portable` to skip the machine-wide config layer entirely. This is
-useful when running Dais from a USB stick or copied folder on a machine that may
-already have its own Dais settings. Project-local `dais.toml` and explicit
-`--config <path>` files are still loaded.
+If a config layer doesn't exist, Dais skips it.
+All settings are optional.
+Run with `--portable` to skip the machine-wide config layer entirely.
+This is useful when running Dais from a USB stick or copied folder on a machine that may already have its own Dais settings.
+Project-local `dais.toml` and explicit `--config <path>` files are still loaded.
 
 ## Full Default Configuration
 
@@ -92,11 +92,10 @@ mode = "elapsed"
 
 ## Remote Control API
 
-Dais can expose a local HTTP API for scripts, Stream Deck tools, phone/tablet web
-controls, and experimental input adapters.
+Dais can expose a local HTTP API for scripts, Stream Deck tools, phone/tablet web controls, and experimental input adapters.
 
-This section is the configuration reference. See [remote.md](remote.md) for the
-full remote-control guide.
+This section is the configuration reference.
+See [remote.md](remote.md) for the full remote-control guide.
 
 Start a presentation with the remote API enabled:
 
@@ -106,9 +105,10 @@ dais --remote-lan slides.pdf
 dais --remote --remote-port 4317 slides.pdf
 ```
 
-By default, the server binds to `127.0.0.1:4317`. Loopback requests are allowed
-without a token unless `allow_unauthenticated_loopback = false`. Non-loopback
-clients always need a token. Use `--remote-lan` for normal phone/tablet pairing.
+By default, the server binds to `127.0.0.1:4317`.
+Loopback requests are allowed without a token unless `allow_unauthenticated_loopback = false`.
+Non-loopback clients always need a token.
+Use `--remote-lan` for normal phone/tablet pairing.
 Set `host` explicitly only when you want LAN binding from config:
 
 ```toml
@@ -144,11 +144,10 @@ When token authentication is required, append the token shown in the Dais log:
 http://192.168.1.24:4317/remote?token=<token>
 ```
 
-When remote mode is enabled, the presenter console shows a `Remote` status item
-in the bottom bar. Click it to view pairing URLs and QR codes. The status text
-also shows active remote event clients and the last remote command received.
-When bound to `0.0.0.0`, Dais shows usable loopback/LAN URLs rather than
-advertising `0.0.0.0` itself.
+When remote mode is enabled, the presenter console shows a `Remote` status item in the bottom bar.
+Click it to view pairing URLs and QR codes.
+The status text also shows active remote event clients and the last remote command received.
+When bound to `0.0.0.0`, Dais shows usable loopback/LAN URLs rather than advertising `0.0.0.0` itself.
 
 REST endpoints use `/api/v1`:
 
@@ -160,9 +159,8 @@ curl http://127.0.0.1:4317/api/v1/events
 curl http://127.0.0.1:4317/api/v1/slides/current.png --output current.png
 ```
 
-For token-protected sessions, send `Authorization: Bearer <token>` or
-`X-Dais-Token: <token>`. Browser endpoints also accept `?token=<token>` so the
-built-in web remote can connect from a second device.
+For token-protected sessions, send `Authorization: Bearer <token>` or `X-Dais-Token: <token>`.
+Browser endpoints also accept `?token=<token>` so the built-in web remote can connect from a second device.
 
 Slide image endpoints are rendered on demand for the remote:
 
@@ -172,9 +170,8 @@ Slide image endpoints are rendered on demand for the remote:
 | `/api/v1/slides/next.png` | First page of the next logical slide, or current page at the end |
 | `/api/v1/slides/<n>/thumbnail.png` | First page of 1-based logical slide `n` |
 
-Remote slide PNGs are cached in-memory during the session. State and command
-requests opportunistically warm the current and next slide images so the web
-remote stays responsive during navigation.
+Remote slide PNGs are cached in-memory during the session.
+State and command requests opportunistically warm the current and next slide images so the web remote stays responsive during navigation.
 
 ## Display Modes
 
@@ -184,20 +181,23 @@ remote stays responsive during navigation.
 | `single` | Single-monitor presenter mode. Press `F5` to enter either the split workspace or HUD, depending on `single_monitor_view`. |
 | `screen-share` | Audience window is a normal resizable window (not fullscreen). For Zoom/Teams screen sharing. Use `--screen-share` CLI flag or set in config. |
 
-CLI flags (`--single`, `--screen-share`) override config. If no flag is given and config is `"dual"` (default), Dais auto-detects: 2+ monitors → dual, 1 monitor → single.
+CLI flags (`--single`, `--screen-share`) override config.
+If no flag is given and config is `"dual"` (default), Dais auto-detects: 2+ monitors → dual, 1 monitor → single.
 
-In dual mode, press **F6** to swap the presenter and audience monitors for the current session. This does not rewrite `dais.toml`; use `display.presenter_monitor` and `display.audience_monitor` for a permanent assignment.
+In dual mode, press **F6** to swap the presenter and audience monitors for the current session.
+This does not rewrite `dais.toml`; use `display.presenter_monitor` and `display.audience_monitor` for a permanent assignment.
 
 ## Monitor Assignment
 
-Set `audience_monitor` and `presenter_monitor` to a monitor name, monitor id, or a 1-based display number such as `"1"` or `"2"`. Use `"auto"` for automatic assignment.
+Set `audience_monitor` and `presenter_monitor` to a monitor name, monitor id, or a 1-based display number such as `"1"` or `"2"`.
+Use `"auto"` for automatic assignment.
 
 Detected monitors are logged at startup with ids and names, so you can see which selector to use.
 
 ## Timer
 
 - **Elapsed mode:** Starts at 0:00 and counts up. This is the default. If `duration_minutes` is omitted, no limit is shown.
-- **Countdown mode:** Starts at `duration_minutes` and counts down. If you use countdown mode, you should set `duration_minutes`.
+- **Countdown mode:** Starts at `duration_minutes` and counts down. Set `duration_minutes` when using countdown mode.
 
 ## Laser Pointer
 
@@ -221,33 +221,53 @@ color = "#FFFF0080"
 size = 36.0
 ```
 
-In this example, dot, minimal, arrow, ring, and bullseye stay white at size 12. Crosshair changes to green at size 24, and highlight changes to translucent yellow at size 36.
+In this example, dot, minimal, arrow, ring, and bullseye stay white at size 12.
+Crosshair changes to green at size 24, and highlight changes to translucent yellow at size 36.
 
 ## Freeze
 
-Press **F** to freeze the audience display on the current slide. While frozen, the presenter console continues to show navigation controls normally. You can advance slides, change tools, and check notes. The audience stays locked on the page that was visible when freeze was toggled. Press **F** again to unfreeze.
+Press **F** to freeze the audience display on the current slide.
+While frozen, the presenter console continues to show navigation controls normally.
+You can advance slides, change tools, and check notes.
+The audience stays locked on the page that was visible when freeze was toggled.
+Press **F** again to unfreeze.
 
 ## Blackout
 
-Press **B** or **.** (period) to black out the audience display. Navigation is blocked while blacked out. Press **B** again to restore the audience view.
+Press **B** or **.** (period) to black out the audience display.
+Navigation is blocked while blacked out.
+Press **B** again to restore the audience view.
 
-At the end of a presentation, advancing past the last slide automatically blacks out the audience. Press **B** again to return.
+At the end of a presentation, advancing past the last slide automatically blacks out the audience.
+Press **B** again to return.
 
 Blackout and whiteboard are mutually exclusive. Activating one deactivates the other.
 
 ## Whiteboard
 
-Press **W** to show a blank white canvas on the audience display. Ink mode activates automatically. Whiteboard strokes are shared across all slides. They persist regardless of navigation and are saved to the sidecar with **Ctrl+S**. Press **C** to clear the whiteboard. Press **W** again to return to the slide view.
+Press **W** to show a blank white canvas on the audience display.
+Ink mode activates automatically.
+Whiteboard strokes are shared across all slides.
+They persist regardless of navigation and are saved to the sidecar with **Ctrl+S**.
+Press **C** to clear the whiteboard.
+Press **W** again to return to the slide view.
 
-Activating the whiteboard deactivates blackout and the laser pointer. Whiteboard ink uses the same `[ink]` settings as slide annotations.
+Activating the whiteboard deactivates blackout and the laser pointer.
+Whiteboard ink uses the same `[ink]` settings as slide annotations.
 
 ## Slide Overview
 
-Press **O** to open the slide overview grid. All slide thumbnails are displayed in a scrollable grid over the presenter console. Use arrow keys to move the selection highlight, **Enter** to jump to the selected slide, or click any thumbnail directly. Pressing **O** or **Escape** closes the overview without navigating.
+Press **O** to open the slide overview grid.
+All slide thumbnails are displayed in a scrollable grid over the presenter console.
+Use arrow keys to move the selection highlight, **Enter** to jump to the selected slide, or click any thumbnail directly.
+Pressing **O** or **Escape** closes the overview without navigating.
 
 ## Zoom
 
-Press **Z** to toggle zoom mode on the audience display. While zoom is active, click and drag on the audience view to set the zoom region. The zoom factor is clamped between 1× and 10×. Press **Z** again to exit.
+Press **Z** to toggle zoom mode on the audience display.
+While zoom is active, click and drag on the audience view to set the zoom region.
+The zoom factor is clamped between 1× and 10×.
+Press **Z** again to exit.
 
 ## Text Boxes
 
@@ -266,9 +286,8 @@ background = "#FFF7CCDD"
 typst_prelude = "#set align(horizon)"
 ```
 
-The prelude is copied into newly created text boxes and saved with them in `.dais`
-sidecars. Existing boxes keep the prelude they were created with until edited in
-the sidecar.
+The prelude is copied into newly created text boxes and saved with them in `.dais` sidecars.
+Existing boxes keep the prelude they were created with until edited in the sidecar.
 
 ## Sidecar Formats
 
@@ -287,16 +306,12 @@ sidecar_format = "pdfpc"   # "dais" (default) or "pdfpc"
 
 When loading, Dais checks in order: `.dais` sidecar → `.pdfpc` sidecar → embedded PDF metadata.
 The grouping editor and `save_sidecar` action both use `sidecar_format` when choosing what to write.
-Set `save_slide_timings = false`, or run with `--time-ignore`, to save sidecars
-without updating the `slide_timings` data.
-In `.dais` files, page and slide references use one-based numbers that match
-the slide numbers shown in the presenter UI.
+Set `save_slide_timings = false`, or run with `--time-ignore`, to save sidecars without updating the `slide_timings` data.
+In `.dais` files, page and slide references use one-based numbers that match the slide numbers shown in the presenter UI.
 Speaker notes are keyed by the one-based first page of the logical slide group.
 
-Per-logical-slide target durations can be assigned in seconds in `.dais`
-sidecars using `slide_target_durations` with one-based logical slide numbers.
-When a logical slide contains multiple PDF pages or build steps, one target
-duration applies to the whole group:
+Per-logical-slide target durations can be assigned in seconds in `.dais` sidecars using `slide_target_durations` with one-based logical slide numbers.
+When a logical slide contains multiple PDF pages or build steps, one target duration applies to the whole group:
 
 ```eon
 slide_target_durations: {
@@ -305,10 +320,8 @@ slide_target_durations: {
 }
 ```
 
-Dais also imports target durations from `.pdfpc` sidecars that already contain
-compatible timing sections, but target durations are written only to `.dais`.
-When a slide has a target duration, the presenter slide timer shows
-`elapsed / target` and turns red after the target is exceeded.
+Dais also imports target durations from `.pdfpc` sidecars that already contain compatible timing sections, but target durations are written only to `.dais`.
+When a slide has a target duration, the presenter slide timer shows `elapsed / target` and turns red after the target is exceeded.
 
 ## Single-Monitor Presentation Mode (F5)
 
@@ -325,20 +338,23 @@ In single-monitor mode, press **F5** to toggle between the presenter console and
 - A bottom bar that appears near the lower edge
 - Notes when you hover near the bottom edge
 
-Press **Escape** to exit HUD mode back to the console. In dual-monitor mode, F5 is available but the audience already has a dedicated screen.
+Press **Escape** to exit HUD mode back to the console.
+In dual-monitor mode, F5 is available but the audience already has a dedicated screen.
 
 ## Monitor Recovery
 
-If a configured audience monitor is missing at launch, Dais now:
+If a configured audience monitor is missing at launch, Dais:
 
 - Falls back gracefully to another display or single-monitor mode
 - Shows a startup dialog in the presenter window so you can reassign the audience output for the current session
 
-The reassignment dialog does not rewrite `dais.toml`. To persist the new monitor choice, update `display.audience_monitor` in config afterward.
+The reassignment dialog does not rewrite `dais.toml`.
+To persist the new monitor choice, update `display.audience_monitor` in config afterward.
 
 ## DPI and Scaling
 
-Dais renders slides at the audience monitor's native resolution for maximum sharpness. The presenter console uses a fixed 1920×1080 canonical render size, scaled by the GPU.
+Dais renders slides at the audience monitor's native resolution for maximum sharpness.
+The presenter console uses a fixed 1920×1080 canonical render size, scaled by the GPU.
 
 On mixed-DPI setups (e.g., Retina laptop + 1080p projector):
 - The audience window renders at the projector's native resolution

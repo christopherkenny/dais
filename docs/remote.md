@@ -1,12 +1,10 @@
 # Remote Control
 
-Dais can expose a local remote-control API while a presentation is running. The
-remote layer is designed for second-device control, local scripts, Stream Deck
-profiles, classroom automation, and experimental adapters that should not live
-inside the core presenter.
+Dais can expose a local remote-control API while a presentation is running.
+The remote layer is designed for second-device control, local scripts, Stream Deck profiles, classroom automation, and experimental adapters that should not live inside the core presenter.
 
-Remote control is an input adapter. Requests become normal Dais commands, and
-the presentation engine remains the only owner of presentation state.
+Remote control is an input adapter.
+Requests become normal Dais commands, and the presentation engine remains the only owner of presentation state.
 
 ## Quick Start
 
@@ -46,8 +44,8 @@ dais remote timer toggle
 
 ## Browser Remote
 
-The browser remote is served directly by Dais at `/remote`. It is intended to be
-usable from a phone, tablet, or local browser without installing a native app.
+The browser remote is served directly by Dais at `/remote`.
+It is intended to be usable from a phone, tablet, or local browser without installing a native app.
 
 It currently shows:
 
@@ -63,16 +61,16 @@ It currently shows:
 
 ### Notes editing
 
-The Notes tab has an **Edit** button that opens the current slide's notes in a
-text field. Click **Save** to write the change and persist it to the sidecar
-immediately. **Cancel** discards the draft. Slide changes received while
-editing do not overwrite the draft.
+The Notes tab has an **Edit** button that opens the current slide's notes in a text field.
+Click **Save** to write the change and persist it to the sidecar immediately.
+**Cancel** discards the draft.
+Slide changes received while editing do not overwrite the draft.
 
 ### Drawing
 
-The Draw tab shows the current slide with a canvas overlay. Draw with a finger,
-mouse, or stylus (including Apple Pencil on iPad). Each completed stroke is sent
-to the presenter screen and saved to the sidecar immediately.
+The Draw tab shows the current slide with a canvas overlay.
+Draw with a finger, mouse, or stylus (including Apple Pencil on iPad).
+Each completed stroke is sent to the presenter screen and saved to the sidecar immediately.
 
 Controls:
 
@@ -81,17 +79,14 @@ Controls:
 - **Clear** — removes all ink on the current slide.
 
 The local canvas provides immediate feedback while the stroke is in transit.
-When the presenter navigates to a different slide, the canvas clears
-automatically to match the new slide.
+When the presenter navigates to a different slide, the canvas clears automatically to match the new slide.
 
-Drawing works alongside the presenter's own ink tools. If the presenter already
-has ink mode active, remote strokes are added without toggling it; if ink mode
-is off, the remote enables it for the stroke and restores it afterward.
+Drawing works alongside the presenter's own ink tools.
+If the presenter already has ink mode active, remote strokes are added without toggling it; if ink mode is off, the remote enables it for the stroke and restores it afterward.
 
 ## Pairing A Second Device
 
-For a phone or tablet on the same network, bind the server to a LAN-reachable
-address:
+For a phone or tablet on the same network, bind the server to a LAN-reachable address:
 
 ```powershell
 dais --remote-lan slides.pdf
@@ -140,8 +135,8 @@ Fields:
 | `token` | Authentication token. Empty means Dais generates a short pairing code per launch. Custom tokens may contain only ASCII letters and digits |
 | `allow_unauthenticated_loopback` | Allows local same-machine requests without a token |
 
-Loopback convenience only applies to loopback clients. Non-loopback clients
-always need a pairing code.
+Loopback convenience only applies to loopback clients.
+Non-loopback clients always need a pairing code.
 
 CLI flags override config for the current session:
 
@@ -152,8 +147,8 @@ dais --remote --remote-port 4317 slides.pdf
 dais --remote --remote-host 192.168.1.24 slides.pdf
 ```
 
-Use `--remote-lan` for normal phone/tablet pairing. Use `--remote-host` only
-when you need to bind to a specific interface.
+Use `--remote-lan` for normal phone/tablet pairing.
+Use `--remote-host` only when you need to bind to a specific interface.
 
 ## CLI Remote
 
@@ -179,8 +174,7 @@ dais remote --host 127.0.0.1 --port 4317 state
 dais remote --host 192.168.1.24 --port 4317 --token <token> action next_slide
 ```
 
-The CLI is useful for smoke testing, automation, keyboard macro tools, and
-external control programs that prefer shell commands over raw HTTP.
+The CLI is useful for smoke testing, automation, keyboard macro tools, and external control programs that prefer shell commands over raw HTTP.
 
 ## REST API
 
@@ -263,8 +257,8 @@ Browser flows can also pass the pairing code in the URL:
 
 ## Action Names
 
-For simple presenter-control commands, the remote API uses an allowlist of the
-same action names as the keybinding system. Useful remote actions include:
+For simple presenter-control commands, the remote API uses an allowlist of the same action names as the keybinding system.
+Useful remote actions include:
 
 ```text
 next_slide
@@ -291,19 +285,15 @@ toggle_presentation_mode
 swap_displays
 ```
 
-The remote API intentionally does not expose every keybinding action. Local-only
-or editing-oriented actions such as quit, save sidecar, notes editing, notes font
-changes, and text box mode are not dispatched through `remote action`.
+The remote API intentionally does not expose every keybinding action.
+Local-only or editing-oriented actions such as quit, save sidecar, notes editing, notes font changes, and text box mode are not dispatched through `remote action`.
 
-Parameterized operations, such as `goto`, `pointer`, and timer subcommands, use
-dedicated endpoints and CLI commands instead of pretending every operation is a
-keybinding action.
+Parameterized operations, such as `goto`, `pointer`, and timer subcommands, use dedicated endpoints and CLI commands instead of pretending every operation is a keybinding action.
 
 ## State Shape
 
-`GET /api/v1/state` returns a stable remote state DTO, not the internal Rust
-`PresentationState` type. This keeps the API free to evolve without exposing
-engine internals.
+`GET /api/v1/state` returns a stable remote state DTO, not the internal Rust `PresentationState` type.
+This keeps the API free to evolve without exposing engine internals.
 
 The state includes:
 
@@ -327,14 +317,12 @@ on undocumented fields.
 `GET /api/v1/events` provides a browser-friendly event stream. The built-in web
 remote uses it to update state without polling.
 
-This is intentionally simpler than WebSocket support. REST plus server-sent
-events is enough for the first second-device workflow while preserving a path to
-WebSockets later if richer bidirectional UI needs appear.
+This is intentionally simpler than WebSocket support.
+REST plus server-sent events is enough for the current second-device workflow while preserving a path to WebSockets later if richer bidirectional UI needs appear.
 
 ## External Controllers
 
-External controllers should call the stable action API rather than adding
-device-specific code to Dais.
+External controllers call the stable action API rather than adding device-specific code to Dais.
 
 Good fits include:
 
@@ -364,19 +352,15 @@ or:
 POST /api/v1/actions/toggle_blackout
 ```
 
-That keeps tools such as Stream Deck profiles, shell scripts, and experimental
-adapters outside the core app while letting them drive the same presentation
-commands.
+That keeps tools such as Stream Deck profiles, shell scripts, and experimental adapters outside the core app while letting them drive the same presentation commands.
 
 ## Relationship To Clickers
 
-Traditional USB presenter clickers usually emulate keyboard keys such as
-`PageDown` and `PageUp`. Those are handled by Dais through the keybinding and
-clicker-profile system. See [clicker-setup.md](clicker-setup.md).
+Traditional USB presenter clickers usually emulate keyboard keys such as `PageDown` and `PageUp`.
+Those are handled by Dais through the keybinding and clicker-profile system.
+See [clicker-setup.md](clicker-setup.md).
 
-The remote API is for controls that are not naturally keyboard input: web
-remotes, scripts, hardware macro pads, networked control surfaces, and
-experimental adapters.
+The remote API is for controls that are not naturally keyboard input: web remotes, scripts, hardware macro pads, networked control surfaces, and experimental adapters.
 
 ## Security Notes
 
@@ -389,8 +373,8 @@ The remote server is local-first:
 - Non-loopback requests always require token authentication.
 - Browser-originating requests receive basic Host and Origin checks.
 
-Do not expose the remote API directly to the public internet. It is intended for
-local-machine and local-network control during a presentation.
+Do not expose the remote API directly to the public internet.
+It is intended for local-machine and local-network control during a presentation.
 
 ## Testing
 
@@ -414,9 +398,6 @@ Second-device test:
 cargo run -p dais -- --remote-lan --remote-port 4317 tests/example.pdf
 ```
 
-Click `Remote` in the presenter status bar, scan the QR code with a phone, and
-verify that slide images, notes, timer state, and next/previous controls all
-work from the phone.
+Click `Remote` in the presenter status bar, scan the QR code with a phone, and verify that slide images, notes, timer state, and next/previous controls all work from the phone.
 
-For broader manual QA, add remote checks to the same real-room testing pass as
-display modes, clickers, screen-share mode, and monitor recovery.
+For broader manual QA, add remote checks to the same real-room testing pass as display modes, clickers, screen-share mode, and monitor recovery.

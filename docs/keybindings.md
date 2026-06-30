@@ -1,6 +1,7 @@
 # Keybinding Reference
 
-All keybindings are remappable via the `[keybindings]` section in `config.toml`. The defaults are designed to feel familiar for presenter-console workflows.
+All keybindings are remappable via the `[keybindings]` section in `config.toml`.
+The defaults are designed to feel familiar for presenter-console workflows.
 
 ## Default Keybindings
 
@@ -58,7 +59,8 @@ cycle_laser_style = ["Ctrl+l"]
 save_sidecar = ["Ctrl+Shift+s"]
 ```
 
-When you define a binding for an action, it **replaces all defaults** for that action. Unmentioned actions keep their defaults.
+When you define a binding for an action, it **replaces all defaults** for that action.
+Unmentioned actions keep their defaults.
 
 ## Modifier Keys
 
@@ -87,10 +89,7 @@ dais remote pointer 0.5 0.5
 dais remote timer reset
 ```
 
-This keeps external controllers generic: Stream Deck profiles, scripts, phone
-controls, or experimental devices can call the same stable action API without
-being built into Dais itself.
+This keeps external controllers generic: Stream Deck profiles, scripts, phone controls, or experimental devices can call the same stable action API without being built into Dais itself.
 
-Not every keybinding action is remote-dispatchable. Local-only or editing
-actions such as quit, save sidecar, notes editing, notes font changes, and text
-box mode stay inside the presenter console.
+Not every keybinding action is remote-dispatchable.
+Local-only or editing actions such as quit, save sidecar, notes editing, notes font changes, and text box mode stay inside the presenter console.

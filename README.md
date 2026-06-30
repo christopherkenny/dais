@@ -93,13 +93,10 @@ The binary will be at `target/release/dais` (or `dais.exe` on Windows).
 - **macOS:** `~/Library/Application Support/dais/config.toml`
 - **Linux:** `~/.config/dais/config.toml`
 
-Dais also reads a project-local `dais.toml` next to the PDF you open, and `--config <path>`
-can override both.
-Use `--portable` to skip the OS user config layer while still reading project-local
-and explicit config files.
+Dais also reads a project-local `dais.toml` next to the PDF you open, and `--config <path>` can override both.
+Use `--portable` to skip the OS user config layer while still reading project-local and explicit config files.
 
-Use `--notes <path>` to keep speaker notes in a Markdown file that Dais can
-load, edit, and save during the presentation.
+Use `--notes <path>` to keep speaker notes in a Markdown file that Dais can load, edit, and save during the presentation.
 
 See [docs/configuration.md](docs/configuration.md) for the full reference.
 

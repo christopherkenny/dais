@@ -6,10 +6,8 @@ title: "Dais: A Native PDF Presenter Console"
 [![Crates.io](https://img.shields.io/crates/v/dais.svg)](https://crates.io/crates/dais)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Dais is a cross-platform PDF presentation console written in Rust for researchers
-and academics who build slides in LaTeX/Beamer, Typst, PowerPoint, or Keynote.
-Dais is designed for straightforward installation, reliable operation in real
-presentation setups, and compatibility with existing slide workflows.
+Dais is a cross-platform PDF presentation console written in Rust for researchers and academics who build slides in LaTeX/Beamer, Typst, PowerPoint, or Keynote.
+Dais is designed for straightforward installation, reliable operation in real presentation setups, and compatibility with existing slide workflows.
 
 ## Features
 
@@ -58,16 +56,15 @@ With one monitor, Dais automatically falls back to single mode.
 
 ## Grouping Editor
 
-For PDFs without embedded overlay metadata, such as PowerPoint exports, use the
-built-in editor:
+For PDFs without embedded overlay metadata, such as PowerPoint exports, use the built-in editor:
 
 ```bash
 dais --edit slides.pdf
 ```
 
-Use the "Split after" buttons beneath each thumbnail to split a group, and the
-"Merge" buttons between groups to combine them. Save writes the configured
-sidecar format. When loading, Dais checks `.dais` before `.pdfpc`.
+Use the "Split after" buttons beneath each thumbnail to split a group, and the "Merge" buttons between groups to combine them.
+Save writes the configured sidecar format.
+When loading, Dais checks `.dais` before `.pdfpc`.
 
 ## Building From Source
 
