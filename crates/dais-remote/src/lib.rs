@@ -147,6 +147,8 @@ pub struct RemoteState {
     pub laser_active: bool,
     pub pointer_position: Option<(f32, f32)>,
     pub ink_active: bool,
+    pub draw_tool: String,
+    pub eraser_radius: f32,
     pub spotlight_active: bool,
     pub spotlight_position: Option<(f32, f32)>,
     pub zoom_active: bool,
@@ -205,6 +207,17 @@ struct InkStrokeRequest {
     points: Vec<[f32; 2]>,
     color: Option<[u8; 4]>,
     width: Option<f32>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct InkEraseRequest {
+    points: Vec<[f32; 2]>,
+    radius: Option<f32>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct InkSetToolRequest {
+    tool: String,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize)]
@@ -347,6 +360,8 @@ fn remote_router(context: HandlerContext) -> Router {
         .route("/api/v1/commands/timer", post(timer))
         .route("/api/v1/commands/notes", post(set_notes))
         .route("/api/v1/commands/ink/stroke", post(ink_stroke))
+        .route("/api/v1/commands/ink/erase", post(ink_erase))
+        .route("/api/v1/commands/ink/set_tool", post(ink_set_tool))
         .route("/api/v1/commands/ink/clear", post(ink_clear))
         .route("/api/v1/slides/current.png", get(current_slide_png))
         .route("/api/v1/slides/next.png", get(next_slide_png))
@@ -541,6 +556,49 @@ async fn ink_stroke(
     Json(ok_response("stroke added")).into_response()
 }
 
+async fn ink_set_tool(
+    State(context): State<HandlerContext>,
+    Json(body): Json<InkSetToolRequest>,
+) -> Response {
+    let tool = match body.tool.as_str() {
+        "pen" => dais_core::state::DrawTool::Pen,
+        "highlighter" => dais_core::state::DrawTool::Highlighter,
+        "eraser" => dais_core::state::DrawTool::Eraser,
+        _ => return bad_request(&anyhow::anyhow!("unknown tool: {}", body.tool)),
+    };
+    match context.sender.send(Command::SetDrawTool(tool)) {
+        Ok(()) => {
+            context.status.set_last_command("ink_set_tool");
+            Json(ok_response("draw tool set")).into_response()
+        }
+        Err(_) => server_error(&anyhow::anyhow!("presentation engine is not accepting commands")),
+    }
+}
+
+async fn ink_erase(
+    State(context): State<HandlerContext>,
+    Json(body): Json<InkEraseRequest>,
+) -> Response {
+    if body.points.is_empty() {
+        return bad_request(&anyhow::anyhow!("erase requires at least one point"));
+    }
+
+    let radius = body.radius.unwrap_or(0.03).clamp(0.001, 0.5);
+
+    for &[x, y] in &body.points {
+        if context.sender.send(Command::EraseInkNear { x, y, radius }).is_err() {
+            return server_error(&anyhow::anyhow!("presentation engine is not accepting commands"));
+        }
+    }
+
+    if context.sender.send(Command::SaveSidecar).is_err() {
+        return server_error(&anyhow::anyhow!("presentation engine is not accepting commands"));
+    }
+
+    context.status.set_last_command("ink_erase");
+    Json(ok_response("erase applied")).into_response()
+}
+
 async fn ink_clear(State(context): State<HandlerContext>) -> Response {
     match context
         .sender
@@ -621,6 +679,8 @@ pub fn remote_state(state: &PresentationState) -> RemoteState {
         laser_active: state.laser_active,
         pointer_position: state.pointer_position,
         ink_active: state.ink_active,
+        draw_tool: draw_tool_name(state.draw_tool).to_string(),
+        eraser_radius: state.eraser_radius,
         spotlight_active: state.spotlight_active,
         spotlight_position: state.spotlight_position,
         zoom_active: state.zoom_active,
@@ -1000,6 +1060,14 @@ fn timer_phase_name(phase: TimerPhase) -> &'static str {
         TimerPhase::Normal => "normal",
         TimerPhase::Warning => "warning",
         TimerPhase::Overrun => "overrun",
+    }
+}
+
+fn draw_tool_name(tool: dais_core::state::DrawTool) -> &'static str {
+    match tool {
+        dais_core::state::DrawTool::Pen => "pen",
+        dais_core::state::DrawTool::Highlighter => "highlighter",
+        dais_core::state::DrawTool::Eraser => "eraser",
     }
 }
 

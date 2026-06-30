@@ -1,3 +1,5 @@
+use crate::state::DrawTool;
+
 /// Every user action in Dais is represented as a discrete typed command.
 ///
 /// Commands are dispatched through the [`CommandBus`](crate::bus::CommandBus) and processed
@@ -53,6 +55,12 @@ pub enum Command {
     FinishInkStroke,
     /// Clear all ink on the current page.
     ClearInk,
+    /// Erase ink strokes near a position (normalized 0..1 coordinates).
+    /// Strokes are clipped at the circle boundary — only the portion within
+    /// `radius` is removed; the portions outside are kept as separate strokes.
+    EraseInkNear { x: f32, y: f32, radius: f32 },
+    /// Switch the active drawing tool (pen, highlighter, or eraser).
+    SetDrawTool(DrawTool),
     /// Set the active pen color (RGBA). Affects only future strokes.
     SetInkColor([u8; 4]),
     /// Set the active pen width in logical pixels. Affects only future strokes.

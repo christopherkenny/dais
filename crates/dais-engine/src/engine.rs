@@ -6,8 +6,8 @@ use dais_core::commands::Command;
 use dais_core::config::Config;
 use dais_core::slide_group::SlideGroup;
 use dais_core::state::{
-    ActivePen, InkStroke, PointerAppearance, PointerAppearances, PointerStyle, PresentationState,
-    TextBox, TimerState, ZoomRegion,
+    ActivePen, DrawTool, InkStroke, PointerAppearance, PointerAppearances, PointerStyle,
+    PresentationState, TextBox, TimerState, ZoomRegion,
 };
 use dais_sidecar::markdown_notes::MarkdownNotesDocument;
 use dais_sidecar::types::{InkStrokeMeta, PresentationMetadata, TextBoxMeta};
@@ -22,6 +22,14 @@ const INK_COLOR_FALLBACKS: &[[u8; 4]] = &[
 
 /// Built-in pen width presets cycled by `CycleInkWidth` (logical pixels).
 const INK_WIDTH_PRESETS: &[f32] = &[1.0, 2.0, 4.0, 8.0, 16.0];
+
+/// Fixed highlighter color presets (semi-transparent, ~40 % opacity).
+const HIGHLIGHTER_COLOR_PRESETS: &[[u8; 4]] = &[
+    [255, 220, 0, 100],  // yellow
+    [60, 220, 60, 100],  // green
+    [0, 200, 255, 100],  // cyan
+    [255, 80, 180, 100], // pink
+];
 
 #[derive(Debug, Clone, Copy)]
 enum SidecarKind {
@@ -159,6 +167,17 @@ impl PresentationEngine {
             color: ink_color_presets.first().copied().unwrap_or([255, 0, 0, 255]),
             width: config.ink.width,
         };
+        state.ink_color_presets.clone_from(&ink_color_presets);
+        let highlighter_color_presets: Vec<[u8; 4]> = if config.ink.highlighter_colors.is_empty() {
+            HIGHLIGHTER_COLOR_PRESETS.to_vec()
+        } else {
+            config.ink.highlighter_colors.iter().filter_map(|s| parse_hex_color(s)).collect()
+        };
+        state.active_highlighter = ActivePen {
+            color: highlighter_color_presets.first().copied().unwrap_or([255, 220, 0, 100]),
+            width: config.ink.highlighter_width,
+        };
+        state.highlighter_color_presets = highlighter_color_presets;
         let text_box_default_color =
             parse_hex_color(&config.text_boxes.color).unwrap_or([0, 0, 0, 255]);
         let text_box_default_background = parse_optional_hex_color(&config.text_boxes.background);
@@ -297,6 +316,8 @@ impl PresentationEngine {
             | Command::SetInkWidth(_)
             | Command::CycleInkColor
             | Command::CycleInkWidth
+            | Command::EraseInkNear { .. }
+            | Command::SetDrawTool(_)
             | Command::ToggleSpotlight
             | Command::SetSpotlightPosition(..)
             | Command::ToggleZoom
@@ -430,6 +451,8 @@ impl PresentationEngine {
             | Command::AddInkPoint(..)
             | Command::FinishInkStroke
             | Command::ClearInk
+            | Command::EraseInkNear { .. }
+            | Command::SetDrawTool(_)
             | Command::SetInkColor(_)
             | Command::SetInkWidth(_)
             | Command::CycleInkColor
@@ -472,7 +495,10 @@ impl PresentationEngine {
             }
             Command::AddInkPoint(x, y) if self.state.ink_active => {
                 let point = (x.clamp(0.0, 1.0), y.clamp(0.0, 1.0));
-                let active_pen = self.state.active_pen;
+                let active_pen = match self.state.draw_tool {
+                    DrawTool::Highlighter => self.state.active_highlighter,
+                    _ => self.state.active_pen,
+                };
                 let strokes = if self.state.whiteboard_active {
                     &mut self.state.whiteboard_strokes
                 } else {
@@ -510,12 +536,15 @@ impl PresentationEngine {
                     self.state.slide_ink_by_page.remove(&self.state.current_page);
                 }
             }
-            Command::SetInkColor(color) => {
-                self.state.active_pen.color = color;
-            }
-            Command::SetInkWidth(width) => {
-                self.state.active_pen.width = width.max(0.5);
-            }
+            Command::SetInkColor(color) => match self.state.draw_tool {
+                DrawTool::Highlighter => self.state.active_highlighter.color = color,
+                _ => self.state.active_pen.color = color,
+            },
+            Command::SetInkWidth(width) => match self.state.draw_tool {
+                DrawTool::Highlighter => self.state.active_highlighter.width = width.max(0.5),
+                DrawTool::Eraser => self.state.eraser_radius = width.clamp(0.005, 0.5),
+                DrawTool::Pen => self.state.active_pen.width = width.max(0.5),
+            },
             Command::CycleInkColor if !self.ink_color_presets.is_empty() => {
                 let current = self.state.active_pen.color;
                 let idx = self.ink_color_presets.iter().position(|c| *c == current).unwrap_or(0);
@@ -533,6 +562,25 @@ impl PresentationEngine {
                     .find(|&&w| w > current)
                     .copied()
                     .unwrap_or(INK_WIDTH_PRESETS[0]);
+            }
+            Command::SetDrawTool(tool) => {
+                self.state.draw_tool = tool;
+            }
+            Command::EraseInkNear { x, y, radius } => {
+                if self.state.whiteboard_active {
+                    self.state.whiteboard_strokes =
+                        erase_strokes_near(&self.state.whiteboard_strokes, x, y, radius);
+                } else {
+                    let page = self.state.current_page;
+                    let strokes =
+                        self.state.slide_ink_by_page.get(&page).cloned().unwrap_or_default();
+                    let new_strokes = erase_strokes_near(&strokes, x, y, radius);
+                    if new_strokes.is_empty() {
+                        self.state.slide_ink_by_page.remove(&page);
+                    } else {
+                        self.state.slide_ink_by_page.insert(page, new_strokes);
+                    }
+                }
             }
             _ => {}
         }
@@ -1104,6 +1152,191 @@ fn load_annotations_into_state(state: &mut PresentationState, metadata: &Present
     }
     // Ensure new IDs don't collide with loaded ones
     state.next_text_box_id = max_id + 1;
+}
+
+/// Erase portions of `strokes` within `radius` of `(cx, cy)` (normalized coords).
+///
+/// Strokes are clipped at the erase circle boundary. Points inside the circle are
+/// removed; the remaining portions outside become new, shorter strokes.
+fn erase_strokes_near(strokes: &[InkStroke], cx: f32, cy: f32, radius: f32) -> Vec<InkStroke> {
+    let mut result = Vec::new();
+    for stroke in strokes {
+        clip_stroke_against_circle(stroke, cx, cy, radius, &mut result);
+    }
+    result
+}
+
+fn clip_stroke_against_circle(
+    stroke: &InkStroke,
+    cx: f32,
+    cy: f32,
+    radius: f32,
+    out: &mut Vec<InkStroke>,
+) {
+    let points = &stroke.points;
+    if points.is_empty() {
+        return;
+    }
+
+    // Single-point strokes: keep if outside the erase circle.
+    if points.len() == 1 {
+        let (x, y) = points[0];
+        let dx = x - cx;
+        let dy = y - cy;
+        if dx * dx + dy * dy > radius * radius {
+            out.push(stroke.clone());
+        }
+        return;
+    }
+
+    let mut current: Vec<(f32, f32)> = Vec::new();
+
+    for window in points.windows(2) {
+        let p1 = window[0];
+        let p2 = window[1];
+
+        match clip_segment_outside_circle(p1, p2, cx, cy, radius) {
+            SegmentClip::Full => {
+                if current.is_empty() {
+                    current.push(p1);
+                }
+                current.push(p2);
+            }
+            SegmentClip::None => {
+                flush_sub_stroke(&current, stroke, out);
+                current.clear();
+            }
+            SegmentClip::Start(ep) => {
+                if current.is_empty() {
+                    current.push(p1);
+                }
+                current.push(ep);
+                flush_sub_stroke(&current, stroke, out);
+                current.clear();
+            }
+            SegmentClip::End(sp) => {
+                flush_sub_stroke(&current, stroke, out);
+                current.clear();
+                current.push(sp);
+                current.push(p2);
+            }
+            SegmentClip::Both(ep, sp) => {
+                if current.is_empty() {
+                    current.push(p1);
+                }
+                current.push(ep);
+                flush_sub_stroke(&current, stroke, out);
+                current.clear();
+                current.push(sp);
+                current.push(p2);
+            }
+        }
+    }
+
+    flush_sub_stroke(&current, stroke, out);
+}
+
+fn flush_sub_stroke(current: &[(f32, f32)], template: &InkStroke, out: &mut Vec<InkStroke>) {
+    if current.len() >= 2 {
+        out.push(InkStroke {
+            points: current.to_owned(),
+            color: template.color,
+            width: template.width,
+            finished: true,
+        });
+    }
+}
+
+/// Which portions of a segment survive the erase circle.
+enum SegmentClip {
+    /// Entire segment is outside the circle — keep it all.
+    Full,
+    /// Entire segment is inside the circle — erase it all.
+    None,
+    /// Keep only `[p1 .. entry_point]` (p2 side enters the circle).
+    Start((f32, f32)),
+    /// Keep only `[exit_point .. p2]` (p1 side is inside the circle).
+    End((f32, f32)),
+    /// Keep `[p1 .. entry_point]` and `[exit_point .. p2]`; middle is erased.
+    Both((f32, f32), (f32, f32)),
+}
+
+/// Clip segment `[p1, p2]` against the erase circle, returning which portions survive.
+fn clip_segment_outside_circle(
+    p1: (f32, f32),
+    p2: (f32, f32),
+    cx: f32,
+    cy: f32,
+    radius: f32,
+) -> SegmentClip {
+    let (x1, y1) = p1;
+    let (x2, y2) = p2;
+
+    let fx = x1 - cx;
+    let fy = y1 - cy;
+    let ex = x2 - cx;
+    let ey = y2 - cy;
+
+    let r2 = radius * radius;
+    let p1_inside = fx * fx + fy * fy <= r2;
+    let p2_inside = ex * ex + ey * ey <= r2;
+
+    if p1_inside && p2_inside {
+        return SegmentClip::None;
+    }
+
+    let dx = x2 - x1;
+    let dy = y2 - y1;
+    let a = dx * dx + dy * dy;
+
+    if a < 1e-12 {
+        // Zero-length segment; p1_inside && p2_inside already handled above.
+        return SegmentClip::Full;
+    }
+
+    let b = 2.0 * (fx * dx + fy * dy);
+    let c = fx * fx + fy * fy - r2;
+    let discriminant = b * b - 4.0 * a * c;
+
+    if discriminant <= 0.0 {
+        // No real intersection — segment lies entirely outside.
+        return SegmentClip::Full;
+    }
+
+    let sqrt_disc = discriminant.sqrt();
+    // t1 < t2: t1 is entry into circle, t2 is exit from circle.
+    let t1 = (-b - sqrt_disc) / (2.0 * a);
+    let t2 = (-b + sqrt_disc) / (2.0 * a);
+
+    let t1_in = (0.0..=1.0).contains(&t1);
+    let t2_in = (0.0..=1.0).contains(&t2);
+
+    match (p1_inside, p2_inside) {
+        (false, false) => {
+            if t1_in && t2_in {
+                // Segment passes through the circle: two surviving portions.
+                SegmentClip::Both(lerp(p1, p2, t1), lerp(p1, p2, t2))
+            } else {
+                // Intersects the infinite line but not the actual segment.
+                SegmentClip::Full
+            }
+        }
+        (false, true) => {
+            // p1 outside, p2 inside — entry at t1.
+            let entry = if t1_in { lerp(p1, p2, t1) } else { p1 };
+            SegmentClip::Start(entry)
+        }
+        (true, false) => {
+            // p1 inside, p2 outside — exit at t2.
+            let exit_pt = if t2_in { lerp(p1, p2, t2) } else { p2 };
+            SegmentClip::End(exit_pt)
+        }
+        (true, true) => unreachable!("both-inside handled above"),
+    }
+}
+
+fn lerp(p1: (f32, f32), p2: (f32, f32), t: f32) -> (f32, f32) {
+    (p1.0 + t * (p2.0 - p1.0), p1.1 + t * (p2.1 - p1.1))
 }
 
 #[cfg(test)]

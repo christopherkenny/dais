@@ -6,7 +6,7 @@
 //! via a hover panel near the bottom edge.
 
 use dais_core::bus::CommandSender;
-use dais_core::state::PresentationState;
+use dais_core::state::{DrawTool, PresentationState};
 use dais_document::cache::PageCache;
 use dais_document::page::RenderSize;
 use dais_document::typst_renderer::TextBoxRenderCache;
@@ -113,6 +113,8 @@ impl HudOverlay {
                     image_rect,
                     crate::input::ActiveAids {
                         ink: state.ink_active,
+                        eraser: state.draw_tool == DrawTool::Eraser,
+                        eraser_radius: state.eraser_radius,
                         laser: state.laser_active,
                         spotlight: state.spotlight_active,
                         zoom: state.zoom_active,
@@ -237,17 +239,7 @@ impl HudOverlay {
                     );
                 }
                 if state.ink_active {
-                    let p = state.active_pen.color;
-                    let swatch = egui::Color32::from_rgba_unmultiplied(p[0], p[1], p[2], p[3]);
-                    ui.colored_label(
-                        egui::Color32::from_gray(180),
-                        egui::RichText::new(format!("{}px", state.active_pen.width)).size(11.0),
-                    );
-                    ui.colored_label(swatch, egui::RichText::new("■").size(14.0));
-                    ui.colored_label(
-                        egui::Color32::from_rgb(255, 165, 0),
-                        egui::RichText::new("INK").size(12.0),
-                    );
+                    crate::widgets::show_ink_toolbar(ui, state, sender);
                 }
                 if state.laser_active {
                     ui.colored_label(egui::Color32::RED, egui::RichText::new("LASER").size(12.0));

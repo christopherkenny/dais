@@ -22,6 +22,18 @@ pub struct TextBox {
     pub typst_prelude: String,
 }
 
+/// Which drawing tool is active within ink drawing mode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum DrawTool {
+    /// Opaque freehand pen (default).
+    #[default]
+    Pen,
+    /// Semi-transparent wide highlighter.
+    Highlighter,
+    /// Proximity eraser that removes ink segment-by-segment.
+    Eraser,
+}
+
 /// The single authoritative state of the presentation.
 ///
 /// The engine owns and mutates this. The UI reads it (via watch channel) and renders it.
@@ -74,8 +86,18 @@ pub struct PresentationState {
     pub pointer_appearances: PointerAppearances,
     /// Whether ink drawing mode is active.
     pub ink_active: bool,
-    /// Active pen settings — used to initialise the next stroke.
+    /// Which drawing tool is active (pen, highlighter, or eraser).
+    pub draw_tool: DrawTool,
+    /// Eraser circle radius in normalized slide coordinates (0..1).
+    pub eraser_radius: f32,
+    /// Ink color presets available in the drawing toolbar (from config).
+    pub ink_color_presets: Vec<[u8; 4]>,
+    /// Active pen settings — used to initialise the next pen stroke.
     pub active_pen: ActivePen,
+    /// Highlighter color presets (semi-transparent).
+    pub highlighter_color_presets: Vec<[u8; 4]>,
+    /// Active highlighter settings — used to initialise the next highlighter stroke.
+    pub active_highlighter: ActivePen,
     /// Per-page slide ink annotations (`page_index` → strokes).
     pub slide_ink_by_page: HashMap<usize, Vec<InkStroke>>,
     /// Per-page text box overlays (`page_index` → boxes).
@@ -155,7 +177,12 @@ impl PresentationState {
             pointer_style: PointerStyle::Dot,
             pointer_appearances: PointerAppearances::default(),
             ink_active: false,
+            draw_tool: DrawTool::Pen,
+            eraser_radius: 0.03,
+            ink_color_presets: Vec::new(),
             active_pen: ActivePen::default(),
+            highlighter_color_presets: Vec::new(),
+            active_highlighter: ActivePen::highlighter_default(),
             slide_ink_by_page: HashMap::new(),
             slide_text_boxes_by_page: HashMap::new(),
             text_box_mode: false,
@@ -315,6 +342,13 @@ pub struct ActivePen {
 impl Default for ActivePen {
     fn default() -> Self {
         Self { color: [255, 0, 0, 255], width: 3.0 }
+    }
+}
+
+impl ActivePen {
+    /// Default highlighter settings: semi-transparent yellow at a wider width.
+    pub fn highlighter_default() -> Self {
+        Self { color: [255, 220, 0, 100], width: 10.0 }
     }
 }
 

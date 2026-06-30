@@ -15,6 +15,8 @@
 - `--time-ignore` can disable per-slide timing updates when saving sidecars.
 - `dais export ... --out ...` writes a new PDF with saved Dais ink annotations and Typst text boxes composed over the original PDF pages, with options for SVG/PNG output, layer selection, whiteboard export, handout export that collapses incremental build pages, and recurring defaults under `[export]`.
 - Dual-monitor presentations can swap the presenter and audience screens instantly with `F6` or the remappable `swap_displays` action, without changing config.
+- Ink toolbar now has a unified pen-type selector: Pen, Highlighter, and Eraser. Pen and Highlighter maintain independent color and width settings.
+- Highlighter presets are configurable via `[ink] highlighter_colors` (RGBA hex strings) and `[ink] highlighter_width` in `dais.toml`.
 
 ## Bug fixes
 

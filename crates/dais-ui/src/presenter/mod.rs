@@ -12,7 +12,7 @@ pub mod overview;
 pub mod timer;
 
 use dais_core::bus::CommandSender;
-use dais_core::state::PresentationState;
+use dais_core::state::{DrawTool, PresentationState};
 use dais_document::cache::PageCache;
 use dais_document::render_pipeline::FALLBACK_RENDER_SIZE;
 use dais_document::typst_renderer::TextBoxRenderCache;
@@ -162,6 +162,8 @@ impl PresenterConsole {
                     image_rect,
                     crate::input::ActiveAids {
                         ink: state.ink_active,
+                        eraser: state.draw_tool == DrawTool::Eraser,
+                        eraser_radius: state.eraser_radius,
                         laser: state.laser_active,
                         spotlight: state.spotlight_active,
                         zoom: state.zoom_active,
@@ -407,6 +409,8 @@ impl PresenterConsole {
                     aud_rect,
                     crate::input::ActiveAids {
                         ink: state.ink_active,
+                        eraser: state.draw_tool == DrawTool::Eraser,
+                        eraser_radius: state.eraser_radius,
                         laser: state.laser_active,
                         spotlight: state.spotlight_active,
                         zoom: state.zoom_active,
@@ -737,14 +741,7 @@ impl PresenterConsole {
                     ui.colored_label(color, egui::RichText::new(text).size(12.0));
                 }
                 if state.ink_active {
-                    let p = state.active_pen.color;
-                    let swatch = egui::Color32::from_rgba_unmultiplied(p[0], p[1], p[2], p[3]);
-                    let gray = egui::Color32::from_gray(180);
-                    ui.colored_label(swatch, egui::RichText::new("■").size(12.0));
-                    ui.colored_label(
-                        gray,
-                        egui::RichText::new(format!("{}px", state.active_pen.width)).size(11.0),
-                    );
+                    crate::widgets::show_ink_toolbar(ui, state, sender);
                 }
 
                 // Jump mode indicator

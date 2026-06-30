@@ -74,11 +74,17 @@ Each completed stroke is sent to the presenter screen and saved to the sidecar i
 
 Controls:
 
-- **Color palette** — six presets: red, blue, green, yellow, white, black.
-- **Width** — Thin (2 px), Med (4 px), Thick (8 px).
+- **Tool selector** — **Pen**, **Hi** (highlighter), **Eraser**.
+  Pen draws opaque strokes using the selected color and width.
+  Highlighter draws semi-transparent wide strokes useful for marking key points.
+  Eraser removes ink by proximity — drag over strokes to clip them away.
+- **Pen colors** — color swatches matching the presenter's configured ink palette.
+- **Highlighter colors** — semi-transparent yellow, green, cyan, and pink (or configured presets).
+- **Width** — Thin, Med, Thick (different pixel sizes for pen vs. highlighter).
 - **Clear** — removes all ink on the current slide.
 
-The local canvas provides immediate feedback while the stroke is in transit.
+The active tool is kept in sync with the presenter console.
+The local canvas provides immediate feedback while the stroke or erase is in transit.
 When the presenter navigates to a different slide, the canvas clears automatically to match the new slide.
 
 Drawing works alongside the presenter's own ink tools.
@@ -191,6 +197,8 @@ All API endpoints are under `/api/v1`.
 | `/api/v1/commands/timer` | `POST` | Start, pause, toggle, or reset the timer |
 | `/api/v1/commands/notes` | `POST` | Set speaker notes for the current slide and save |
 | `/api/v1/commands/ink/stroke` | `POST` | Add an ink stroke to the current slide and save |
+| `/api/v1/commands/ink/erase` | `POST` | Erase ink near a path of points (segment-accurate) |
+| `/api/v1/commands/ink/set_tool` | `POST` | Switch the active draw tool: `"pen"`, `"highlighter"`, or `"eraser"` |
 | `/api/v1/commands/ink/clear` | `POST` | Clear all ink on the current slide and save |
 | `/api/v1/slides/current.png` | `GET` | Render the current page as PNG |
 | `/api/v1/slides/next.png` | `GET` | Render the next logical slide as PNG |
@@ -228,6 +236,14 @@ curl -X POST http://127.0.0.1:4317/api/v1/commands/ink/stroke `
   -H "Content-Type: application/json" `
   -d '{ "points": [[0.1,0.2],[0.5,0.5],[0.9,0.8]], "color": [255,0,0,255], "width": 4.0 }'
 
+curl -X POST http://127.0.0.1:4317/api/v1/commands/ink/erase `
+  -H "Content-Type: application/json" `
+  -d '{ "points": [[0.3,0.4],[0.4,0.5]], "radius": 0.03 }'
+
+curl -X POST http://127.0.0.1:4317/api/v1/commands/ink/set_tool `
+  -H "Content-Type: application/json" `
+  -d '{ "tool": "highlighter" }'
+
 curl -X POST http://127.0.0.1:4317/api/v1/commands/ink/clear
 ```
 
@@ -236,8 +252,21 @@ Ink stroke body fields:
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `points` | `[[f32, f32]]` | Yes | Two or more `[x, y]` pairs in normalized 0–1 coordinates |
-| `color` | `[u8, u8, u8, u8]` | No | RGBA pen color; uses the active pen color if omitted |
+| `color` | `[u8, u8, u8, u8]` | No | RGBA pen color; uses the active pen color if omitted. Pass alpha < 255 for highlighter strokes |
 | `width` | `f32` | No | Stroke width in logical pixels; uses the active pen width if omitted |
+
+Ink erase body fields:
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `points` | `[[f32, f32]]` | Yes | One or more `[x, y]` positions in normalized 0–1 coordinates. Each point erases within the given radius |
+| `radius` | `f32` | No | Erase circle radius in normalized coordinates. Defaults to `0.03` (approximately 29 px on a 960 px slide). Clamped to 0.001–0.5 |
+
+Set-tool body fields:
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `tool` | `string` | Yes | `"pen"`, `"highlighter"`, or `"eraser"` |
 
 Token-protected requests can authenticate with either header:
 
@@ -305,6 +334,7 @@ The state includes:
 - Notes visibility
 - Blackout, freeze, whiteboard, and screen-share state
 - Laser, ink, spotlight, and zoom state
+- Active draw tool (`draw_tool`: `"pen"`, `"highlighter"`, or `"eraser"`)
 - Active pen color (`ink_pen_color`) and width (`ink_pen_width`)
 - Pointer and zoom-position data where relevant
 - URLs for current and next slide images

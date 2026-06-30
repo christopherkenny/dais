@@ -196,11 +196,16 @@ struct PartialSpotlightConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct InkConfig {
-    /// Pen color presets as hex strings (RGBA or RGB). `CycleInkColor` steps through these.
+    /// Pen color presets as hex strings (RGB or RGBA). `CycleInkColor` steps through these.
     /// Accepts a single string (`color = "#FF0000"`) or an array (`colors = ["#FF0000", "#0000FF"]`).
     pub colors: Vec<String>,
-    /// Stroke width in logical pixels.
+    /// Default pen stroke width in logical pixels.
     pub width: f32,
+    /// Highlighter color presets as RGBA hex strings (alpha controls opacity).
+    /// Defaults to semi-transparent yellow, green, cyan, and pink.
+    pub highlighter_colors: Vec<String>,
+    /// Default highlighter stroke width in logical pixels.
+    pub highlighter_width: f32,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -211,6 +216,8 @@ struct PartialInkConfig {
     /// Legacy single-color form: `color = "#FF0000"`. Ignored if `colors` is also set.
     color: Option<String>,
     width: Option<f32>,
+    highlighter_colors: Option<Vec<String>>,
+    highlighter_width: Option<f32>,
 }
 
 /// Default style for newly created text boxes.
@@ -390,7 +397,12 @@ impl Default for SpotlightConfig {
 
 impl Default for InkConfig {
     fn default() -> Self {
-        Self { colors: vec!["#FF0000".to_string()], width: 3.0 }
+        Self {
+            colors: vec!["#FF0000".to_string()],
+            width: 3.0,
+            highlighter_colors: Vec::new(),
+            highlighter_width: 10.0,
+        }
     }
 }
 
@@ -612,6 +624,12 @@ fn apply_partial_config(config: &mut Config, partial: PartialConfig) {
         }
         if let Some(width) = ink.width {
             config.ink.width = width;
+        }
+        if let Some(highlighter_colors) = ink.highlighter_colors {
+            config.ink.highlighter_colors = highlighter_colors;
+        }
+        if let Some(highlighter_width) = ink.highlighter_width {
+            config.ink.highlighter_width = highlighter_width;
         }
     }
 

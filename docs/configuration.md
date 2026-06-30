@@ -48,7 +48,9 @@ dim_opacity = 0.6              # 0.0 = invisible, 1.0 = fully black
 
 [ink]
 colors = ["#FF0000"]           # Pen color presets, RGB or RGBA hex strings
-width = 3.0
+width = 3.0                    # Default pen stroke width in logical pixels
+# highlighter_colors = [...]   # RGBA hex strings; omit to use built-in yellow/green/cyan/pink
+highlighter_width = 10.0       # Default highlighter stroke width in logical pixels
 
 [text_boxes]
 color = "#000000"
@@ -260,6 +262,29 @@ Press **W** again to return to the slide view.
 
 Activating the whiteboard deactivates blackout and the laser pointer.
 Whiteboard ink uses the same `[ink]` settings as slide annotations.
+
+## Ink Drawing
+
+`[ink]` controls both the pen and highlighter drawing tools.
+
+`colors` sets the pen color swatches shown in the toolbar when the Pen tool is active.
+Use RGB (`#RRGGBB`) or RGBA (`#RRGGBBAA`) hex strings.
+Multiple colors cycle with **Ctrl+D** (pen only; the highlighter has its own swatches).
+
+`highlighter_colors` sets the highlighter swatches.
+Always use RGBA — the alpha byte controls how transparent the highlight is.
+Lower alpha = more transparent (lighter); higher alpha = more opaque (darker).
+Around `64` (25 % opacity) to `A0` (63 %) gives realistic highlighter results.
+
+Example:
+
+```toml
+[ink]
+colors = ["#F58025", "#DC1E1E", "#1E64DC", "#1EB41E"]
+width = 2.0
+highlighter_colors = ["#FFDC0064", "#00C8FF64", "#3CDC6464", "#FF50B464"]
+highlighter_width = 12.0
+```
 
 ## Slide Overview
 

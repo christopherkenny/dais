@@ -31,6 +31,8 @@ pub enum InputMode {
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ActiveAids {
     pub ink: bool,
+    pub eraser: bool,
+    pub eraser_radius: f32,
     pub laser: bool,
     pub spotlight: bool,
     pub zoom: bool,
@@ -57,6 +59,8 @@ pub struct InputHandler {
     /// True while an ink stroke is being built (pointer held down). Used to
     /// finish the stroke reliably even when egui's drag threshold isn't met.
     stroke_in_progress: bool,
+    /// True while an erase drag is in progress.
+    erase_in_progress: bool,
 }
 
 /// Timeout for jump-to-slide digit accumulation.
@@ -75,6 +79,7 @@ impl InputHandler {
             jump_buffer: String::new(),
             jump_start: None,
             stroke_in_progress: false,
+            erase_in_progress: false,
         }
     }
 
@@ -314,8 +319,17 @@ impl InputHandler {
         {
             let norm = normalize_to_rect(pos, image_rect);
             if (0.0..=1.0).contains(&norm.0) && (0.0..=1.0).contains(&norm.1) {
-                let _ = self.sender.send(Command::AddInkPoint(norm.0, norm.1));
-                self.stroke_in_progress = true;
+                if aids.eraser {
+                    let _ = self.sender.send(Command::EraseInkNear {
+                        x: norm.0,
+                        y: norm.1,
+                        radius: aids.eraser_radius,
+                    });
+                    self.erase_in_progress = true;
+                } else {
+                    let _ = self.sender.send(Command::AddInkPoint(norm.0, norm.1));
+                    self.stroke_in_progress = true;
+                }
             }
         }
 
@@ -327,6 +341,10 @@ impl InputHandler {
         if aids.ink && self.stroke_in_progress && !pointer_down {
             let _ = self.sender.send(Command::FinishInkStroke);
             self.stroke_in_progress = false;
+        }
+        if aids.ink && self.erase_in_progress && !pointer_down {
+            let _ = self.sender.send(Command::SaveSidecar);
+            self.erase_in_progress = false;
         }
     }
 
