@@ -414,7 +414,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="ink-drawing" class="level2">
 <h2 class="anchored" data-anchor-id="ink-drawing">Ink Drawing</h2>
 <p><code>[ink]</code> controls both the pen and highlighter drawing tools.</p>
-<p><code>colors</code> sets the pen color swatches shown in the toolbar when the Pen tool is active. Use RGB (<code>#RRGGBB</code>) or RGBA (<code>#RRGGBBAA</code>) hex strings. Multiple colors cycle with <strong>Ctrl+D</strong> (pen only; the highlighter has its own swatches).</p>
+<p><code>colors</code> sets the pen color swatches shown in the toolbar when the Pen tool is active. Use RGB (<code>#RRGGBB</code>) or RGBA (<code>#RRGGBBAA</code>) hex strings. Dais pads the palette to at least six colors with red, blue, green, yellow, white, and black. Multiple colors cycle with <strong>Ctrl+D</strong> (pen only; the highlighter has its own swatches).</p>
 <p><code>highlighter_colors</code> sets the highlighter swatches. Always use RGBA — the alpha byte controls how transparent the highlight is. Lower alpha = more transparent (lighter); higher alpha = more opaque (darker). Around <code>64</code> (25 % opacity) to <code>A0</code> (63 %) gives realistic highlighter results.</p>
 <p>Example:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[ink]</span></span>

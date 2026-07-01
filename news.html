@@ -173,7 +173,10 @@ ul.task-list li input[type="checkbox"] {
 <li>Remote control can run alongside a presentation with <code>--remote</code> or <code>--remote-lan</code>.</li>
 <li>Built-in browser remote at <code>/remote</code> supports current and next slide previews, notes, timer controls, previous/next navigation, goto slide, blackout, freeze, whiteboard, and laser controls.</li>
 <li>Speaker notes are editable from the browser remote. The Notes tab has an Edit button that opens the current slide’s notes in a textarea; Save writes the change and persists it to the sidecar immediately.</li>
-<li>Slides are annotatable from the browser remote. The Draw tab shows the current slide with a canvas overlay; draw with a finger, mouse, or Apple Pencil and strokes are sent to the presenter screen and saved to the sidecar. Includes a six-color palette, three width presets, and a clear button.</li>
+<li>Slides are annotatable from the browser remote. The Draw tab shows the current slide with a canvas overlay; draw with a finger, mouse, or Apple Pencil and strokes are sent to the presenter screen and saved to the sidecar. Includes a six-color palette, three width presets, and a clear button.
+<ul>
+<li>Remote drawing supports whiteboard mode, Pen/Highlighter/Eraser selection, highlighter strokes, and presenter-synchronized ink state.</li>
+</ul></li>
 <li>Presenter console shows remote pairing URLs, QR codes, pairing code, connected remote clients, and the last remote command.</li>
 <li>Per-logical-slide target durations can be set in <code>.dais</code> sidecars; the presenter slide timer shows <code>elapsed / target</code> and turns red when a slide exceeds its target.</li>
 <li><code>--notes &lt;path&gt;</code> can use a Markdown file as the speaker-notes source and save edits back to that file.</li>
@@ -183,15 +186,9 @@ ul.task-list li input[type="checkbox"] {
 <li><code>--time-ignore</code> can disable per-slide timing updates when saving sidecars.</li>
 <li><code>dais export ... --out ...</code> writes a new PDF with saved Dais ink annotations and Typst text boxes composed over the original PDF pages, with options for SVG/PNG output, layer selection, whiteboard export, handout export that collapses incremental build pages, and recurring defaults under <code>[export]</code>.</li>
 <li>Dual-monitor presentations can swap the presenter and audience screens instantly with <code>F6</code> or the remappable <code>swap_displays</code> action, without changing config.</li>
-<li>Ink toolbar now has a unified pen-type selector: Pen, Highlighter, and Eraser. Pen and Highlighter maintain independent color and width settings.</li>
+<li>Ink toolbar has a unified pen-type selector: Pen, Highlighter, and Eraser. Pen and Highlighter maintain independent color and width settings.</li>
 <li>Highlighter presets are configurable via <code>[ink] highlighter_colors</code> (RGBA hex strings) and <code>[ink] highlighter_width</code> in <code>dais.toml</code>.</li>
-</ul>
-</section>
-<section id="bug-fixes" class="level2">
-<h2 class="anchored" data-anchor-id="bug-fixes">Bug fixes</h2>
-<ul>
-<li>Remote LAN mode now accepts valid IP-literal hosts when bound to <code>0.0.0.0</code>.</li>
-<li>Custom remote tokens are restricted to URL-safe characters so browser pairing links work reliably.</li>
+<li>The built-in pen palette includes red, blue, green, yellow, white, and black when fewer than six colors are configured.</li>
 </ul>
 </section>
 </section>
@@ -203,8 +200,8 @@ ul.task-list li input[type="checkbox"] {
 <li>Text boxes can use a configured Typst prelude from <code>[text_boxes].typst_prelude</code> in <code>dais.toml</code>.</li>
 </ul>
 </section>
-<section id="bug-fixes-1" class="level2">
-<h2 class="anchored" data-anchor-id="bug-fixes-1">Bug fixes</h2>
+<section id="bug-fixes" class="level2">
+<h2 class="anchored" data-anchor-id="bug-fixes">Bug fixes</h2>
 <ul>
 <li>Ctrl+L laser-style cycling now advances one style per keypress and reaches every pointer style.</li>
 <li>Normal forward/back navigation now steps through incremental build pages instead of skipping to the next logical slide.</li>

@@ -235,7 +235,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><strong>Width</strong> — Thin, Med, Thick (different pixel sizes for pen vs.&nbsp;highlighter).</li>
 <li><strong>Clear</strong> — removes all ink on the current slide.</li>
 </ul>
-<p>The active tool is kept in sync with the presenter console. The local canvas provides immediate feedback while the stroke or erase is in transit. When the presenter navigates to a different slide, the canvas clears automatically to match the new slide.</p>
+<p>The active tool is kept in sync with the presenter console. The local canvas provides immediate feedback while the stroke or erase is in transit, then refreshes from the presenter’s authoritative ink state. When the presenter navigates to a different slide, the canvas clears automatically to match the new slide. When whiteboard mode is active, the Draw tab switches to a blank white drawing surface and remote strokes are saved to the shared whiteboard instead of the current slide.</p>
 <p>Drawing works alongside the presenter’s own ink tools. If the presenter already has ink mode active, remote strokes are added without toggling it; if ink mode is off, the remote enables it for the stroke and restores it afterward.</p>
 </section>
 </section>
@@ -443,7 +443,7 @@ http://192.168.1.24:4317/remote?token=...</code></pre>
 <span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="fu">curl</span> <span class="op">-</span>X POST http<span class="op">://</span><span class="dv">127.0</span><span class="op">.</span><span class="dv">0.1</span><span class="op">:</span><span class="dv">4317</span><span class="op">/</span>api<span class="op">/</span>v1<span class="op">/</span>commands<span class="op">/</span>ink<span class="op">/</span>stroke `</span>
 <span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>  <span class="op">-</span>H <span class="st">"Content-Type: application/json"</span> `</span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>  <span class="op">-</span>d <span class="st">'{ "points": [[0.1,0.2],[0.5,0.5],[0.9,0.8]], "color": [255,0,0,255], "width": 4.0 }'</span></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>  <span class="op">-</span>d <span class="st">'{ "points": [[0.1,0.2],[0.5,0.5],[0.9,0.8]], "tool": "highlighter", "color": [255,220,0,100], "width": 12.0 }'</span></span>
 <span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a><span class="fu">curl</span> <span class="op">-</span>X POST http<span class="op">://</span><span class="dv">127.0</span><span class="op">.</span><span class="dv">0.1</span><span class="op">:</span><span class="dv">4317</span><span class="op">/</span>api<span class="op">/</span>v1<span class="op">/</span>commands<span class="op">/</span>ink<span class="op">/</span><span class="fu">erase</span> `</span>
 <span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>  <span class="op">-</span>H <span class="st">"Content-Type: application/json"</span> `</span>
@@ -478,12 +478,18 @@ http://192.168.1.24:4317/remote?token=...</code></pre>
 <td>Two or more <code>[x, y]</code> pairs in normalized 0–1 coordinates</td>
 </tr>
 <tr class="even">
+<td><code>tool</code></td>
+<td><code>string</code></td>
+<td>No</td>
+<td><code>"pen"</code> or <code>"highlighter"</code> for this stroke. When present, Dais applies the tool before color, width, and points in one command batch</td>
+</tr>
+<tr class="odd">
 <td><code>color</code></td>
 <td><code>[u8, u8, u8, u8]</code></td>
 <td>No</td>
 <td>RGBA pen color; uses the active pen color if omitted. Pass alpha &lt; 255 for highlighter strokes</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>width</code></td>
 <td><code>f32</code></td>
 <td>No</td>
@@ -593,6 +599,10 @@ swap_displays</code></pre>
 <li>Laser, ink, spotlight, and zoom state</li>
 <li>Active draw tool (<code>draw_tool</code>: <code>"pen"</code>, <code>"highlighter"</code>, or <code>"eraser"</code>)</li>
 <li>Active pen color (<code>ink_pen_color</code>) and width (<code>ink_pen_width</code>)</li>
+<li>Pen color presets (<code>ink_color_presets</code>)</li>
+<li>Active highlighter color (<code>ink_highlighter_color</code>) and width (<code>ink_highlighter_width</code>)</li>
+<li>Highlighter color presets (<code>ink_highlighter_color_presets</code>)</li>
+<li>Active slide or whiteboard ink strokes (<code>ink_strokes</code>)</li>
 <li>Pointer and zoom-position data where relevant</li>
 <li>URLs for current and next slide images</li>
 </ul>
