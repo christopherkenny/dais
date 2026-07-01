@@ -12,13 +12,17 @@ use dais_core::state::{
 use dais_sidecar::markdown_notes::MarkdownNotesDocument;
 use dais_sidecar::types::{InkStrokeMeta, PresentationMetadata, TextBoxMeta};
 
-/// Fallback color presets appended when the user configures fewer than 4 colors.
+/// Fallback color presets appended when the user configures fewer than 6 colors.
 const INK_COLOR_FALLBACKS: &[[u8; 4]] = &[
-    [220, 30, 30, 255],  // red
-    [30, 100, 220, 255], // blue
-    [30, 180, 30, 255],  // green
-    [220, 200, 0, 255],  // yellow
+    [220, 30, 30, 255],   // red
+    [30, 100, 220, 255],  // blue
+    [30, 180, 30, 255],   // green
+    [220, 200, 0, 255],   // yellow
+    [255, 255, 255, 255], // white
+    [0, 0, 0, 255],       // black
 ];
+
+const MIN_INK_COLOR_PRESETS: usize = 6;
 
 /// Built-in pen width presets cycled by `CycleInkWidth` (logical pixels).
 const INK_WIDTH_PRESETS: &[f32] = &[1.0, 2.0, 4.0, 8.0, 16.0];
@@ -47,7 +51,7 @@ pub struct PresentationEngine {
     shared_state: Arc<RwLock<PresentationState>>,
     timer_start: Option<Instant>,
     slide_start: Instant,
-    /// Pen color presets for cycling (from config, padded to at least 4 with fallbacks).
+    /// Pen color presets for cycling (from config, padded to at least 6 with fallbacks).
     ink_color_presets: Vec<[u8; 4]>,
     /// Default text color for newly placed text boxes.
     text_box_default_color: [u8; 4],
@@ -153,15 +157,8 @@ impl PresentationEngine {
         state.spotlight_radius = config.spotlight.radius.clamp(16.0, 2048.0);
         state.spotlight_dim_opacity = config.spotlight.dim_opacity.clamp(0.0, 1.0);
 
-        // Parse user-configured colors, then pad with fallbacks until we have at least 4.
-        let mut ink_color_presets: Vec<[u8; 4]> =
-            config.ink.colors.iter().filter_map(|s| parse_hex_color(s)).collect();
-        for &fallback in INK_COLOR_FALLBACKS {
-            if ink_color_presets.len() >= 4 {
-                break;
-            }
-            ink_color_presets.push(fallback);
-        }
+        // Parse user-configured colors, then pad with fallbacks until we have at least 6.
+        let ink_color_presets = ink_color_presets_from_config(&config.ink.colors);
 
         state.active_pen = ActivePen {
             color: ink_color_presets.first().copied().unwrap_or([255, 0, 0, 255]),
@@ -1056,6 +1053,18 @@ fn parse_hex_color(color_str: &str) -> Option<[u8; 4]> {
     } else {
         None
     }
+}
+
+fn ink_color_presets_from_config(colors: &[String]) -> Vec<[u8; 4]> {
+    let mut presets: Vec<[u8; 4]> = colors.iter().filter_map(|s| parse_hex_color(s)).collect();
+    let fallback_start = usize::from(!presets.is_empty());
+    for &fallback in &INK_COLOR_FALLBACKS[fallback_start..] {
+        if presets.len() >= MIN_INK_COLOR_PRESETS {
+            break;
+        }
+        presets.push(fallback);
+    }
+    presets
 }
 
 fn parse_optional_hex_color(color_str: &str) -> Option<[u8; 4]> {
@@ -2519,6 +2528,9 @@ mod tests {
         let (engine, _, _) = make_engine_with_config(3, &PresentationMetadata::default(), &config);
         assert_eq!(engine.state().active_pen.color, [255, 0, 0, 128]);
         assert!((engine.state().active_pen.width - 7.5).abs() < f32::EPSILON);
+        assert_eq!(engine.state().ink_color_presets.len(), 6);
+        assert!(engine.state().ink_color_presets.contains(&[255, 255, 255, 255]));
+        assert!(engine.state().ink_color_presets.contains(&[0, 0, 0, 255]));
     }
 
     #[test]

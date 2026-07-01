@@ -269,6 +269,7 @@ Whiteboard ink uses the same `[ink]` settings as slide annotations.
 
 `colors` sets the pen color swatches shown in the toolbar when the Pen tool is active.
 Use RGB (`#RRGGBB`) or RGBA (`#RRGGBBAA`) hex strings.
+Dais pads the palette to at least six colors with red, blue, green, yellow, white, and black.
 Multiple colors cycle with **Ctrl+D** (pen only; the highlighter has its own swatches).
 
 `highlighter_colors` sets the highlighter swatches.

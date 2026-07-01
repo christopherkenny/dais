@@ -25,5 +25,7 @@ All docs should be written as features, not as proposals.
 Avoid proposal language like "should" or "will".
 Features and bug fixes should contain a short, scannable note in `NEWS.md` in similar style to existing items.
 
+If a feature was introduced in the same version before the final version is released and later a bug is fixed, then these changes should not be documented as bug fixes.
+
 Markdown should be written to be human-readable.
 There should be no line breaks within sentences and every sentence should be followed by a line break.

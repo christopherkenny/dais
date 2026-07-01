@@ -15,6 +15,8 @@ main{display:grid;grid-template-columns:1fr;gap:10px;padding:10px;max-width:1080
 .band{background:#181d22;border:1px solid #2a323a;border-radius:8px;padding:10px}
 .slides{display:grid;grid-template-columns:1fr 42%;gap:10px;align-items:start}
 .slide img{display:block;width:100%;height:auto;background:#0a0c0f;border-radius:5px;border:1px solid #303840}
+.slide.whiteboard img,.drawSurface.whiteboard img{opacity:0}
+.slide.whiteboard .imageBack,.drawSurface.whiteboard{background:#fff;border-radius:5px}
 .slide .label{display:flex;justify-content:space-between;color:#a7b0b8;font-size:12px;margin-bottom:6px}
 .timer{font-variant-numeric:tabular-nums;font-size:42px;font-weight:720;line-height:1;color:#f2c14e}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -22,6 +24,7 @@ main{display:grid;grid-template-columns:1fr;gap:10px;padding:10px;max-width:1080
 .tabs{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px}
 button{appearance:none;border:1px solid #3a4650;background:#252d35;color:#f5f7f8;border-radius:7px;padding:10px 12px;font:inherit;font-weight:650;min-height:42px}
 button:active{transform:translateY(1px);background:#33404a}
+button.active{background:#d8e0e8;border-color:#f5f7f8;color:#101316}
 button.primary{background:#2764d8;border-color:#3e7df0}
 button.warn.active{background:#4d2630;border-color:#824250}
 button.good{background:#244836;border-color:#3b7556}
@@ -76,9 +79,9 @@ input{background:#11161b;border:1px solid #3a4650;border-radius:7px;color:#edf2f
   </section>
   <div class="view" id="controlView">
     <section class="slides">
-      <div class="slide band">
+      <div class="slide band" id="currentSlideFrame">
         <div class="label"><span>Current</span><span id="mode"></span></div>
-        <img id="currentImg" alt="Current slide">
+        <div class="imageBack"><img id="currentImg" alt="Current slide"></div>
       </div>
       <div class="slide band">
         <div class="label"><span>Next</span></div>
@@ -143,7 +146,7 @@ input{background:#11161b;border:1px solid #3a4650;border-radius:7px;color:#edf2f
         <button id="toolEraser" style="font-size:12px;min-height:30px;padding:3px 14px">Eraser</button>
         <button id="drawClear" class="warn" style="font-size:12px;min-height:30px;padding:3px 10px;margin-left:auto">Clear</button>
       </div>
-      <div style="position:relative">
+      <div id="drawSurface" class="drawSurface" style="position:relative">
         <img id="drawImg" alt="Current slide" style="display:block;width:100%;height:auto;background:#0a0c0f;border-radius:5px;border:1px solid #303840;user-select:none;pointer-events:none">
         <canvas id="drawCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;touch-action:none;cursor:crosshair;border-radius:5px"></canvas>
       </div>
@@ -162,8 +165,8 @@ function withToken(path){
 }
 function withCache(path){const authed=withToken(path);return authed+(authed.includes('?')?'&':'?')+'v='+Date.now();}
 const $=id=>document.getElementById(id);
-let state=null,lastPage=-1,nextPage=-1,pollTimer=null,overviewCount=0,activeView='control',everConnected=false,notesEditing=false;
-let drawColor=[255,0,0,255],drawWidth=2,drawHiColor=[255,220,0,100],drawHiWidth=12,drawEraserRadius=0.03,drawStrokes=[],drawStroke=null,drawTool='pen',erasePath=[];
+let state=null,lastPage=-1,lastWhiteboard=null,nextPage=-1,pollTimer=null,overviewCount=0,activeView='control',everConnected=false,notesEditing=false;
+let drawColor=[255,0,0,255],drawWidth=2,drawHiColor=[255,220,0,100],drawHiWidth=12,drawEraserRadius=0.03,drawStrokes=[],drawStroke=null,drawTool='pen',erasePath=null,drawStrokesSig='',pendingInkUntil=0;
 function mmss(seconds){seconds=Math.max(0,seconds|0);const m=Math.floor(seconds/60),s=seconds%60;return m+':'+String(s).padStart(2,'0');}
 function setConn(text,color){$('conn').textContent=text;$('conn').style.color=color;}
 function connectionMessage(error){
@@ -257,22 +260,27 @@ function renderState(nextState){
   $('freeze').classList.toggle('primary',state.frozen);
   $('whiteboard').classList.toggle('primary',state.whiteboard_active);
   $('laser').classList.toggle('good',state.laser_active);
-  if(state.current_page!==lastPage){
+  $('currentSlideFrame').classList.toggle('whiteboard',state.whiteboard_active);
+  $('drawSurface').classList.toggle('whiteboard',state.whiteboard_active);
+  if(state.current_page!==lastPage||state.whiteboard_active!==lastWhiteboard){
    lastPage=state.current_page;
+   lastWhiteboard=state.whiteboard_active;
    const slideUrl=withCache('/api/v1/slides/current.png');
    $('currentImg').src=slideUrl;
    $('drawImg').src=slideUrl;
-   drawStrokes=[];drawStroke=null;erasePath=[];
+   drawStrokes=[];drawStroke=null;erasePath=null;drawStrokesSig='';
    if(activeView==='draw')redrawCanvas();
   }
   const serverTool=state.draw_tool||'pen';
-  if(serverTool!==drawTool){
-   drawTool=serverTool;
-   $('toolPen').classList.toggle('active',drawTool==='pen');
-   $('toolHi').classList.toggle('active',drawTool==='highlighter');
-   $('toolEraser').classList.toggle('active',drawTool==='eraser');
-   $('drawCanvas').style.cursor=drawTool==='eraser'?'cell':'crosshair';
+  drawTool=serverTool;
+  const stateStrokes=(state.ink_strokes||[]).map(s=>({pts:s.points,c:s.color,w:s.width}));
+  const stateSig=strokeSignature(stateStrokes);
+  if(!drawStroke&&!erasePath&&Date.now()>=pendingInkUntil&&stateSig!==drawStrokesSig){
+   drawStrokes=stateStrokes;
+   drawStrokesSig=stateSig;
+   if(activeView==='draw')redrawCanvas();
   }
+  syncDrawControls();
   drawEraserRadius=state.eraser_radius||0.03;
   const np=Math.min(state.current_logical_slide+2,state.total_logical_slides);
   if(np!==nextPage){nextPage=np;$('nextImg').src=withCache('/api/v1/slides/next.png');}
@@ -366,6 +374,78 @@ function redrawCanvas(){
   ctx.fill();ctx.restore();
  }
 }
+function sameColor(a,b){return a&&b&&a.length===b.length&&a.every((v,i)=>v===b[i]);}
+function strokeSignature(strokes){
+ return JSON.stringify(strokes.map(s=>[s.c,s.w,s.pts]));
+}
+function lerpPt(a,b,t){return[a[0]+t*(b[0]-a[0]),a[1]+t*(b[1]-a[1])];}
+function clipSegmentOutsideCircle(p1,p2,c,radius){
+ const fx=p1[0]-c[0],fy=p1[1]-c[1],ex=p2[0]-c[0],ey=p2[1]-c[1],r2=radius*radius;
+ const p1Inside=fx*fx+fy*fy<=r2,p2Inside=ex*ex+ey*ey<=r2;
+ if(p1Inside&&p2Inside)return[];
+ const dx=p2[0]-p1[0],dy=p2[1]-p1[1],a=dx*dx+dy*dy;
+ if(a<1e-12)return[[p1,p2]];
+ const b=2*(fx*dx+fy*dy),cc=fx*fx+fy*fy-r2,disc=b*b-4*a*cc;
+ if(disc<=0)return[[p1,p2]];
+ const root=Math.sqrt(disc),t1=(-b-root)/(2*a),t2=(-b+root)/(2*a);
+ const t1In=t1>=0&&t1<=1,t2In=t2>=0&&t2<=1;
+ if(!p1Inside&&!p2Inside){
+  return t1In&&t2In?[[p1,lerpPt(p1,p2,t1)],[lerpPt(p1,p2,t2),p2]]:[[p1,p2]];
+ }
+ if(!p1Inside&&p2Inside)return[[p1,t1In?lerpPt(p1,p2,t1):p1]];
+ return[[t2In?lerpPt(p1,p2,t2):p2,p2]];
+}
+function eraseStrokesNear(strokes,c,radius){
+ const next=[];
+ for(const s of strokes){
+  let current=[];
+  for(let i=1;i<s.pts.length;i++){
+   const a=s.pts[i-1],b=s.pts[i];
+   const kept=clipSegmentOutsideCircle(a,b,c,radius);
+   if(kept.length===1&&kept[0][0]===a&&kept[0][1]===b){
+     if(current.length===0)current.push(a);
+     current.push(b);
+   }else if(kept.length===1&&kept[0][0]===a){
+    if(current.length===0)current.push(a);
+    current.push(kept[0][1]);
+    if(current.length>=2)next.push({pts:current,c:s.c,w:s.w});
+    current=[];
+   }else if(kept.length===1){
+    if(current.length>=2)next.push({pts:current,c:s.c,w:s.w});
+    current=[kept[0][0],kept[0][1]];
+   }else if(kept.length===2){
+    if(current.length===0)current.push(a);
+    current.push(kept[0][1]);
+    if(current.length>=2)next.push({pts:current,c:s.c,w:s.w});
+    current=[kept[1][0],kept[1][1]];
+   }else{
+    if(current.length>=2)next.push({pts:current,c:s.c,w:s.w});
+    current=[];
+   }
+  }
+  if(current.length>=2)next.push({pts:current,c:s.c,w:s.w});
+ }
+ return next;
+}
+function applyLocalErase(path,radius){
+ drawStrokes=path.reduce((strokes,pt)=>eraseStrokesNear(strokes,pt,radius),drawStrokes);
+ drawStrokesSig=strokeSignature(drawStrokes);
+}
+function syncDrawControls(){
+ $('toolPen').classList.toggle('active',drawTool==='pen');
+ $('toolHi').classList.toggle('active',drawTool==='highlighter');
+ $('toolEraser').classList.toggle('active',drawTool==='eraser');
+ $('drawCanvas').style.cursor=drawTool==='eraser'?'cell':'crosshair';
+ document.querySelectorAll('.swatch').forEach(s=>{
+  const color=s.dataset.color.split(',').map(Number);
+  const active=drawTool==='highlighter'
+   ?color[0]===drawHiColor[0]&&color[1]===drawHiColor[1]&&color[2]===drawHiColor[2]
+   :sameColor(color,drawColor);
+  s.classList.toggle('active',active);
+ });
+ const activeWidth=drawTool==='highlighter'?drawHiWidth/2:drawTool==='eraser'?drawEraserRadius*200:drawWidth;
+ document.querySelectorAll('.drawWidth').forEach(w=>w.classList.toggle('active',+w.dataset.width===activeWidth));
+}
 function canvasPt(e){
  const r=$('drawCanvas').getBoundingClientRect();
  return[Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))];
@@ -391,14 +471,17 @@ dc.addEventListener('pointermove',e=>{
 });
 dc.addEventListener('pointerup',async e=>{
  if(drawTool==='eraser'){
-  if(!erasePath||erasePath.length===0){erasePath=[];return;}
+  if(!erasePath||erasePath.length===0){erasePath=null;return;}
   erasePath.push(canvasPt(e));
-  const pts=[...erasePath];erasePath=[];redrawCanvas();
+  const pts=[...erasePath];
+  applyLocalErase(pts,drawEraserRadius);
+  erasePath=null;
+  pendingInkUntil=Date.now()+1200;
+  redrawCanvas();
   try{
    await api('/api/v1/commands/ink/erase',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({points:pts,radius:drawEraserRadius})});
    $('drawStatus').textContent='';
-   if(activeView==='draw')$('drawImg').src=withCache('/api/v1/slides/current.png');
   }catch(err){$('drawStatus').textContent='erase not sent';}
  }else{
   if(!drawStroke)return;
@@ -407,39 +490,41 @@ dc.addEventListener('pointerup',async e=>{
   const c=drawTool==='highlighter'?[...drawHiColor]:[...drawColor];
   const w=drawTool==='highlighter'?drawHiWidth:drawWidth;
   const s={pts:drawStroke,c,w};
-  drawStrokes.push(s);drawStroke=null;redrawCanvas();
+  drawStrokes.push(s);drawStrokesSig=strokeSignature(drawStrokes);drawStroke=null;pendingInkUntil=Date.now()+1200;redrawCanvas();
   try{
    await api('/api/v1/commands/ink/stroke',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({points:s.pts,color:s.c,width:s.w})});
+    body:JSON.stringify({points:s.pts,tool:drawTool,color:s.c,width:s.w})});
    $('drawStatus').textContent='';
   }catch(err){$('drawStatus').textContent='stroke not sent';}
  }
  e.preventDefault();
 });
-dc.addEventListener('pointercancel',()=>{drawStroke=null;erasePath=[];redrawCanvas();});
+dc.addEventListener('pointercancel',()=>{drawStroke=null;erasePath=null;redrawCanvas();});
 $('drawImg').addEventListener('load',initDrawCanvas);
 new ResizeObserver(()=>{if(activeView==='draw')initDrawCanvas();}).observe($('drawImg'));
 document.querySelectorAll('.swatch').forEach(b=>b.onclick=()=>{
- drawColor=b.dataset.color.split(',').map(Number);
- document.querySelectorAll('.swatch').forEach(s=>s.classList.toggle('active',s===b));
+ const color=b.dataset.color.split(',').map(Number);
+ if(drawTool==='highlighter')drawHiColor=[color[0],color[1],color[2],100];
+ else drawColor=color;
+ syncDrawControls();
 });
 document.querySelectorAll('.drawWidth').forEach(b=>b.onclick=()=>{
- drawWidth=+b.dataset.width;
- document.querySelectorAll('.drawWidth').forEach(w=>w.classList.toggle('active',w===b));
+ const width=+b.dataset.width;
+ if(drawTool==='highlighter')drawHiWidth=width*2;
+ else if(drawTool==='eraser')drawEraserRadius=width/200;
+ else drawWidth=width;
+ syncDrawControls();
 });
 function setDrawTool(tool){
  drawTool=tool;
- $('toolPen').classList.toggle('active',tool==='pen');
- $('toolHi').classList.toggle('active',tool==='highlighter');
- $('toolEraser').classList.toggle('active',tool==='eraser');
- $('drawCanvas').style.cursor=tool==='eraser'?'cell':'crosshair';
+ syncDrawControls();
  api('/api/v1/commands/ink/set_tool',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tool})}).catch(()=>{});
 }
 $('toolPen').onclick=()=>{if(drawTool!=='pen')setDrawTool('pen');};
 $('toolHi').onclick=()=>{if(drawTool!=='highlighter')setDrawTool('highlighter');};
 $('toolEraser').onclick=()=>{if(drawTool!=='eraser')setDrawTool('eraser');};
 $('drawClear').onclick=async()=>{
- drawStrokes=[];redrawCanvas();
+ drawStrokes=[];drawStrokesSig=strokeSignature(drawStrokes);redrawCanvas();
  try{await api('/api/v1/commands/ink/clear',{method:'POST'});}
  catch(e){$('drawStatus').textContent='clear failed';}
 };

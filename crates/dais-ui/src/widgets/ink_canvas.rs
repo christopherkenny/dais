@@ -3,7 +3,7 @@
 //! Renders ink strokes as overlays on a slide image rect.
 
 use dais_core::state::InkStroke;
-use egui::{Color32, Rect, Stroke, Ui};
+use egui::{Color32, Rect, Stroke, Ui, epaint::PathShape};
 
 /// Render ink strokes over a slide image area.
 ///
@@ -29,11 +29,13 @@ pub fn draw_ink_strokes(ui: &mut Ui, image_rect: Rect, strokes: &[InkStroke]) {
         let points: Vec<egui::Pos2> =
             stroke.points.iter().map(|&(x, y)| denormalize(image_rect, x, y)).collect();
 
-        for &pt in &points {
-            painter.circle_filled(pt, radius, color);
+        painter.add(PathShape::line(points.clone(), egui_stroke));
+
+        if let Some(&first) = points.first() {
+            painter.circle_filled(first, radius, color);
         }
-        for window in points.windows(2) {
-            painter.line_segment([window[0], window[1]], egui_stroke);
+        if let Some(&last) = points.last() {
+            painter.circle_filled(last, radius, color);
         }
     }
 }

@@ -158,7 +158,19 @@ pub struct RemoteState {
     pub current_notes: Option<String>,
     pub ink_pen_color: [u8; 4],
     pub ink_pen_width: f32,
+    pub ink_color_presets: Vec<[u8; 4]>,
+    pub ink_highlighter_color: [u8; 4],
+    pub ink_highlighter_width: f32,
+    pub ink_highlighter_color_presets: Vec<[u8; 4]>,
+    pub ink_strokes: Vec<RemoteInkStroke>,
     pub timer: RemoteTimerState,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RemoteInkStroke {
+    pub points: Vec<[f32; 2]>,
+    pub color: [u8; 4],
+    pub width: f32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -205,6 +217,7 @@ struct NotesRequest {
 #[derive(Debug, Clone, Deserialize)]
 struct InkStrokeRequest {
     points: Vec<[f32; 2]>,
+    tool: Option<String>,
     color: Option<[u8; 4]>,
     width: Option<f32>,
 }
@@ -526,10 +539,22 @@ async fn ink_stroke(
     }
 
     let ink_was_active = context.shared_state.read().is_ok_and(|s| s.ink_active);
+    let requested_tool = match body.tool.as_deref() {
+        Some("pen") => Some(dais_core::state::DrawTool::Pen),
+        Some("highlighter") => Some(dais_core::state::DrawTool::Highlighter),
+        Some("eraser") => {
+            return bad_request(&anyhow!("eraser strokes use /api/v1/commands/ink/erase"));
+        }
+        Some(tool) => return bad_request(&anyhow!("unknown tool: {tool}")),
+        None => None,
+    };
 
-    let mut cmds = Vec::with_capacity(body.points.len() + 5);
+    let mut cmds = Vec::with_capacity(body.points.len() + 6);
     if !ink_was_active {
         cmds.push(Command::ToggleInk);
+    }
+    if let Some(tool) = requested_tool {
+        cmds.push(Command::SetDrawTool(tool));
     }
     if let Some(color) = body.color {
         cmds.push(Command::SetInkColor(color));
@@ -690,6 +715,11 @@ pub fn remote_state(state: &PresentationState) -> RemoteState {
         current_notes: state.current_notes.clone(),
         ink_pen_color: state.active_pen.color,
         ink_pen_width: state.active_pen.width,
+        ink_color_presets: state.ink_color_presets.clone(),
+        ink_highlighter_color: state.active_highlighter.color,
+        ink_highlighter_width: state.active_highlighter.width,
+        ink_highlighter_color_presets: state.highlighter_color_presets.clone(),
+        ink_strokes: remote_ink_strokes(state),
         timer: RemoteTimerState {
             running: state.timer.running,
             elapsed_seconds: state.timer.elapsed.as_secs(),
@@ -697,6 +727,23 @@ pub fn remote_state(state: &PresentationState) -> RemoteState {
             phase: timer_phase_name(state.timer.phase()).to_string(),
         },
     }
+}
+
+fn remote_ink_strokes(state: &PresentationState) -> Vec<RemoteInkStroke> {
+    let strokes = if state.whiteboard_active {
+        state.whiteboard_strokes.as_slice()
+    } else {
+        state.current_page_ink()
+    };
+    strokes
+        .iter()
+        .filter(|stroke| stroke.points.len() >= 2)
+        .map(|stroke| RemoteInkStroke {
+            points: stroke.points.iter().map(|&(x, y)| [x, y]).collect(),
+            color: stroke.color,
+            width: stroke.width,
+        })
+        .collect()
 }
 
 pub fn command_for_action_name(name: &str) -> Option<Command> {
@@ -1129,6 +1176,15 @@ mod tests {
         state.current_logical_slide = 1;
         state.blacked_out = true;
         state.timer.running = true;
+        state.slide_ink_by_page.insert(
+            1,
+            vec![dais_core::state::InkStroke {
+                points: vec![(0.1, 0.2), (0.8, 0.9)],
+                color: [0, 110, 255, 255],
+                width: 4.0,
+                finished: true,
+            }],
+        );
         state
     }
 
@@ -1210,6 +1266,14 @@ mod tests {
         assert_eq!(dto.current_notes.as_deref(), Some("hello"));
         assert_eq!(dto.ink_pen_color, [255, 0, 0, 255]);
         assert!((dto.ink_pen_width - 3.0).abs() < f32::EPSILON);
+        assert_eq!(dto.ink_color_presets.len(), 0);
+        assert_eq!(dto.ink_highlighter_color, [255, 220, 0, 100]);
+        assert!((dto.ink_highlighter_width - 10.0).abs() < f32::EPSILON);
+        assert_eq!(dto.ink_highlighter_color_presets.len(), 0);
+        assert_eq!(dto.ink_strokes.len(), 1);
+        assert_eq!(dto.ink_strokes[0].points, vec![[0.1, 0.2], [0.8, 0.9]]);
+        assert_eq!(dto.ink_strokes[0].color, [0, 110, 255, 255]);
+        assert!((dto.ink_strokes[0].width - 4.0).abs() < f32::EPSILON);
     }
 
     #[test]
@@ -1294,6 +1358,41 @@ mod tests {
         client_ink_stroke(&endpoint(&server), &[[0.1, 0.2], [0.9, 0.8]], None, None).unwrap();
 
         assert_eq!(receiver.try_recv(), Some(Command::ToggleInk));
+        assert_eq!(receiver.try_recv(), Some(Command::AddInkPoint(0.1, 0.2)));
+        assert_eq!(receiver.try_recv(), Some(Command::AddInkPoint(0.9, 0.8)));
+        assert_eq!(receiver.try_recv(), Some(Command::FinishInkStroke));
+        assert_eq!(receiver.try_recv(), Some(Command::ToggleInk));
+        assert_eq!(receiver.try_recv(), Some(Command::SaveSidecar));
+    }
+
+    #[test]
+    fn http_ink_stroke_with_tool_dispatches_tool_before_style_and_points() {
+        let bus = CommandBus::new();
+        let sender = bus.sender();
+        let receiver = bus.into_receiver();
+        let server = test_server(sender);
+
+        let response = client_json_request(
+            &endpoint(&server),
+            "POST",
+            "/api/v1/commands/ink/stroke",
+            &serde_json::json!({
+                "points": [[0.1, 0.2], [0.9, 0.8]],
+                "tool": "highlighter",
+                "color": [255, 220, 0, 100],
+                "width": 12.0
+            }),
+        )
+        .unwrap();
+
+        assert!(response.ok);
+        assert_eq!(receiver.try_recv(), Some(Command::ToggleInk));
+        assert_eq!(
+            receiver.try_recv(),
+            Some(Command::SetDrawTool(dais_core::state::DrawTool::Highlighter))
+        );
+        assert_eq!(receiver.try_recv(), Some(Command::SetInkColor([255, 220, 0, 100])));
+        assert_eq!(receiver.try_recv(), Some(Command::SetInkWidth(12.0)));
         assert_eq!(receiver.try_recv(), Some(Command::AddInkPoint(0.1, 0.2)));
         assert_eq!(receiver.try_recv(), Some(Command::AddInkPoint(0.9, 0.8)));
         assert_eq!(receiver.try_recv(), Some(Command::FinishInkStroke));

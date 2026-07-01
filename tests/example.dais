@@ -106,12 +106,12 @@ groups: [
 	}
 ]
 notes: {
-	"3": "Example comment made via the *remote* feature!"
 	"1": "Some notes. We can write *new* comments as we need.  **Fancy**. More?"
+	"3": "Example comment made via the *remote* feature!"
 	"5": "How hard would it be to text box writing in the whiteboard? disable question mark while in notes."
 }
 slide_timings: {
-	"1": 19.8917397
+	"1": 40.2655804
 }
 slide_annotations: {
 	"4": [

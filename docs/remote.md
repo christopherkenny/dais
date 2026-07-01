@@ -84,8 +84,9 @@ Controls:
 - **Clear** — removes all ink on the current slide.
 
 The active tool is kept in sync with the presenter console.
-The local canvas provides immediate feedback while the stroke or erase is in transit.
+The local canvas provides immediate feedback while the stroke or erase is in transit, then refreshes from the presenter's authoritative ink state.
 When the presenter navigates to a different slide, the canvas clears automatically to match the new slide.
+When whiteboard mode is active, the Draw tab switches to a blank white drawing surface and remote strokes are saved to the shared whiteboard instead of the current slide.
 
 Drawing works alongside the presenter's own ink tools.
 If the presenter already has ink mode active, remote strokes are added without toggling it; if ink mode is off, the remote enables it for the stroke and restores it afterward.
@@ -234,7 +235,7 @@ curl -X POST http://127.0.0.1:4317/api/v1/commands/notes `
 
 curl -X POST http://127.0.0.1:4317/api/v1/commands/ink/stroke `
   -H "Content-Type: application/json" `
-  -d '{ "points": [[0.1,0.2],[0.5,0.5],[0.9,0.8]], "color": [255,0,0,255], "width": 4.0 }'
+  -d '{ "points": [[0.1,0.2],[0.5,0.5],[0.9,0.8]], "tool": "highlighter", "color": [255,220,0,100], "width": 12.0 }'
 
 curl -X POST http://127.0.0.1:4317/api/v1/commands/ink/erase `
   -H "Content-Type: application/json" `
@@ -252,6 +253,7 @@ Ink stroke body fields:
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `points` | `[[f32, f32]]` | Yes | Two or more `[x, y]` pairs in normalized 0–1 coordinates |
+| `tool` | `string` | No | `"pen"` or `"highlighter"` for this stroke. When present, Dais applies the tool before color, width, and points in one command batch |
 | `color` | `[u8, u8, u8, u8]` | No | RGBA pen color; uses the active pen color if omitted. Pass alpha < 255 for highlighter strokes |
 | `width` | `f32` | No | Stroke width in logical pixels; uses the active pen width if omitted |
 
@@ -336,6 +338,10 @@ The state includes:
 - Laser, ink, spotlight, and zoom state
 - Active draw tool (`draw_tool`: `"pen"`, `"highlighter"`, or `"eraser"`)
 - Active pen color (`ink_pen_color`) and width (`ink_pen_width`)
+- Pen color presets (`ink_color_presets`)
+- Active highlighter color (`ink_highlighter_color`) and width (`ink_highlighter_width`)
+- Highlighter color presets (`ink_highlighter_color_presets`)
+- Active slide or whiteboard ink strokes (`ink_strokes`)
 - Pointer and zoom-position data where relevant
 - URLs for current and next slide images
 

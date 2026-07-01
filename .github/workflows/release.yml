@@ -117,6 +117,39 @@ jobs:
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Prepare release notes
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          news_version="${version#v}"
+          news_version="${news_version%%-*}"
+
+          awk -v header="# dais ${news_version}" '
+            $0 == header {
+              found = 1
+              print
+              next
+            }
+
+            found && /^# dais / {
+              exit
+            }
+
+            found {
+              print
+            }
+
+            END {
+              if (!found) {
+                exit 1
+              }
+            }
+          ' NEWS.md > release-notes.md
+
+          if [ ! -s release-notes.md ]; then
+            echo "No release notes found for ${news_version} in NEWS.md" >&2
+            exit 1
+          fi
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -133,4 +166,4 @@ jobs:
             dais-linux-x86_64.tar.gz
             dais-macos-aarch64.tar.gz
             checksums-sha256.txt
-          generate_release_notes: true
+          body_path: release-notes.md
