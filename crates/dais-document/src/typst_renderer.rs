@@ -113,6 +113,42 @@ pub fn render_text_box(
     fallback
 }
 
+/// Render a text box to SVG markup.
+///
+/// Returns `None` if compilation fails.
+pub fn render_text_box_svg(
+    content: &str,
+    typst_prelude: &str,
+    px_width: u32,
+    px_height: u32,
+    font_size: f32,
+    color: [u8; 4],
+    background: Option<[u8; 4]>,
+) -> Option<String> {
+    let markup =
+        build_markup(content, typst_prelude, px_width, px_height, font_size, color, background);
+    if let Some(svg) = compile_markup_svg(&markup) {
+        return Some(svg);
+    }
+
+    let fallback_markup = build_plain_text_fallback(
+        content,
+        typst_prelude,
+        px_width,
+        px_height,
+        font_size,
+        color,
+        background,
+    );
+    let fallback = compile_markup_svg(&fallback_markup);
+    if fallback.is_some() {
+        warn!("Typst text box SVG render failed; fell back to plain-text rendering");
+    } else {
+        warn!("Typst text box SVG render failed, including plain-text fallback");
+    }
+    fallback
+}
+
 fn build_markup(
     content: &str,
     typst_prelude: &str,
@@ -198,6 +234,14 @@ fn compile_markup(markup: &str) -> Option<RenderedTextBox> {
     }
 
     Some(RenderedTextBox { data: rgba, width: pixmap.width(), height: pixmap.height() })
+}
+
+fn compile_markup_svg(markup: &str) -> Option<String> {
+    let world = MinimalWorld::new(markup.to_owned());
+    let result = typst::compile::<typst_library::layout::PagedDocument>(&world);
+    let document = result.output.ok()?;
+    let page = document.pages.into_iter().next()?;
+    Some(typst_svg::svg(&page))
 }
 
 fn unpremultiply_channel(channel: u8, alpha: u8) -> u8 {
@@ -288,7 +332,7 @@ impl TextBoxRenderCache {
 
 #[cfg(test)]
 mod tests {
-    use super::render_text_box;
+    use super::{render_text_box, render_text_box_svg};
 
     fn top_row_has_visible_pixels(rendered: &super::RenderedTextBox) -> bool {
         rendered.data[..rendered.width as usize * 4].chunks_exact(4).any(|pixel| pixel[3] > 0)
@@ -307,6 +351,15 @@ mod tests {
         let rendered =
             render_text_box("Hello, *Typst*!", "", 240, 80, 20.0, [255, 255, 255, 255], None);
         assert!(rendered.is_some());
+    }
+
+    #[test]
+    fn renders_valid_typst_markup_to_svg() {
+        let svg =
+            render_text_box_svg("Hello, *Typst*!", "", 240, 80, 20.0, [255, 255, 255, 255], None)
+                .expect("valid typst should render to SVG");
+
+        assert!(svg.starts_with("<svg"));
     }
 
     #[test]

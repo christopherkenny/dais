@@ -5,8 +5,9 @@
 - Remote control can run alongside a presentation with `--remote` or `--remote-lan`.
 - Built-in browser remote at `/remote` supports current and next slide previews, notes, timer controls, previous/next navigation, goto slide, blackout, freeze, whiteboard, and laser controls.
 - Speaker notes are editable from the browser remote. The Notes tab has an Edit button that opens the current slide's notes in a textarea; Save writes the change and persists it to the sidecar immediately.
-- Slides are annotatable from the browser remote. The Draw tab shows the current slide with a canvas overlay; draw with a finger, mouse, or Apple Pencil and strokes are sent to the presenter screen and saved to the sidecar. Includes a six-color palette, three width presets, and a clear button.
+- Slides are annotatable from the browser remote. The Annotate tab shows the current slide with an overlay; draw with a finger, mouse, or Apple Pencil and strokes are sent to the presenter screen and saved to the sidecar. Includes a six-color palette, three width presets, and a clear button.
   - Remote drawing supports whiteboard mode, Pen/Highlighter/Eraser selection, highlighter strokes, and presenter-synchronized ink state.
+- The browser remote Annotate tab includes a Text tool for placing, selecting, editing, moving, resizing, and deleting slide text boxes from a second device.
 - Presenter console shows remote pairing URLs, QR codes, pairing code, connected remote clients, and the last remote command.
 - Per-logical-slide target durations can be set in `.dais` sidecars; the presenter slide timer shows `elapsed / target` and turns red when a slide exceeds its target.
 - `--notes <path>` can use a Markdown file as the speaker-notes source and save edits back to that file.

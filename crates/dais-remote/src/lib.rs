@@ -6,7 +6,7 @@ use std::thread;
 use std::time::Duration;
 
 use anyhow::{Context, Result, anyhow};
-use axum::extract::{ConnectInfo, Path, Request, State};
+use axum::extract::{ConnectInfo, Path, Query, Request, State};
 use axum::http::header::{AUTHORIZATION, HOST, ORIGIN};
 use axum::http::{HeaderMap, HeaderName, StatusCode};
 use axum::middleware::{self, Next};
@@ -20,7 +20,9 @@ use dais_core::config::RemoteConfig;
 use dais_core::keybindings::Action;
 use dais_core::state::{PresentationState, TimerPhase};
 use dais_document::page::RenderSize;
+use dais_document::render_pipeline::FALLBACK_RENDER_SIZE;
 use dais_document::source::DocumentSource;
+use dais_document::typst_renderer::render_text_box_svg;
 use image::codecs::png::PngEncoder;
 use image::{ColorType, ImageEncoder};
 use serde::{Deserialize, Serialize};
@@ -163,6 +165,10 @@ pub struct RemoteState {
     pub ink_highlighter_width: f32,
     pub ink_highlighter_color_presets: Vec<[u8; 4]>,
     pub ink_strokes: Vec<RemoteInkStroke>,
+    pub text_box_mode: bool,
+    pub selected_text_box: Option<u64>,
+    pub text_box_editing: bool,
+    pub text_boxes: Vec<RemoteTextBox>,
     pub timer: RemoteTimerState,
 }
 
@@ -171,6 +177,16 @@ pub struct RemoteInkStroke {
     pub points: Vec<[f32; 2]>,
     pub color: [u8; 4],
     pub width: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RemoteTextBox {
+    pub id: u64,
+    pub rect: [f32; 4],
+    pub content: String,
+    pub font_size: f32,
+    pub color: [u8; 4],
+    pub background: Option<[u8; 4]>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -231,6 +247,47 @@ struct InkEraseRequest {
 #[derive(Debug, Clone, Deserialize)]
 struct InkSetToolRequest {
     tool: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct TextBoxPlaceRequest {
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct TextBoxIdRequest {
+    id: u64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct TextBoxContentRequest {
+    id: u64,
+    content: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct TextBoxMoveRequest {
+    id: u64,
+    x: f32,
+    y: f32,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct TextBoxResizeRequest {
+    id: u64,
+    w: f32,
+    h: f32,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct TextBoxSvgQuery {
+    w: Option<u32>,
+    h: Option<u32>,
+    slide_w: Option<u32>,
+    slide_h: Option<u32>,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize)]
@@ -376,6 +433,13 @@ fn remote_router(context: HandlerContext) -> Router {
         .route("/api/v1/commands/ink/erase", post(ink_erase))
         .route("/api/v1/commands/ink/set_tool", post(ink_set_tool))
         .route("/api/v1/commands/ink/clear", post(ink_clear))
+        .route("/api/v1/commands/text-boxes/place", post(text_box_place))
+        .route("/api/v1/commands/text-boxes/select", post(text_box_select))
+        .route("/api/v1/commands/text-boxes/content", post(text_box_content))
+        .route("/api/v1/commands/text-boxes/move", post(text_box_move))
+        .route("/api/v1/commands/text-boxes/resize", post(text_box_resize))
+        .route("/api/v1/commands/text-boxes/delete", post(text_box_delete))
+        .route("/api/v1/text-boxes/{id}/svg", get(text_box_svg))
         .route("/api/v1/slides/current.png", get(current_slide_png))
         .route("/api/v1/slides/next.png", get(next_slide_png))
         .route("/api/v1/slides/{slide}/thumbnail.png", get(thumbnail_png))
@@ -638,6 +702,142 @@ async fn ink_clear(State(context): State<HandlerContext>) -> Response {
     }
 }
 
+async fn text_box_place(
+    State(context): State<HandlerContext>,
+    Json(body): Json<TextBoxPlaceRequest>,
+) -> Response {
+    if body.w <= 0.0 || body.h <= 0.0 {
+        return bad_request(&anyhow!("text box size must be positive"));
+    }
+
+    match context
+        .sender
+        .send(Command::PlaceTextBox { x: body.x, y: body.y, w: body.w, h: body.h })
+        .and_then(|()| context.sender.send(Command::SaveSidecar))
+    {
+        Ok(()) => {
+            context.status.set_last_command("text_box_place");
+            Json(ok_response("text box placed")).into_response()
+        }
+        Err(_) => server_error(&anyhow!("presentation engine is not accepting commands")),
+    }
+}
+
+async fn text_box_select(
+    State(context): State<HandlerContext>,
+    Json(body): Json<TextBoxIdRequest>,
+) -> Response {
+    match context.sender.send(Command::SelectTextBox(body.id)) {
+        Ok(()) => {
+            context.status.set_last_command("text_box_select");
+            Json(ok_response("text box selected")).into_response()
+        }
+        Err(_) => server_error(&anyhow!("presentation engine is not accepting commands")),
+    }
+}
+
+async fn text_box_content(
+    State(context): State<HandlerContext>,
+    Json(body): Json<TextBoxContentRequest>,
+) -> Response {
+    match context
+        .sender
+        .send(Command::EditTextBoxContent { id: body.id, content: body.content })
+        .and_then(|()| context.sender.send(Command::SaveSidecar))
+    {
+        Ok(()) => {
+            context.status.set_last_command("text_box_content");
+            Json(ok_response("text box content updated")).into_response()
+        }
+        Err(_) => server_error(&anyhow!("presentation engine is not accepting commands")),
+    }
+}
+
+async fn text_box_move(
+    State(context): State<HandlerContext>,
+    Json(body): Json<TextBoxMoveRequest>,
+) -> Response {
+    match context
+        .sender
+        .send(Command::MoveTextBox { id: body.id, x: body.x, y: body.y })
+        .and_then(|()| context.sender.send(Command::SaveSidecar))
+    {
+        Ok(()) => {
+            context.status.set_last_command("text_box_move");
+            Json(ok_response("text box moved")).into_response()
+        }
+        Err(_) => server_error(&anyhow!("presentation engine is not accepting commands")),
+    }
+}
+
+async fn text_box_resize(
+    State(context): State<HandlerContext>,
+    Json(body): Json<TextBoxResizeRequest>,
+) -> Response {
+    if body.w <= 0.0 || body.h <= 0.0 {
+        return bad_request(&anyhow!("text box size must be positive"));
+    }
+
+    match context
+        .sender
+        .send(Command::ResizeTextBox { id: body.id, w: body.w, h: body.h })
+        .and_then(|()| context.sender.send(Command::SaveSidecar))
+    {
+        Ok(()) => {
+            context.status.set_last_command("text_box_resize");
+            Json(ok_response("text box resized")).into_response()
+        }
+        Err(_) => server_error(&anyhow!("presentation engine is not accepting commands")),
+    }
+}
+
+async fn text_box_delete(
+    State(context): State<HandlerContext>,
+    Json(body): Json<TextBoxIdRequest>,
+) -> Response {
+    match context
+        .sender
+        .send(Command::DeleteTextBox { id: body.id })
+        .and_then(|()| context.sender.send(Command::SaveSidecar))
+    {
+        Ok(()) => {
+            context.status.set_last_command("text_box_delete");
+            Json(ok_response("text box deleted")).into_response()
+        }
+        Err(_) => server_error(&anyhow!("presentation engine is not accepting commands")),
+    }
+}
+
+async fn text_box_svg(
+    State(context): State<HandlerContext>,
+    Path(id): Path<u64>,
+    Query(query): Query<TextBoxSvgQuery>,
+) -> Response {
+    let width = query.w.unwrap_or(320).clamp(1, 3840);
+    let height = query.h.unwrap_or(120).clamp(1, 2160);
+    let slide_width = query.slide_w.unwrap_or(REMOTE_SLIDE_SIZE.width).clamp(1, 3840);
+    let slide_height = query.slide_h.unwrap_or(REMOTE_SLIDE_SIZE.height).clamp(1, 2160);
+    let text_box = match current_text_box(&context.shared_state, id) {
+        Ok(Some(text_box)) => text_box,
+        Ok(None) => return (StatusCode::NOT_FOUND, "text box not found").into_response(),
+        Err(error) => return server_error(&error),
+    };
+    let font_size = remote_text_box_font_size(&text_box, slide_width, slide_height);
+
+    match render_text_box_svg(
+        &text_box.content,
+        &text_box.typst_prelude,
+        width,
+        height,
+        font_size,
+        text_box.color,
+        text_box.background,
+    ) {
+        Some(svg) => ([(axum::http::header::CONTENT_TYPE, "image/svg+xml")], svg).into_response(),
+        None => server_error(&anyhow!("failed to render text box SVG")),
+    }
+}
+
 async fn events(
     State(context): State<HandlerContext>,
 ) -> Sse<impl futures_core::Stream<Item = Result<Event, Infallible>>> {
@@ -720,6 +920,10 @@ pub fn remote_state(state: &PresentationState) -> RemoteState {
         ink_highlighter_width: state.active_highlighter.width,
         ink_highlighter_color_presets: state.highlighter_color_presets.clone(),
         ink_strokes: remote_ink_strokes(state),
+        text_box_mode: state.text_box_mode,
+        selected_text_box: state.selected_text_box,
+        text_box_editing: state.text_box_editing,
+        text_boxes: remote_text_boxes(state),
         timer: RemoteTimerState {
             running: state.timer.running,
             elapsed_seconds: state.timer.elapsed.as_secs(),
@@ -742,6 +946,28 @@ fn remote_ink_strokes(state: &PresentationState) -> Vec<RemoteInkStroke> {
             points: stroke.points.iter().map(|&(x, y)| [x, y]).collect(),
             color: stroke.color,
             width: stroke.width,
+        })
+        .collect()
+}
+
+fn remote_text_boxes(state: &PresentationState) -> Vec<RemoteTextBox> {
+    if state.whiteboard_active {
+        return Vec::new();
+    }
+
+    state
+        .current_page_text_boxes()
+        .iter()
+        .map(|text_box| {
+            let (x, y, w, h) = text_box.rect;
+            RemoteTextBox {
+                id: text_box.id,
+                rect: [x, y, w, h],
+                content: text_box.content.clone(),
+                font_size: text_box.font_size,
+                color: text_box.color,
+                background: text_box.background,
+            }
         })
         .collect()
 }
@@ -1069,6 +1295,26 @@ fn render_png(
     Ok(png)
 }
 
+fn current_text_box(
+    shared_state: &Arc<RwLock<PresentationState>>,
+    id: u64,
+) -> Result<Option<dais_core::state::TextBox>> {
+    let state = shared_state.read().map_err(|_| anyhow!("state lock poisoned"))?;
+    Ok(state.current_page_text_boxes().iter().find(|text_box| text_box.id == id).cloned())
+}
+
+#[allow(clippy::cast_precision_loss)]
+fn remote_text_box_font_size(
+    text_box: &dais_core::state::TextBox,
+    slide_width: u32,
+    slide_height: u32,
+) -> f32 {
+    let width_scale = slide_width as f32 / FALLBACK_RENDER_SIZE.width as f32;
+    let height_scale = slide_height as f32 / FALLBACK_RENDER_SIZE.height as f32;
+    let scale = width_scale.min(height_scale).max(0.05);
+    (text_box.font_size.clamp(8.0, 72.0) * scale).max(1.0)
+}
+
 fn remote_urls(addr: SocketAddr) -> Vec<String> {
     let mut urls = Vec::new();
     if addr.ip().is_unspecified() {
@@ -1185,6 +1431,18 @@ mod tests {
                 finished: true,
             }],
         );
+        state.slide_text_boxes_by_page.insert(
+            1,
+            vec![dais_core::state::TextBox {
+                id: 42,
+                rect: (0.2, 0.3, 0.4, 0.1),
+                content: "Remote text".to_string(),
+                font_size: 24.0,
+                color: [10, 20, 30, 255],
+                background: Some([255, 255, 255, 200]),
+                typst_prelude: "#set align(center)".to_string(),
+            }],
+        );
         state
     }
 
@@ -1274,6 +1532,15 @@ mod tests {
         assert_eq!(dto.ink_strokes[0].points, vec![[0.1, 0.2], [0.8, 0.9]]);
         assert_eq!(dto.ink_strokes[0].color, [0, 110, 255, 255]);
         assert!((dto.ink_strokes[0].width - 4.0).abs() < f32::EPSILON);
+        assert_eq!(dto.text_boxes.len(), 1);
+        assert_eq!(dto.text_boxes[0].id, 42);
+        for (actual, expected) in dto.text_boxes[0].rect.iter().zip([0.2, 0.3, 0.4, 0.1]) {
+            assert!((*actual - expected).abs() < f32::EPSILON);
+        }
+        assert_eq!(dto.text_boxes[0].content, "Remote text");
+        assert!((dto.text_boxes[0].font_size - 24.0).abs() < f32::EPSILON);
+        assert_eq!(dto.text_boxes[0].color, [10, 20, 30, 255]);
+        assert_eq!(dto.text_boxes[0].background, Some([255, 255, 255, 200]));
     }
 
     #[test]
@@ -1415,6 +1682,86 @@ mod tests {
     }
 
     #[test]
+    fn http_text_box_place_dispatches_command() {
+        let bus = CommandBus::new();
+        let sender = bus.sender();
+        let receiver = bus.into_receiver();
+        let server = test_server(sender);
+
+        let response = client_json_request(
+            &endpoint(&server),
+            "POST",
+            "/api/v1/commands/text-boxes/place",
+            &serde_json::json!({ "x": 0.1, "y": 0.2, "w": 0.3, "h": 0.4 }),
+        )
+        .unwrap();
+
+        assert!(response.ok);
+        assert_eq!(
+            receiver.try_recv(),
+            Some(Command::PlaceTextBox { x: 0.1, y: 0.2, w: 0.3, h: 0.4 })
+        );
+        assert_eq!(receiver.try_recv(), Some(Command::SaveSidecar));
+    }
+
+    #[test]
+    fn http_text_box_editing_routes_dispatch_commands() {
+        let bus = CommandBus::new();
+        let sender = bus.sender();
+        let receiver = bus.into_receiver();
+        let server = test_server(sender);
+
+        client_json_request(
+            &endpoint(&server),
+            "POST",
+            "/api/v1/commands/text-boxes/select",
+            &serde_json::json!({ "id": 42 }),
+        )
+        .unwrap();
+        client_json_request(
+            &endpoint(&server),
+            "POST",
+            "/api/v1/commands/text-boxes/content",
+            &serde_json::json!({ "id": 42, "content": "Updated" }),
+        )
+        .unwrap();
+        client_json_request(
+            &endpoint(&server),
+            "POST",
+            "/api/v1/commands/text-boxes/move",
+            &serde_json::json!({ "id": 42, "x": 0.4, "y": 0.5 }),
+        )
+        .unwrap();
+        client_json_request(
+            &endpoint(&server),
+            "POST",
+            "/api/v1/commands/text-boxes/resize",
+            &serde_json::json!({ "id": 42, "w": 0.2, "h": 0.3 }),
+        )
+        .unwrap();
+        client_json_request(
+            &endpoint(&server),
+            "POST",
+            "/api/v1/commands/text-boxes/delete",
+            &serde_json::json!({ "id": 42 }),
+        )
+        .unwrap();
+
+        assert_eq!(receiver.try_recv(), Some(Command::SelectTextBox(42)));
+        assert_eq!(
+            receiver.try_recv(),
+            Some(Command::EditTextBoxContent { id: 42, content: "Updated".to_string() })
+        );
+        assert_eq!(receiver.try_recv(), Some(Command::SaveSidecar));
+        assert_eq!(receiver.try_recv(), Some(Command::MoveTextBox { id: 42, x: 0.4, y: 0.5 }));
+        assert_eq!(receiver.try_recv(), Some(Command::SaveSidecar));
+        assert_eq!(receiver.try_recv(), Some(Command::ResizeTextBox { id: 42, w: 0.2, h: 0.3 }));
+        assert_eq!(receiver.try_recv(), Some(Command::SaveSidecar));
+        assert_eq!(receiver.try_recv(), Some(Command::DeleteTextBox { id: 42 }));
+        assert_eq!(receiver.try_recv(), Some(Command::SaveSidecar));
+    }
+
+    #[test]
     fn http_goto_rejects_zero_slide() {
         let bus = CommandBus::new();
         let sender = bus.sender();
@@ -1455,6 +1802,24 @@ mod tests {
 
         assert_eq!(content_type, "image/png");
         assert!(body.starts_with(b"\x89PNG"));
+    }
+
+    #[test]
+    fn text_box_svg_route_renders_typst_image() {
+        let bus = CommandBus::new();
+        let server = test_server(bus.sender());
+
+        let response = reqwest::blocking::get(format!(
+            "http://{}/api/v1/text-boxes/42/svg?w=180&h=60&slide_w=960&slide_h=540",
+            server.addr()
+        ))
+        .unwrap();
+        let content_type =
+            response.headers().get("content-type").unwrap().to_str().unwrap().to_string();
+        let body = response.text().unwrap();
+
+        assert_eq!(content_type, "image/svg+xml");
+        assert!(body.starts_with("<svg"));
     }
 
     #[test]

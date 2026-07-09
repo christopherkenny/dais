@@ -57,6 +57,7 @@ It currently shows:
 - Previous and next controls
 - Blackout, freeze, whiteboard, and laser controls
 - Goto slide input
+- Drawing and text-box controls on the Annotate tab
 - Connection state and last-command feedback
 
 ### Notes editing
@@ -66,9 +67,9 @@ Click **Save** to write the change and persist it to the sidecar immediately.
 **Cancel** discards the draft.
 Slide changes received while editing do not overwrite the draft.
 
-### Drawing
+### Annotating
 
-The Draw tab shows the current slide with a canvas overlay.
+The Annotate tab shows the current slide with an overlay for drawing and text boxes.
 Draw with a finger, mouse, or stylus (including Apple Pencil on iPad).
 Each completed stroke is sent to the presenter screen and saved to the sidecar immediately.
 
@@ -78,6 +79,7 @@ Controls:
   Pen draws opaque strokes using the selected color and width.
   Highlighter draws semi-transparent wide strokes useful for marking key points.
   Eraser removes ink by proximity — drag over strokes to clip them away.
+- **Text** — switches the Annotate tab to text-box editing.
 - **Pen colors** — color swatches matching the presenter's configured ink palette.
 - **Highlighter colors** — semi-transparent yellow, green, cyan, and pink (or configured presets).
 - **Width** — Thin, Med, Thick (different pixel sizes for pen vs. highlighter).
@@ -86,10 +88,20 @@ Controls:
 The active tool is kept in sync with the presenter console.
 The local canvas provides immediate feedback while the stroke or erase is in transit, then refreshes from the presenter's authoritative ink state.
 When the presenter navigates to a different slide, the canvas clears automatically to match the new slide.
-When whiteboard mode is active, the Draw tab switches to a blank white drawing surface and remote strokes are saved to the shared whiteboard instead of the current slide.
+When whiteboard mode is active, the Annotate tab switches to a blank white drawing surface and remote strokes are saved to the shared whiteboard instead of the current slide.
 
 Drawing works alongside the presenter's own ink tools.
 If the presenter already has ink mode active, remote strokes are added without toggling it; if ink mode is off, the remote enables it for the stroke and restores it afterward.
+
+### Text boxes
+
+The **Text** tool edits slide text boxes from the browser remote.
+Drag on empty slide space to place a new text box.
+Tap a text box to select it.
+Drag the selected box to move it, drag its lower-right handle to resize it, edit its content in the text field, and use **Save** or **Delete** to persist the change.
+
+The browser remote previews saved text boxes with SVGs rendered by Dais' Typst renderer.
+The edit field remains plain text so Typst markup can be entered directly.
 
 ## Pairing A Second Device
 
@@ -201,6 +213,13 @@ All API endpoints are under `/api/v1`.
 | `/api/v1/commands/ink/erase` | `POST` | Erase ink near a path of points (segment-accurate) |
 | `/api/v1/commands/ink/set_tool` | `POST` | Switch the active draw tool: `"pen"`, `"highlighter"`, or `"eraser"` |
 | `/api/v1/commands/ink/clear` | `POST` | Clear all ink on the current slide and save |
+| `/api/v1/commands/text-boxes/place` | `POST` | Place a text box on the current slide and save |
+| `/api/v1/commands/text-boxes/select` | `POST` | Select a text box on the current slide |
+| `/api/v1/commands/text-boxes/content` | `POST` | Update text box content and save |
+| `/api/v1/commands/text-boxes/move` | `POST` | Move a text box and save |
+| `/api/v1/commands/text-boxes/resize` | `POST` | Resize a text box and save |
+| `/api/v1/commands/text-boxes/delete` | `POST` | Delete a text box and save |
+| `/api/v1/text-boxes/<id>/svg?w=<px>&h=<px>&slide_w=<px>&slide_h=<px>` | `GET` | Render a current-slide text box as a Typst SVG |
 | `/api/v1/slides/current.png` | `GET` | Render the current page as PNG |
 | `/api/v1/slides/next.png` | `GET` | Render the next logical slide as PNG |
 | `/api/v1/slides/<n>/thumbnail.png` | `GET` | Render logical slide `n` as PNG |
@@ -246,6 +265,14 @@ curl -X POST http://127.0.0.1:4317/api/v1/commands/ink/set_tool `
   -d '{ "tool": "highlighter" }'
 
 curl -X POST http://127.0.0.1:4317/api/v1/commands/ink/clear
+
+curl -X POST http://127.0.0.1:4317/api/v1/commands/text-boxes/place `
+  -H "Content-Type: application/json" `
+  -d '{ "x": 0.15, "y": 0.2, "w": 0.3, "h": 0.12 }'
+
+curl -X POST http://127.0.0.1:4317/api/v1/commands/text-boxes/content `
+  -H "Content-Type: application/json" `
+  -d '{ "id": 4, "content": "Remember the demo." }'
 ```
 
 Ink stroke body fields:
@@ -269,6 +296,17 @@ Set-tool body fields:
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `tool` | `string` | Yes | `"pen"`, `"highlighter"`, or `"eraser"` |
+
+Text box body fields:
+
+| Endpoint | Fields |
+|---|---|
+| `place` | `x`, `y`, `w`, and `h` as normalized `f32` slide coordinates |
+| `select` | `id` as the text box id |
+| `content` | `id` and `content` |
+| `move` | `id`, `x`, and `y` as normalized coordinates |
+| `resize` | `id`, `w`, and `h` as normalized sizes |
+| `delete` | `id` |
 
 Token-protected requests can authenticate with either header:
 
@@ -342,6 +380,7 @@ The state includes:
 - Active highlighter color (`ink_highlighter_color`) and width (`ink_highlighter_width`)
 - Highlighter color presets (`ink_highlighter_color_presets`)
 - Active slide or whiteboard ink strokes (`ink_strokes`)
+- Text box mode, selected text box, editing flag, and active slide text boxes (`text_boxes`)
 - Pointer and zoom-position data where relevant
 - URLs for current and next slide images
 
