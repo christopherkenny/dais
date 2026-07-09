@@ -91,7 +91,7 @@ pub fn show_ink_toolbar(ui: &mut egui::Ui, state: &PresentationState, sender: &C
                     painter.circle_stroke(
                         rect.center(),
                         9.0,
-                        egui::Stroke::new(2.0, egui::Color32::WHITE),
+                        egui::Stroke::new(2.0_f32, egui::Color32::WHITE),
                     );
                 }
                 response.on_hover_text(color_label(preset));

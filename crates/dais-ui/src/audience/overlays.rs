@@ -266,7 +266,7 @@ pub fn draw_spotlight_overlay(
     painter.rect_stroke(
         hole_rect,
         0.0,
-        egui::Stroke::new(2.0, egui::Color32::from_rgba_unmultiplied(255, 255, 255, 100)),
+        egui::Stroke::new(2.0_f32, egui::Color32::from_rgba_unmultiplied(255, 255, 255, 100)),
         egui::StrokeKind::Outside,
     );
 }
@@ -301,7 +301,7 @@ pub fn draw_zoom_indicator(
     painter.rect_stroke(
         zoom_rect,
         0.0,
-        egui::Stroke::new(2.0, egui::Color32::YELLOW),
+        egui::Stroke::new(2.0_f32, egui::Color32::YELLOW),
         egui::StrokeKind::Outside,
     );
 

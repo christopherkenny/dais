@@ -164,7 +164,7 @@ impl OverviewGrid {
             ui.painter().rect_stroke(
                 thumb_rect,
                 2.0,
-                egui::Stroke::new(3.0, egui::Color32::LIGHT_BLUE),
+                egui::Stroke::new(3.0_f32, egui::Color32::LIGHT_BLUE),
                 egui::StrokeKind::Outside,
             );
         }

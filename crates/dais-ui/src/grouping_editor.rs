@@ -59,7 +59,7 @@ const BUTTON_FILL_ACTIVE: egui::Color32 = egui::Color32::from_rgb(84, 104, 132);
 fn flat_button(text: impl Into<egui::WidgetText>) -> egui::Button<'static> {
     egui::Button::new(text)
         .fill(BUTTON_FILL)
-        .stroke(egui::Stroke::new(1.0, ACTION_COLOR.gamma_multiply(0.65)))
+        .stroke(egui::Stroke::new(1.0_f32, ACTION_COLOR.gamma_multiply(0.65)))
         .corner_radius(4.0)
 }
 
@@ -253,7 +253,7 @@ impl GroupingEditor {
         ui.allocate_ui(egui::vec2(card_width, 0.0), |ui| {
             egui::Frame::group(ui.style())
                 .fill(bg_color)
-                .stroke(egui::Stroke::new(1.0, ACTION_COLOR.gamma_multiply(0.2)))
+                .stroke(egui::Stroke::new(1.0_f32, ACTION_COLOR.gamma_multiply(0.2)))
                 .corner_radius(8.0)
                 .inner_margin(12.0)
                 .show(ui, |ui| {

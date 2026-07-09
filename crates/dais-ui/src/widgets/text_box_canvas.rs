@@ -158,7 +158,7 @@ pub fn draw_text_boxes(
                 ui.painter_at(slide_rect).rect_stroke(
                     preview,
                     2.0,
-                    Stroke::new(1.5, Color32::from_rgba_unmultiplied(100, 160, 255, 180)),
+                    Stroke::new(1.5_f32, Color32::from_rgba_unmultiplied(100, 160, 255, 180)),
                     egui::StrokeKind::Outside,
                 );
             }
@@ -330,7 +330,7 @@ pub fn draw_text_boxes(
                     ui.painter_at(slide_rect).circle_stroke(
                         corner,
                         HANDLE_RADIUS,
-                        Stroke::new(1.0, Color32::from_gray(80)),
+                        Stroke::new(1.0_f32, Color32::from_gray(80)),
                     );
 
                     if handle_resp.dragged() {

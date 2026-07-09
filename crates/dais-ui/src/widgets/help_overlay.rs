@@ -77,7 +77,7 @@ impl HelpOverlay {
             .frame(
                 egui::Frame::window(&ctx.style())
                     .fill(OVERLAY_BG)
-                    .stroke(egui::Stroke::new(1.0, OVERLAY_STROKE))
+                    .stroke(egui::Stroke::new(1.0_f32, OVERLAY_STROKE))
                     .corner_radius(10.0)
                     .inner_margin(16.0),
             )

@@ -1967,7 +1967,7 @@ mod tests {
 
         assert_eq!(token.len(), 9);
         assert_eq!(token.as_bytes()[4], b'-');
-        assert!(token.chars().filter(char::is_ascii_digit).count() == 8);
+        assert_eq!(token.chars().filter(char::is_ascii_digit).count(), 8);
         assert!(generated_pairing_code_is_valid(&token));
     }
 }
