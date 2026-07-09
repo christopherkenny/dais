@@ -218,25 +218,32 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>Previous and next controls</li>
 <li>Blackout, freeze, whiteboard, and laser controls</li>
 <li>Goto slide input</li>
+<li>Drawing and text-box controls on the Annotate tab</li>
 <li>Connection state and last-command feedback</li>
 </ul>
 <section id="notes-editing" class="level3">
 <h3 class="anchored" data-anchor-id="notes-editing">Notes editing</h3>
 <p>The Notes tab has an <strong>Edit</strong> button that opens the current slide’s notes in a text field. Click <strong>Save</strong> to write the change and persist it to the sidecar immediately. <strong>Cancel</strong> discards the draft. Slide changes received while editing do not overwrite the draft.</p>
 </section>
-<section id="drawing" class="level3">
-<h3 class="anchored" data-anchor-id="drawing">Drawing</h3>
-<p>The Draw tab shows the current slide with a canvas overlay. Draw with a finger, mouse, or stylus (including Apple Pencil on iPad). Each completed stroke is sent to the presenter screen and saved to the sidecar immediately.</p>
+<section id="annotating" class="level3">
+<h3 class="anchored" data-anchor-id="annotating">Annotating</h3>
+<p>The Annotate tab shows the current slide with an overlay for drawing and text boxes. Draw with a finger, mouse, or stylus (including Apple Pencil on iPad). Each completed stroke is sent to the presenter screen and saved to the sidecar immediately.</p>
 <p>Controls:</p>
 <ul>
 <li><strong>Tool selector</strong> — <strong>Pen</strong>, <strong>Hi</strong> (highlighter), <strong>Eraser</strong>. Pen draws opaque strokes using the selected color and width. Highlighter draws semi-transparent wide strokes useful for marking key points. Eraser removes ink by proximity — drag over strokes to clip them away.</li>
+<li><strong>Text</strong> — switches the Annotate tab to text-box editing.</li>
 <li><strong>Pen colors</strong> — color swatches matching the presenter’s configured ink palette.</li>
 <li><strong>Highlighter colors</strong> — semi-transparent yellow, green, cyan, and pink (or configured presets).</li>
 <li><strong>Width</strong> — Thin, Med, Thick (different pixel sizes for pen vs.&nbsp;highlighter).</li>
 <li><strong>Clear</strong> — removes all ink on the current slide.</li>
 </ul>
-<p>The active tool is kept in sync with the presenter console. The local canvas provides immediate feedback while the stroke or erase is in transit, then refreshes from the presenter’s authoritative ink state. When the presenter navigates to a different slide, the canvas clears automatically to match the new slide. When whiteboard mode is active, the Draw tab switches to a blank white drawing surface and remote strokes are saved to the shared whiteboard instead of the current slide.</p>
+<p>The active tool is kept in sync with the presenter console. The local canvas provides immediate feedback while the stroke or erase is in transit, then refreshes from the presenter’s authoritative ink state. When the presenter navigates to a different slide, the canvas clears automatically to match the new slide. When whiteboard mode is active, the Annotate tab switches to a blank white drawing surface and remote strokes are saved to the shared whiteboard instead of the current slide.</p>
 <p>Drawing works alongside the presenter’s own ink tools. If the presenter already has ink mode active, remote strokes are added without toggling it; if ink mode is off, the remote enables it for the stroke and restores it afterward.</p>
+</section>
+<section id="text-boxes" class="level3">
+<h3 class="anchored" data-anchor-id="text-boxes">Text boxes</h3>
+<p>The <strong>Text</strong> tool edits slide text boxes from the browser remote. Drag on empty slide space to place a new text box. Tap a text box to select it. Drag the selected box to move it, drag its lower-right handle to resize it, edit its content in the text field, and use <strong>Save</strong> or <strong>Delete</strong> to persist the change.</p>
+<p>The browser remote previews saved text boxes with SVGs rendered by Dais’ Typst renderer. The edit field remains plain text so Typst markup can be entered directly.</p>
 </section>
 </section>
 <section id="pairing-a-second-device" class="level2">
@@ -403,16 +410,51 @@ http://192.168.1.24:4317/remote?token=...</code></pre>
 <td>Clear all ink on the current slide and save</td>
 </tr>
 <tr class="odd">
+<td><code>/api/v1/commands/text-boxes/place</code></td>
+<td><code>POST</code></td>
+<td>Place a text box on the current slide and save</td>
+</tr>
+<tr class="even">
+<td><code>/api/v1/commands/text-boxes/select</code></td>
+<td><code>POST</code></td>
+<td>Select a text box on the current slide</td>
+</tr>
+<tr class="odd">
+<td><code>/api/v1/commands/text-boxes/content</code></td>
+<td><code>POST</code></td>
+<td>Update text box content and save</td>
+</tr>
+<tr class="even">
+<td><code>/api/v1/commands/text-boxes/move</code></td>
+<td><code>POST</code></td>
+<td>Move a text box and save</td>
+</tr>
+<tr class="odd">
+<td><code>/api/v1/commands/text-boxes/resize</code></td>
+<td><code>POST</code></td>
+<td>Resize a text box and save</td>
+</tr>
+<tr class="even">
+<td><code>/api/v1/commands/text-boxes/delete</code></td>
+<td><code>POST</code></td>
+<td>Delete a text box and save</td>
+</tr>
+<tr class="odd">
+<td><code>/api/v1/text-boxes/&lt;id&gt;/svg?w=&lt;px&gt;&amp;h=&lt;px&gt;&amp;slide_w=&lt;px&gt;&amp;slide_h=&lt;px&gt;</code></td>
+<td><code>GET</code></td>
+<td>Render a current-slide text box as a Typst SVG</td>
+</tr>
+<tr class="even">
 <td><code>/api/v1/slides/current.png</code></td>
 <td><code>GET</code></td>
 <td>Render the current page as PNG</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>/api/v1/slides/next.png</code></td>
 <td><code>GET</code></td>
 <td>Render the next logical slide as PNG</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>/api/v1/slides/&lt;n&gt;/thumbnail.png</code></td>
 <td><code>GET</code></td>
 <td>Render logical slide <code>n</code> as PNG</td>
@@ -453,7 +495,15 @@ http://192.168.1.24:4317/remote?token=...</code></pre>
 <span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>  <span class="op">-</span>H <span class="st">"Content-Type: application/json"</span> `</span>
 <span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>  <span class="op">-</span>d <span class="st">'{ "tool": "highlighter" }'</span></span>
 <span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a><span class="fu">curl</span> <span class="op">-</span>X POST http<span class="op">://</span><span class="dv">127.0</span><span class="op">.</span><span class="dv">0.1</span><span class="op">:</span><span class="dv">4317</span><span class="op">/</span>api<span class="op">/</span>v1<span class="op">/</span>commands<span class="op">/</span>ink<span class="op">/</span><span class="fu">clear</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a><span class="fu">curl</span> <span class="op">-</span>X POST http<span class="op">://</span><span class="dv">127.0</span><span class="op">.</span><span class="dv">0.1</span><span class="op">:</span><span class="dv">4317</span><span class="op">/</span>api<span class="op">/</span>v1<span class="op">/</span>commands<span class="op">/</span>ink<span class="op">/</span><span class="fu">clear</span></span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a><span class="fu">curl</span> <span class="op">-</span>X POST http<span class="op">://</span><span class="dv">127.0</span><span class="op">.</span><span class="dv">0.1</span><span class="op">:</span><span class="dv">4317</span><span class="op">/</span>api<span class="op">/</span>v1<span class="op">/</span>commands<span class="op">/</span>text-boxes<span class="op">/</span>place `</span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a>  <span class="op">-</span>H <span class="st">"Content-Type: application/json"</span> `</span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a>  <span class="op">-</span>d <span class="st">'{ "x": 0.15, "y": 0.2, "w": 0.3, "h": 0.12 }'</span></span>
+<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a><span class="fu">curl</span> <span class="op">-</span>X POST http<span class="op">://</span><span class="dv">127.0</span><span class="op">.</span><span class="dv">0.1</span><span class="op">:</span><span class="dv">4317</span><span class="op">/</span>api<span class="op">/</span>v1<span class="op">/</span>commands<span class="op">/</span>text-boxes<span class="op">/</span>content `</span>
+<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a>  <span class="op">-</span>H <span class="st">"Content-Type: application/json"</span> `</span>
+<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a>  <span class="op">-</span>d <span class="st">'{ "id": 4, "content": "Remember the demo." }'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Ink stroke body fields:</p>
 <table class="caption-top table">
 <colgroup>
@@ -547,6 +597,45 @@ http://192.168.1.24:4317/remote?token=...</code></pre>
 </tr>
 </tbody>
 </table>
+<p>Text box body fields:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Endpoint</th>
+<th>Fields</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>place</code></td>
+<td><code>x</code>, <code>y</code>, <code>w</code>, and <code>h</code> as normalized <code>f32</code> slide coordinates</td>
+</tr>
+<tr class="even">
+<td><code>select</code></td>
+<td><code>id</code> as the text box id</td>
+</tr>
+<tr class="odd">
+<td><code>content</code></td>
+<td><code>id</code> and <code>content</code></td>
+</tr>
+<tr class="even">
+<td><code>move</code></td>
+<td><code>id</code>, <code>x</code>, and <code>y</code> as normalized coordinates</td>
+</tr>
+<tr class="odd">
+<td><code>resize</code></td>
+<td><code>id</code>, <code>w</code>, and <code>h</code> as normalized sizes</td>
+</tr>
+<tr class="even">
+<td><code>delete</code></td>
+<td><code>id</code></td>
+</tr>
+</tbody>
+</table>
 <p>Token-protected requests can authenticate with either header:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">curl</span> http<span class="op">://</span><span class="dv">192.168</span><span class="op">.</span><span class="dv">1.24</span><span class="op">:</span><span class="dv">4317</span><span class="op">/</span>api<span class="op">/</span>v1<span class="op">/</span>state `</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">-</span>H <span class="st">"Authorization: Bearer &lt;token&gt;"</span></span>
@@ -603,6 +692,7 @@ swap_displays</code></pre>
 <li>Active highlighter color (<code>ink_highlighter_color</code>) and width (<code>ink_highlighter_width</code>)</li>
 <li>Highlighter color presets (<code>ink_highlighter_color_presets</code>)</li>
 <li>Active slide or whiteboard ink strokes (<code>ink_strokes</code>)</li>
+<li>Text box mode, selected text box, editing flag, and active slide text boxes (<code>text_boxes</code>)</li>
 <li>Pointer and zoom-position data where relevant</li>
 <li>URLs for current and next slide images</li>
 </ul>
