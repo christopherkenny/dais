@@ -57,7 +57,7 @@ textarea.notesEdit{display:block;width:100%;min-height:58vh;background:#11161b;b
 .remoteTextBox.selected{border:2px solid #64a0ff;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
 .remoteTextBox .resizeHandle{position:absolute;right:0;bottom:0;width:14px;height:14px;background:#64a0ff;border-left:1px solid #111;border-top:1px solid #111;cursor:nwse-resize}
 .textBoxDraft{position:absolute;border:1px dashed #64a0ff;background:rgba(100,160,255,.12)}
-.textEditor{display:grid;grid-template-columns:1fr auto auto;gap:6px;margin-bottom:8px}
+.textEditor{display:grid;grid-template-columns:1fr auto auto;gap:6px;margin-top:8px}
 .textEditor textarea{min-height:42px;background:#11161b;border:1px solid #3e7df0;border-radius:7px;color:#edf2f4;font:14px/1.35 system-ui,-apple-system,Segoe UI,sans-serif;padding:7px;resize:vertical}
 .meta{color:#a7b0b8;font-size:13px}
 input{background:#11161b;border:1px solid #3a4650;border-radius:7px;color:#edf2f4;padding:11px;font:inherit;width:92px}
@@ -159,15 +159,15 @@ input{background:#11161b;border:1px solid #3a4650;border-radius:7px;color:#edf2f
         <button id="toolText" style="font-size:12px;min-height:30px;padding:3px 14px">Text</button>
         <button id="drawClear" class="warn" style="font-size:12px;min-height:30px;padding:3px 10px;margin-left:auto">Clear</button>
       </div>
-      <div id="textEditor" class="textEditor" hidden>
-        <textarea id="textBoxContent" placeholder="Text"></textarea>
-        <button id="textBoxSave" class="primary" style="font-size:12px;min-height:34px;padding:4px 12px">Save</button>
-        <button id="textBoxDelete" class="warn" style="font-size:12px;min-height:34px;padding:4px 12px">Delete</button>
-      </div>
       <div id="drawSurface" class="drawSurface" style="position:relative">
         <img id="drawImg" alt="Current slide" style="display:block;width:100%;height:auto;background:#0a0c0f;border-radius:5px;border:1px solid #303840;user-select:none;pointer-events:none">
         <canvas id="drawCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;touch-action:none;cursor:crosshair;border-radius:5px"></canvas>
         <div id="textBoxLayer" class="textBoxLayer"></div>
+      </div>
+      <div id="textEditor" class="textEditor" hidden>
+        <textarea id="textBoxContent" placeholder="Text"></textarea>
+        <button id="textBoxSave" class="primary" style="font-size:12px;min-height:34px;padding:4px 12px">Save</button>
+        <button id="textBoxDelete" class="warn" style="font-size:12px;min-height:34px;padding:4px 12px">Delete</button>
       </div>
       <div class="meta" id="drawStatus" style="margin-top:5px;min-height:16px"></div>
     </section>
@@ -186,7 +186,7 @@ function withCache(path){const authed=withToken(path);return authed+(authed.incl
 const $=id=>document.getElementById(id);
 let state=null,lastPage=-1,lastWhiteboard=null,nextPage=-1,pollTimer=null,overviewCount=0,activeView='control',everConnected=false,notesEditing=false;
 let drawColor=[255,0,0,255],drawWidth=2,drawHiColor=[255,220,0,100],drawHiWidth=12,drawEraserRadius=0.03,drawStrokes=[],drawStroke=null,drawTool='pen',erasePath=null,drawStrokesSig='',pendingInkUntil=0;
-let drawMode='ink',textBoxes=[],selectedTextBoxId=null,textDrag=null;
+let annotationMode='ink',textBoxes=[],selectedTextBoxId=null,textDrag=null;
 function mmss(seconds){seconds=Math.max(0,seconds|0);const m=Math.floor(seconds/60),s=seconds%60;return m+':'+String(s).padStart(2,'0');}
 function setConn(text,color){$('conn').textContent=text;$('conn').style.color=color;}
 function connectionMessage(error){
@@ -491,7 +491,7 @@ function setSelectedTextBox(id,send=true){
 }
 function syncTextEditor(){
  const tb=selectedTextBox();
- $('textEditor').hidden=drawMode!=='text'||!tb;
+ $('textEditor').hidden=annotationMode!=='text'||!tb;
  if(!tb)return;
  if(document.activeElement!==$('textBoxContent'))$('textBoxContent').value=tb.content||'';
 }
@@ -546,7 +546,7 @@ function clampTextRect(tb){
  tb.rect[3]=Math.max(0.02,Math.min(1-tb.rect[1],tb.rect[3]));
 }
 function syncDrawControls(){
- const textMode=drawMode==='text';
+ const textMode=annotationMode==='text';
  $('toolPen').classList.toggle('active',!textMode&&drawTool==='pen');
  $('toolHi').classList.toggle('active',!textMode&&drawTool==='highlighter');
  $('toolEraser').classList.toggle('active',!textMode&&drawTool==='eraser');
@@ -572,14 +572,14 @@ function canvasPt(e){
 }
 const dc=$('drawCanvas');
 dc.addEventListener('pointerdown',e=>{
- if(drawMode==='text')return;
+ if(annotationMode==='text')return;
  dc.setPointerCapture(e.pointerId);
  if(drawTool==='eraser'){erasePath=[canvasPt(e)];}
  else{drawStroke=[canvasPt(e)];}
  e.preventDefault();
 });
 dc.addEventListener('pointermove',e=>{
- if(drawMode==='text')return;
+ if(annotationMode==='text')return;
  if(drawTool==='eraser'){
   if(!erasePath)return;
   erasePath.push(canvasPt(e));
@@ -592,7 +592,7 @@ dc.addEventListener('pointermove',e=>{
  e.preventDefault();
 });
 dc.addEventListener('pointerup',async e=>{
- if(drawMode==='text')return;
+ if(annotationMode==='text')return;
  if(drawTool==='eraser'){
   if(!erasePath||erasePath.length===0){erasePath=null;return;}
   erasePath.push(canvasPt(e));
@@ -625,7 +625,7 @@ dc.addEventListener('pointerup',async e=>{
 dc.addEventListener('pointercancel',()=>{drawStroke=null;erasePath=null;redrawCanvas();});
 const tl=$('textBoxLayer');
 tl.addEventListener('pointerdown',e=>{
- if(drawMode!=='text')return;
+ if(annotationMode!=='text')return;
  tl.setPointerCapture(e.pointerId);
  const pt=normFromLayer(e);
  const box=e.target.closest?.('.remoteTextBox');
@@ -643,7 +643,7 @@ tl.addEventListener('pointerdown',e=>{
  e.preventDefault();
 });
 tl.addEventListener('pointermove',e=>{
- if(drawMode!=='text'||!textDrag)return;
+ if(annotationMode!=='text'||!textDrag)return;
  const pt=normFromLayer(e);
  if(textDrag.type==='place'){
   textDrag.rect=rectFromPoints(textDrag.start,pt);
@@ -662,7 +662,7 @@ tl.addEventListener('pointermove',e=>{
  e.preventDefault();
 });
 tl.addEventListener('pointerup',async e=>{
- if(drawMode!=='text'||!textDrag)return;
+ if(annotationMode!=='text'||!textDrag)return;
  const drag=textDrag;
  textDrag=null;
  try{
@@ -703,15 +703,15 @@ document.querySelectorAll('.drawWidth').forEach(b=>b.onclick=()=>{
  syncDrawControls();
 });
 function setDrawTool(tool){
- drawMode='ink';
+ annotationMode='ink';
  drawTool=tool;
  syncDrawControls();
- api('/api/v1/commands/ink/set_tool',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tool})}).catch(()=>{});
+ api('/api/v1/commands/ink/set_tool',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tool})}).then(refresh).catch(()=>{});
 }
-$('toolPen').onclick=()=>{if(drawTool!=='pen')setDrawTool('pen');};
-$('toolHi').onclick=()=>{if(drawTool!=='highlighter')setDrawTool('highlighter');};
-$('toolEraser').onclick=()=>{if(drawTool!=='eraser')setDrawTool('eraser');};
-$('toolText').onclick=()=>{drawMode='text';drawStroke=null;erasePath=null;syncDrawControls();};
+$('toolPen').onclick=()=>{if(annotationMode!=='ink'||drawTool!=='pen')setDrawTool('pen');};
+$('toolHi').onclick=()=>{if(annotationMode!=='ink'||drawTool!=='highlighter')setDrawTool('highlighter');};
+$('toolEraser').onclick=()=>{if(annotationMode!=='ink'||drawTool!=='eraser')setDrawTool('eraser');};
+$('toolText').onclick=()=>{annotationMode='text';drawStroke=null;erasePath=null;syncDrawControls();};
 $('drawClear').onclick=async()=>{
  drawStrokes=[];drawStrokesSig=strokeSignature(drawStrokes);redrawCanvas();
  try{await api('/api/v1/commands/ink/clear',{method:'POST'});}

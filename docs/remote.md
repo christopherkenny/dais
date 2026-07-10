@@ -99,6 +99,7 @@ The **Text** tool edits slide text boxes from the browser remote.
 Drag on empty slide space to place a new text box.
 Tap a text box to select it.
 Drag the selected box to move it, drag its lower-right handle to resize it, edit its content in the text field, and use **Save** or **Delete** to persist the change.
+The text field and its Save/Delete controls appear below the slide preview so mobile browsers keep the slide preview in place while editing.
 
 The browser remote previews saved text boxes with SVGs rendered by `dais`'s Typst renderer.
 The edit field remains plain text so Typst markup can be entered directly.

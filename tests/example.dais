@@ -107,11 +107,11 @@ groups: [
 ]
 notes: {
 	"1": "Some notes. We can write *new* comments as we need.  **Fancy**. More?"
-	"3": "Example comment made via the *remote* feature!"
 	"5": "How hard would it be to text box writing in the whiteboard? disable question mark while in notes."
+	"3": "Example comment made via the *remote* feature!"
 }
 slide_timings: {
-	"1": 103.4475234
+	"1": 100.1835126
 }
 slide_annotations: {
 	"1": [
@@ -191,6 +191,14 @@ slide_annotations: {
 			color: [255, 220, 0, 100]
 			width: 12.0
 		}
+		{
+			points: [
+				[0.8012999, 0.85957885]
+				[0.8012999, 0.85957885]
+			]
+			color: [255, 0, 0, 255]
+			width: 2.0
+		}
 	]
 	"4": [
 		{
@@ -232,9 +240,25 @@ slide_text_boxes: {
 			typst_prelude: "#set align(horizon + center)\n#set text(font: \"Spectral\")\n"
 		}
 		{
-			id: 2
-			rect: [0.02150193, 0.17670637, 0.18688062, 0.14083226]
-			content: "Something $pi - 1$\n\nThe end"
+			id: 4
+			rect: [0.043705024, 0.2084281, 0.0780475, 0.11498681]
+			content: "Hello"
+			font_size: 30.0
+			color: [0, 0, 0, 255]
+			typst_prelude: "#set align(horizon + center)\n#set text(font: \"Spectral\")\n"
+		}
+		{
+			id: 12
+			rect: [0.050791558, 0.45602462, 0.17084432, 0.20404574]
+			content: "$ 3 / 4 = frac(a, b) $"
+			font_size: 30.0
+			color: [0, 0, 0, 255]
+			typst_prelude: "#set align(horizon + center)\n#set text(font: \"Spectral\")\n"
+		}
+		{
+			id: 13
+			rect: [0.72051996, 0.5259373, 0.11142062, 0.22352336]
+			content: "Hello"
 			font_size: 30.0
 			color: [0, 0, 0, 255]
 			typst_prelude: "#set align(horizon + center)\n#set text(font: \"Spectral\")\n"

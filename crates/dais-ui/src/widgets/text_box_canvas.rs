@@ -12,6 +12,7 @@ use std::collections::HashMap;
 
 const HANDLE_RADIUS: f32 = 5.0;
 const HANDLE_COLOR: Color32 = Color32::WHITE;
+const EDITABLE_BORDER_WIDTH: f32 = 1.0;
 const SELECTED_BORDER: Color32 = Color32::from_rgb(100, 160, 255);
 const SELECTED_BORDER_WIDTH: f32 = 2.0;
 const MIN_PLACE_SIZE: f32 = 0.04;
@@ -276,6 +277,18 @@ pub fn draw_text_boxes(
                 child.style_mut().override_font_id = Some(egui::FontId::proportional(font_size));
                 child.label(egui::RichText::new(&tb.content).size(font_size).color(text_color));
             }
+        }
+
+        if text_box_mode && !is_selected && !is_editing {
+            ui.painter_at(slide_rect).rect_stroke(
+                box_rect,
+                2.0,
+                Stroke::new(
+                    EDITABLE_BORDER_WIDTH,
+                    Color32::from_rgba_unmultiplied(100, 160, 255, 140),
+                ),
+                egui::StrokeKind::Outside,
+            );
         }
 
         // --- Box interaction (only in text_box_mode) ---

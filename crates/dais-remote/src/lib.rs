@@ -3,7 +3,7 @@ use std::convert::Infallible;
 use std::net::{IpAddr, SocketAddr};
 use std::sync::{Arc, Mutex, RwLock};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result, anyhow};
 use axum::extract::{ConnectInfo, Path, Query, Request, State};
@@ -30,6 +30,8 @@ use tokio::sync::oneshot;
 use tower_http::sensitive_headers::SetSensitiveRequestHeadersLayer;
 
 const SSE_INTERVAL: Duration = Duration::from_millis(500);
+const COMMAND_APPLY_TIMEOUT: Duration = Duration::from_millis(250);
+const COMMAND_APPLY_POLL: Duration = Duration::from_millis(10);
 const REMOTE_SLIDE_SIZE: RenderSize = RenderSize { width: 960, height: 540 };
 const REMOTE_THUMBNAIL_SIZE: RenderSize = RenderSize { width: 320, height: 180 };
 const X_DAIS_TOKEN: HeaderName = HeaderName::from_static("x-dais-token");
@@ -657,10 +659,24 @@ async fn ink_set_tool(
     };
     match context.sender.send(Command::SetDrawTool(tool)) {
         Ok(()) => {
+            wait_for_draw_tool(&context.shared_state, tool).await;
             context.status.set_last_command("ink_set_tool");
             Json(ok_response("draw tool set")).into_response()
         }
         Err(_) => server_error(&anyhow::anyhow!("presentation engine is not accepting commands")),
+    }
+}
+
+async fn wait_for_draw_tool(
+    shared_state: &Arc<RwLock<PresentationState>>,
+    tool: dais_core::state::DrawTool,
+) {
+    let deadline = Instant::now() + COMMAND_APPLY_TIMEOUT;
+    while Instant::now() < deadline {
+        if shared_state.read().is_ok_and(|state| state.draw_tool == tool) {
+            return;
+        }
+        tokio::time::sleep(COMMAND_APPLY_POLL).await;
     }
 }
 
