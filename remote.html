@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>remote – Dais</title>
+<title>remote – dais</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -118,7 +118,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a class="navbar-brand" href="./index.html">
-    <span class="navbar-title">Dais</span>
+    <span class="navbar-title">dais</span>
     </a>
   </div>
             <div id="quarto-search" class="" title="Search"></div>
@@ -186,15 +186,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="remote-control" class="level1">
 <h1>Remote Control</h1>
-<p>Dais can expose a local remote-control API while a presentation is running. The remote layer is designed for second-device control, local scripts, Stream Deck profiles, classroom automation, and experimental adapters that should not live inside the core presenter.</p>
-<p>Remote control is an input adapter. Requests become normal Dais commands, and the presentation engine remains the only owner of presentation state.</p>
+<p><code>dais</code> can expose a local remote-control API while a presentation is running. The remote layer is designed for second-device control, local scripts, Stream Deck profiles, classroom automation, and experimental adapters that should not live inside the core presenter.</p>
+<p>Remote control is an input adapter. Requests become normal <code>dais</code> commands, and the presentation engine remains the only owner of presentation state.</p>
 <section id="quick-start" class="level2">
 <h2 class="anchored" data-anchor-id="quick-start">Quick Start</h2>
 <p>Start a presentation with the remote server enabled:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>dais <span class="op">--</span>remote slides<span class="op">.</span><span class="fu">pdf</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>For development from the repository:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>cargo run <span class="op">-</span>p dais <span class="op">--</span> <span class="op">--</span>remote tests<span class="op">/</span>example<span class="op">.</span><span class="fu">pdf</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>By default, Dais listens on:</p>
+<p>By default, <code>dais</code> listens on:</p>
 <pre class="text"><code>http://127.0.0.1:4317</code></pre>
 <p>Open the built-in browser remote:</p>
 <pre class="text"><code>http://127.0.0.1:4317/remote</code></pre>
@@ -207,7 +207,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="browser-remote" class="level2">
 <h2 class="anchored" data-anchor-id="browser-remote">Browser Remote</h2>
-<p>The browser remote is served directly by Dais at <code>/remote</code>. It is intended to be usable from a phone, tablet, or local browser without installing a native app.</p>
+<p>The browser remote is served directly by <code>dais</code> at <code>/remote</code>. It is intended to be usable from a phone, tablet, or local browser without installing a native app.</p>
 <p>It currently shows:</p>
 <ul>
 <li>Current slide image</li>
@@ -243,7 +243,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="text-boxes" class="level3">
 <h3 class="anchored" data-anchor-id="text-boxes">Text boxes</h3>
 <p>The <strong>Text</strong> tool edits slide text boxes from the browser remote. Drag on empty slide space to place a new text box. Tap a text box to select it. Drag the selected box to move it, drag its lower-right handle to resize it, edit its content in the text field, and use <strong>Save</strong> or <strong>Delete</strong> to persist the change.</p>
-<p>The browser remote previews saved text boxes with SVGs rendered by Dais’ Typst renderer. The edit field remains plain text so Typst markup can be entered directly.</p>
+<p>The browser remote previews saved text boxes with SVGs rendered by <code>dais</code>’s Typst renderer. The edit field remains plain text so Typst markup can be entered directly.</p>
 </section>
 </section>
 <section id="pairing-a-second-device" class="level2">
@@ -251,15 +251,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>For a phone or tablet on the same network, bind the server to a LAN-reachable address:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>dais <span class="op">--</span>remote-lan slides<span class="op">.</span><span class="fu">pdf</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>When remote mode is enabled, the presenter console shows a <code>Remote</code> item in the bottom status bar. Click it to see copyable pairing URLs, the current pairing code, and QR codes for phone/tablet URLs.</p>
-<p>If Dais is bound to <code>0.0.0.0</code>, it does not advertise <code>0.0.0.0</code> as a pairing URL. Instead, it shows loopback and likely LAN URLs such as:</p>
+<p>If <code>dais</code> is bound to <code>0.0.0.0</code>, it does not advertise <code>0.0.0.0</code> as a pairing URL. Instead, it shows loopback and likely LAN URLs such as:</p>
 <pre class="text"><code>http://127.0.0.1:4317/remote
 http://192.168.1.24:4317/remote?token=...</code></pre>
 <p>Non-loopback devices always need the pairing code. If a phone cannot connect, check:</p>
 <ul>
 <li>The phone and computer are on the same network.</li>
 <li>The network allows devices to reach each other.</li>
-<li>The OS firewall allowed Dais to accept local network connections.</li>
-<li>The phone used the tokenized pairing URL or QR code from the Dais presenter UI.</li>
+<li>The OS firewall allowed <code>dais</code> to accept local network connections.</li>
+<li>The phone used the tokenized pairing URL or QR code from the <code>dais</code> presenter UI.</li>
 </ul>
 </section>
 <section id="configuration" class="level2">
@@ -298,7 +298,7 @@ http://192.168.1.24:4317/remote?token=...</code></pre>
 </tr>
 <tr class="even">
 <td><code>token</code></td>
-<td>Authentication token. Empty means Dais generates a short pairing code per launch. Custom tokens may contain only ASCII letters and digits</td>
+<td>Authentication token. Empty means <code>dais</code> generates a short pairing code per launch. Custom tokens may contain only ASCII letters and digits</td>
 </tr>
 <tr class="odd">
 <td><code>allow_unauthenticated_loopback</code></td>
@@ -367,7 +367,7 @@ http://192.168.1.24:4317/remote?token=...</code></pre>
 <tr class="even">
 <td><code>/api/v1/actions/{action_name}</code></td>
 <td><code>POST</code></td>
-<td>Dispatch a public Dais action</td>
+<td>Dispatch a public <code>dais</code> action</td>
 </tr>
 <tr class="odd">
 <td><code>/api/v1/commands/goto</code></td>
@@ -531,7 +531,7 @@ http://192.168.1.24:4317/remote?token=...</code></pre>
 <td><code>tool</code></td>
 <td><code>string</code></td>
 <td>No</td>
-<td><code>"pen"</code> or <code>"highlighter"</code> for this stroke. When present, Dais applies the tool before color, width, and points in one command batch</td>
+<td><code>"pen"</code> or <code>"highlighter"</code> for this stroke. When present, <code>dais</code> applies the tool before color, width, and points in one command batch</td>
 </tr>
 <tr class="odd">
 <td><code>color</code></td>
@@ -705,7 +705,7 @@ swap_displays</code></pre>
 </section>
 <section id="external-controllers" class="level2">
 <h2 class="anchored" data-anchor-id="external-controllers">External Controllers</h2>
-<p>External controllers call the stable action API rather than adding device-specific code to Dais.</p>
+<p>External controllers call the stable action API rather than adding device-specific code to <code>dais</code>.</p>
 <p>Good fits include:</p>
 <ul>
 <li>Stream Deck profiles</li>
@@ -726,7 +726,7 @@ swap_displays</code></pre>
 </section>
 <section id="relationship-to-clickers" class="level2">
 <h2 class="anchored" data-anchor-id="relationship-to-clickers">Relationship To Clickers</h2>
-<p>Traditional USB presenter clickers usually emulate keyboard keys such as <code>PageDown</code> and <code>PageUp</code>. Those are handled by Dais through the keybinding and clicker-profile system. See <a href="./clicker-setup.html">clicker-setup.md</a>.</p>
+<p>Traditional USB presenter clickers usually emulate keyboard keys such as <code>PageDown</code> and <code>PageUp</code>. Those are handled by <code>dais</code> through the keybinding and clicker-profile system. See <a href="./clicker-setup.html">clicker-setup.md</a>.</p>
 <p>The remote API is for controls that are not naturally keyboard input: web remotes, scripts, hardware macro pads, networked control surfaces, and experimental adapters.</p>
 </section>
 <section id="security-notes" class="level2">
@@ -833,7 +833,7 @@ swap_displays</code></pre>
     }
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp("https:\/\/christopherkenny\.github\.io\/dais");
+        var filterRegex = new RegExp("https:\/\/christophertkenny\.com\/dais\/");
       var isInternal = (href) => {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
@@ -1164,7 +1164,7 @@ swap_displays</code></pre>
 <footer class="footer">
   <div class="nav-footer">
     <div class="nav-footer-left">
-<p>Dais documentation.</p>
+<p><code>dais</code> documentation.</p>
 </div>   
     <div class="nav-footer-center">
       &nbsp;

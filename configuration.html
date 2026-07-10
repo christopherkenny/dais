@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>configuration – Dais</title>
+<title>configuration – dais</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -118,7 +118,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a class="navbar-brand" href="./index.html">
-    <span class="navbar-title">Dais</span>
+    <span class="navbar-title">dais</span>
     </a>
   </div>
             <div id="quarto-search" class="" title="Search"></div>
@@ -186,7 +186,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="configuration-reference" class="level1">
 <h1>Configuration Reference</h1>
-<p>Dais supports layered configuration. Settings are applied in this order:</p>
+<p><code>dais</code> supports layered configuration. Settings are applied in this order:</p>
 <ol type="1">
 <li>Built-in defaults</li>
 <li>Machine-wide config in the platform-appropriate location</li>
@@ -199,7 +199,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><strong>macOS:</strong> <code>~/Library/Application Support/dais/config.toml</code></li>
 <li><strong>Linux:</strong> <code>~/.config/dais/config.toml</code></li>
 </ul>
-<p>If a config layer doesn’t exist, Dais skips it. All settings are optional. Run with <code>--portable</code> to skip the machine-wide config layer entirely. This is useful when running Dais from a USB stick or copied folder on a machine that may already have its own Dais settings. Project-local <code>dais.toml</code> and explicit <code>--config &lt;path&gt;</code> files are still loaded.</p>
+<p>If a config layer doesn’t exist, <code>dais</code> skips it. All settings are optional. Run with <code>--portable</code> to skip the machine-wide config layer entirely. This is useful when running <code>dais</code> from a USB stick or copied folder on a machine that may already have its own <code>dais</code> settings. Project-local <code>dais.toml</code> and explicit <code>--config &lt;path&gt;</code> files are still loaded.</p>
 <section id="full-default-configuration" class="level2">
 <h2 class="anchored" data-anchor-id="full-default-configuration">Full Default Configuration</h2>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dt">sidecar_format</span> <span class="op">=</span> <span class="st">"dais"</span>        <span class="co"># "dais" (default) or "pdfpc"</span></span>
@@ -272,41 +272,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">[timer]</span></span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="dt">mode</span> <span class="op">=</span> <span class="st">"elapsed"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="remote-control-api" class="level2">
-<h2 class="anchored" data-anchor-id="remote-control-api">Remote Control API</h2>
-<p>Dais can expose a local HTTP API for scripts, Stream Deck tools, phone/tablet web controls, and experimental input adapters.</p>
-<p>This section is the configuration reference. See <a href="./remote.html">remote.md</a> for the full remote-control guide.</p>
+<section id="remote-settings" class="level2">
+<h2 class="anchored" data-anchor-id="remote-settings">Remote Settings</h2>
+<p><code>dais</code> can expose a local HTTP API and browser remote while a presentation is running. This section documents the configuration fields. See <a href="./remote.html">remote.md</a> for browser remote usage, REST endpoints, CLI remote commands, pairing, and controller examples.</p>
 <p>Start a presentation with the remote API enabled:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>dais <span class="op">--</span>remote slides<span class="op">.</span><span class="fu">pdf</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>dais <span class="op">--</span>remote-lan slides<span class="op">.</span><span class="fu">pdf</span></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>dais <span class="op">--</span>remote <span class="op">--</span>remote-port <span class="dv">4317</span> slides<span class="op">.</span><span class="fu">pdf</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>By default, the server binds to <code>127.0.0.1:4317</code>. Loopback requests are allowed without a token unless <code>allow_unauthenticated_loopback = false</code>. Non-loopback clients always need a token. Use <code>--remote-lan</code> for normal phone/tablet pairing. Set <code>host</code> explicitly only when you want LAN binding from config:</p>
+<p>The <code>[remote]</code> table can also enable remote control automatically for a project or user config:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[remote]</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="dt">enabled</span> <span class="op">=</span> <span class="cn">true</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="dt">host</span> <span class="op">=</span> <span class="st">"0.0.0.0"</span></span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="dt">port</span> <span class="op">=</span> <span class="dv">4317</span></span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="dt">token</span> <span class="op">=</span> <span class="st">"choose-a-long-random-token"</span></span>
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="dt">allow_unauthenticated_loopback</span> <span class="op">=</span> <span class="cn">false</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Custom remote tokens may contain only ASCII letters and digits.</p>
-<p>The same <code>dais</code> binary can send remote commands:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>dais remote state</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>dais remote action next_slide</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>dais remote goto <span class="dv">12</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="dt">dais</span> remote pointer <span class="dv">0.5</span> <span class="dv">0.5</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="dt">dais</span> remote timer toggle</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Open the browser remote at:</p>
-<pre class="text"><code>http://127.0.0.1:4317/remote</code></pre>
-<p>When token authentication is required, append the token shown in the Dais log:</p>
-<pre class="text"><code>http://192.168.1.24:4317/remote?token=&lt;token&gt;</code></pre>
-<p>When remote mode is enabled, the presenter console shows a <code>Remote</code> status item in the bottom bar. Click it to view pairing URLs and QR codes. The status text also shows active remote event clients and the last remote command received. When bound to <code>0.0.0.0</code>, Dais shows usable loopback/LAN URLs rather than advertising <code>0.0.0.0</code> itself.</p>
-<p>REST endpoints use <code>/api/v1</code>:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">curl</span> http<span class="op">://</span><span class="dv">127.0</span><span class="op">.</span><span class="dv">0.1</span><span class="op">:</span><span class="dv">4317</span><span class="op">/</span>api<span class="op">/</span>v1<span class="op">/</span>state</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">curl</span> <span class="op">-</span>X POST http<span class="op">://</span><span class="dv">127.0</span><span class="op">.</span><span class="dv">0.1</span><span class="op">:</span><span class="dv">4317</span><span class="op">/</span>api<span class="op">/</span>v1<span class="op">/</span>actions<span class="op">/</span>next_slide</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">curl</span> <span class="op">-</span>X POST http<span class="op">://</span><span class="dv">127.0</span><span class="op">.</span><span class="dv">0.1</span><span class="op">:</span><span class="dv">4317</span><span class="op">/</span>api<span class="op">/</span>v1<span class="op">/</span>commands<span class="op">/</span>goto <span class="op">-</span>H <span class="st">"Content-Type: application/json"</span> <span class="op">-</span>d <span class="st">"{\"</span>slide\<span class="st">":12}"</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">curl</span> http<span class="op">://</span><span class="dv">127.0</span><span class="op">.</span><span class="dv">0.1</span><span class="op">:</span><span class="dv">4317</span><span class="op">/</span>api<span class="op">/</span>v1<span class="op">/</span>events</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">curl</span> http<span class="op">://</span><span class="dv">127.0</span><span class="op">.</span><span class="dv">0.1</span><span class="op">:</span><span class="dv">4317</span><span class="op">/</span>api<span class="op">/</span>v1<span class="op">/</span>slides<span class="op">/</span>current<span class="op">.</span><span class="fu">png</span> <span class="op">--</span>output current<span class="op">.</span><span class="fu">png</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>For token-protected sessions, send <code>Authorization: Bearer &lt;token&gt;</code> or <code>X-Dais-Token: &lt;token&gt;</code>. Browser endpoints also accept <code>?token=&lt;token&gt;</code> so the built-in web remote can connect from a second device.</p>
-<p>Slide image endpoints are rendered on demand for the remote:</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 50%">
@@ -314,26 +293,34 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </colgroup>
 <thead>
 <tr class="header">
-<th>Endpoint</th>
+<th>Field</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>/api/v1/slides/current.png</code></td>
-<td>Current presenter page</td>
+<td><code>enabled</code></td>
+<td>Starts the remote server when a presentation starts.</td>
 </tr>
 <tr class="even">
-<td><code>/api/v1/slides/next.png</code></td>
-<td>First page of the next logical slide, or current page at the end</td>
+<td><code>host</code></td>
+<td>Bind address. <code>127.0.0.1</code> is local-only, while <code>0.0.0.0</code> accepts connections on all interfaces.</td>
 </tr>
 <tr class="odd">
-<td><code>/api/v1/slides/&lt;n&gt;/thumbnail.png</code></td>
-<td>First page of 1-based logical slide <code>n</code></td>
+<td><code>port</code></td>
+<td>TCP port. Use <code>0</code> to ask the OS for a free port.</td>
+</tr>
+<tr class="even">
+<td><code>token</code></td>
+<td>Authentication token. Empty means <code>dais</code> generates a short pairing code per launch. Custom tokens may contain only ASCII letters and digits.</td>
+</tr>
+<tr class="odd">
+<td><code>allow_unauthenticated_loopback</code></td>
+<td>Allows same-machine requests without a token.</td>
 </tr>
 </tbody>
 </table>
-<p>Remote slide PNGs are cached in-memory during the session. State and command requests opportunistically warm the current and next slide images so the web remote stays responsive during navigation.</p>
+<p>By default, the server binds to <code>127.0.0.1:4317</code>. Loopback requests are allowed without a token unless <code>allow_unauthenticated_loopback = false</code>. Non-loopback clients always need a token. Use <code>--remote-lan</code> for normal phone/tablet pairing. Set <code>host</code> explicitly only when you want LAN binding from config.</p>
 </section>
 <section id="display-modes" class="level2">
 <h2 class="anchored" data-anchor-id="display-modes">Display Modes</h2>
@@ -363,7 +350,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 </tbody>
 </table>
-<p>CLI flags (<code>--single</code>, <code>--screen-share</code>) override config. If no flag is given and config is <code>"dual"</code> (default), Dais auto-detects: 2+ monitors → dual, 1 monitor → single.</p>
+<p>CLI flags (<code>--single</code>, <code>--screen-share</code>) override config. If no flag is given and config is <code>"dual"</code> (default), <code>dais</code> auto-detects: 2+ monitors → dual, 1 monitor → single.</p>
 <p>In dual mode, press <strong>F6</strong> to swap the presenter and audience monitors for the current session. This does not rewrite <code>dais.toml</code>; use <code>display.presenter_monitor</code> and <code>display.audience_monitor</code> for a permanent assignment.</p>
 </section>
 <section id="monitor-assignment" class="level2">
@@ -382,18 +369,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="laser-pointer">Laser Pointer</h2>
 <p><code>[laser]</code> controls the active pointer style and the default appearance used by every pointer style. Add <code>[laser.dot]</code>, <code>[laser.minimal]</code>, <code>[laser.crosshair]</code>, <code>[laser.arrow]</code>, <code>[laser.ring]</code>, <code>[laser.bullseye]</code>, or <code>[laser.highlight]</code> only when you want to override one style.</p>
 <p>Example:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[laser]</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#FFFFFF"</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="dt">size</span> <span class="op">=</span> <span class="fl">12.0</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="dt">style</span> <span class="op">=</span> <span class="st">"dot"</span></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="kw">[laser.crosshair]</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#00FF00"</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="dt">size</span> <span class="op">=</span> <span class="fl">24.0</span></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="kw">[laser.highlight]</span></span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#FFFF0080"</span></span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="dt">size</span> <span class="op">=</span> <span class="fl">36.0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[laser]</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#FFFFFF"</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="dt">size</span> <span class="op">=</span> <span class="fl">12.0</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="dt">style</span> <span class="op">=</span> <span class="st">"dot"</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="kw">[laser.crosshair]</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#00FF00"</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="dt">size</span> <span class="op">=</span> <span class="fl">24.0</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="kw">[laser.highlight]</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#FFFF0080"</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="dt">size</span> <span class="op">=</span> <span class="fl">36.0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>In this example, dot, minimal, arrow, ring, and bullseye stay white at size 12. Crosshair changes to green at size 24, and highlight changes to translucent yellow at size 36.</p>
 </section>
 <section id="freeze" class="level2">
@@ -414,14 +401,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="ink-drawing" class="level2">
 <h2 class="anchored" data-anchor-id="ink-drawing">Ink Drawing</h2>
 <p><code>[ink]</code> controls both the pen and highlighter drawing tools.</p>
-<p><code>colors</code> sets the pen color swatches shown in the toolbar when the Pen tool is active. Use RGB (<code>#RRGGBB</code>) or RGBA (<code>#RRGGBBAA</code>) hex strings. Dais pads the palette to at least six colors with red, blue, green, yellow, white, and black. Multiple colors cycle with <strong>Ctrl+D</strong> (pen only; the highlighter has its own swatches).</p>
+<p><code>colors</code> sets the pen color swatches shown in the toolbar when the Pen tool is active. Use RGB (<code>#RRGGBB</code>) or RGBA (<code>#RRGGBBAA</code>) hex strings. <code>dais</code> pads the palette to at least six colors with red, blue, green, yellow, white, and black. Multiple colors cycle with <strong>Ctrl+D</strong> (pen only; the highlighter has its own swatches).</p>
 <p><code>highlighter_colors</code> sets the highlighter swatches. Always use RGBA — the alpha byte controls how transparent the highlight is. Lower alpha = more transparent (lighter); higher alpha = more opaque (darker). Around <code>64</code> (25 % opacity) to <code>A0</code> (63 %) gives realistic highlighter results.</p>
 <p>Example:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[ink]</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="dt">colors</span> <span class="op">=</span> <span class="op">[</span><span class="st">"#F58025"</span><span class="op">,</span> <span class="st">"#DC1E1E"</span><span class="op">,</span> <span class="st">"#1E64DC"</span><span class="op">,</span> <span class="st">"#1EB41E"</span><span class="op">]</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="dt">width</span> <span class="op">=</span> <span class="fl">2.0</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="dt">highlighter_colors</span> <span class="op">=</span> <span class="op">[</span><span class="st">"#FFDC0064"</span><span class="op">,</span> <span class="st">"#00C8FF64"</span><span class="op">,</span> <span class="st">"#3CDC6464"</span><span class="op">,</span> <span class="st">"#FF50B464"</span><span class="op">]</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="dt">highlighter_width</span> <span class="op">=</span> <span class="fl">12.0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[ink]</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="dt">colors</span> <span class="op">=</span> <span class="op">[</span><span class="st">"#F58025"</span><span class="op">,</span> <span class="st">"#DC1E1E"</span><span class="op">,</span> <span class="st">"#1E64DC"</span><span class="op">,</span> <span class="st">"#1EB41E"</span><span class="op">]</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="dt">width</span> <span class="op">=</span> <span class="fl">2.0</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="dt">highlighter_colors</span> <span class="op">=</span> <span class="op">[</span><span class="st">"#FFDC0064"</span><span class="op">,</span> <span class="st">"#00C8FF64"</span><span class="op">,</span> <span class="st">"#3CDC6464"</span><span class="op">,</span> <span class="st">"#FF50B464"</span><span class="op">]</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="dt">highlighter_width</span> <span class="op">=</span> <span class="fl">12.0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="slide-overview" class="level2">
 <h2 class="anchored" data-anchor-id="slide-overview">Slide Overview</h2>
@@ -437,30 +424,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ul>
 <li><code>color</code> accepts <code>#RRGGBB</code> or <code>#RRGGBBAA</code></li>
 <li><code>background</code> accepts <code>#RRGGBB</code>, <code>#RRGGBBAA</code>, or <code>"transparent"</code></li>
-<li><code>typst_prelude</code> accepts a Typst snippet inserted after Dais’s page/text defaults</li>
+<li><code>typst_prelude</code> accepts a Typst snippet inserted after <code>dais</code>’s page/text defaults</li>
 </ul>
 <p>Example:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[text_boxes]</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#111111"</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="dt">background</span> <span class="op">=</span> <span class="st">"#FFF7CCDD"</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="dt">typst_prelude</span> <span class="op">=</span> <span class="st">"#set align(horizon)"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[text_boxes]</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="dt">color</span> <span class="op">=</span> <span class="st">"#111111"</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="dt">background</span> <span class="op">=</span> <span class="st">"#FFF7CCDD"</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="dt">typst_prelude</span> <span class="op">=</span> <span class="st">"#set align(horizon)"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>The prelude is copied into newly created text boxes and saved with them in <code>.dais</code> sidecars. Existing boxes keep the prelude they were created with until edited in the sidecar.</p>
 </section>
 <section id="export-defaults" class="level2">
 <h2 class="anchored" data-anchor-id="export-defaults">Export Defaults</h2>
-<p>Dais can store recurring annotated export choices in the same layered TOML config used by presentation mode. Command-line export flags override these defaults for a single run.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[export]</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="dt">format</span> <span class="op">=</span> <span class="st">"pdf"</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="dt">layers</span> <span class="op">=</span> <span class="st">"all"</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="dt">handout</span> <span class="op">=</span> <span class="cn">true</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="dt">whiteboard</span> <span class="op">=</span> <span class="st">"append"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>dais</code> can store recurring annotated export choices in the same layered TOML config used by presentation mode. Command-line export flags override these defaults for a single run.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[export]</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="dt">format</span> <span class="op">=</span> <span class="st">"pdf"</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="dt">layers</span> <span class="op">=</span> <span class="st">"all"</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="dt">handout</span> <span class="op">=</span> <span class="cn">true</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="dt">whiteboard</span> <span class="op">=</span> <span class="st">"append"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>With those defaults, this command writes an annotated after-class handout using the saved ink, text boxes, and whiteboard:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>dais export lecture<span class="op">.</span><span class="fu">pdf</span> <span class="op">--</span>out lecture-annotated<span class="op">.</span><span class="fu">pdf</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>dais export lecture<span class="op">.</span><span class="fu">pdf</span> <span class="op">--</span>out lecture-annotated<span class="op">.</span><span class="fu">pdf</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Use <code>--no-handout</code> to export every PDF page even when <code>handout = true</code> is set in config.</p>
 </section>
 <section id="sidecar-formats" class="level2">
 <h2 class="anchored" data-anchor-id="sidecar-formats">Sidecar Formats</h2>
-<p>Dais stores slide grouping, notes, and metadata in sidecar files next to your PDF.</p>
+<p><code>dais</code> stores slide grouping, notes, and metadata in sidecar files next to your PDF.</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 33%">
@@ -478,7 +465,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td><code>dais</code></td>
 <td><code>.dais</code></td>
-<td>Native EON-based format with versioning for Dais annotations and text boxes. Default save format.</td>
+<td>Native EON-based format with versioning for <code>dais</code> annotations and text boxes. Default save format.</td>
 </tr>
 <tr class="even">
 <td><code>pdfpc</code></td>
@@ -488,14 +475,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tbody>
 </table>
 <p>Set the save format in config:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="dt">sidecar_format</span> <span class="op">=</span> <span class="st">"pdfpc"</span>   <span class="co"># "dais" (default) or "pdfpc"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>When loading, Dais checks in order: <code>.dais</code> sidecar → <code>.pdfpc</code> sidecar → embedded PDF metadata. The grouping editor and <code>save_sidecar</code> action both use <code>sidecar_format</code> when choosing what to write. Set <code>save_slide_timings = false</code>, or run with <code>--time-ignore</code>, to save sidecars without updating the <code>slide_timings</code> data. In <code>.dais</code> files, page and slide references use one-based numbers that match the slide numbers shown in the presenter UI. Speaker notes are keyed by the one-based first page of the logical slide group.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="dt">sidecar_format</span> <span class="op">=</span> <span class="st">"pdfpc"</span>   <span class="co"># "dais" (default) or "pdfpc"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>When loading, <code>dais</code> checks in order: <code>.dais</code> sidecar → <code>.pdfpc</code> sidecar → embedded PDF metadata. The grouping editor and <code>save_sidecar</code> action both use <code>sidecar_format</code> when choosing what to write. Set <code>save_slide_timings = false</code>, or run with <code>--time-ignore</code>, to save sidecars without updating the <code>slide_timings</code> data. In <code>.dais</code> files, page and slide references use one-based numbers that match the slide numbers shown in the presenter UI. Speaker notes are keyed by the one-based first page of the logical slide group.</p>
 <p>Per-logical-slide target durations can be assigned in seconds in <code>.dais</code> sidecars using <code>slide_target_durations</code> with one-based logical slide numbers. When a logical slide contains multiple PDF pages or build steps, one target duration applies to the whole group:</p>
 <pre class="eon"><code>slide_target_durations: {
     "1": 60.0
     "2": 90.0
 }</code></pre>
-<p>Dais also imports target durations from <code>.pdfpc</code> sidecars that already contain compatible timing sections, but target durations are written only to <code>.dais</code>. When a slide has a target duration, the presenter slide timer shows <code>elapsed / target</code> and turns red after the target is exceeded.</p>
+<p><code>dais</code> also imports target durations from <code>.pdfpc</code> sidecars that already contain compatible timing sections, but target durations are written only to <code>.dais</code>. When a slide has a target duration, the presenter slide timer shows <code>elapsed / target</code> and turns red after the target is exceeded.</p>
 </section>
 <section id="single-monitor-presentation-mode-f5" class="level2">
 <h2 class="anchored" data-anchor-id="single-monitor-presentation-mode-f5">Single-Monitor Presentation Mode (F5)</h2>
@@ -515,7 +502,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="monitor-recovery" class="level2">
 <h2 class="anchored" data-anchor-id="monitor-recovery">Monitor Recovery</h2>
-<p>If a configured audience monitor is missing at launch, Dais:</p>
+<p>If a configured audience monitor is missing at launch, <code>dais</code>:</p>
 <ul>
 <li>Falls back gracefully to another display or single-monitor mode</li>
 <li>Shows a startup dialog in the presenter window so you can reassign the audience output for the current session</li>
@@ -524,7 +511,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="dpi-and-scaling" class="level2">
 <h2 class="anchored" data-anchor-id="dpi-and-scaling">DPI and Scaling</h2>
-<p>Dais renders slides at the audience monitor’s native resolution for maximum sharpness. The presenter console uses a fixed 1920×1080 canonical render size, scaled by the GPU.</p>
+<p><code>dais</code> renders slides at the audience monitor’s native resolution for maximum sharpness. The presenter console uses a fixed 1920×1080 canonical render size, scaled by the GPU.</p>
 <p>On mixed-DPI setups (e.g., Retina laptop + 1080p projector): - The audience window renders at the projector’s native resolution - The presenter window renders at the standard canonical size - egui’s built-in scaling handles UI element sizing per-window</p>
 
 
@@ -605,7 +592,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     }
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp("https:\/\/christopherkenny\.github\.io\/dais");
+        var filterRegex = new RegExp("https:\/\/christophertkenny\.com\/dais\/");
       var isInternal = (href) => {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
@@ -936,7 +923,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <footer class="footer">
   <div class="nav-footer">
     <div class="nav-footer-left">
-<p>Dais documentation.</p>
+<p><code>dais</code> documentation.</p>
 </div>   
     <div class="nav-footer-center">
       &nbsp;
