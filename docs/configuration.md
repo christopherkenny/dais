@@ -1,6 +1,6 @@
 # Configuration Reference
 
-Dais supports layered configuration. Settings are applied in this order:
+`dais` supports layered configuration. Settings are applied in this order:
 
 1. Built-in defaults
 2. Machine-wide config in the platform-appropriate location
@@ -13,10 +13,10 @@ The machine-wide config lives at:
 - **macOS:** `~/Library/Application Support/dais/config.toml`
 - **Linux:** `~/.config/dais/config.toml`
 
-If a config layer doesn't exist, Dais skips it.
+If a config layer doesn't exist, `dais` skips it.
 All settings are optional.
 Run with `--portable` to skip the machine-wide config layer entirely.
-This is useful when running Dais from a USB stick or copied folder on a machine that may already have its own Dais settings.
+This is useful when running `dais` from a USB stick or copied folder on a machine that may already have its own `dais` settings.
 Project-local `dais.toml` and explicit `--config <path>` files are still loaded.
 
 ## Full Default Configuration
@@ -98,12 +98,11 @@ mode = "dual"
 mode = "elapsed"
 ```
 
-## Remote Control API
+## Remote Settings
 
-Dais can expose a local HTTP API for scripts, Stream Deck tools, phone/tablet web controls, and experimental input adapters.
-
-This section is the configuration reference.
-See [remote.md](remote.md) for the full remote-control guide.
+`dais` can expose a local HTTP API and browser remote while a presentation is running.
+This section documents the configuration fields.
+See [remote.md](remote.md) for browser remote usage, REST endpoints, CLI remote commands, pairing, and controller examples.
 
 Start a presentation with the remote API enabled:
 
@@ -113,11 +112,7 @@ dais --remote-lan slides.pdf
 dais --remote --remote-port 4317 slides.pdf
 ```
 
-By default, the server binds to `127.0.0.1:4317`.
-Loopback requests are allowed without a token unless `allow_unauthenticated_loopback = false`.
-Non-loopback clients always need a token.
-Use `--remote-lan` for normal phone/tablet pairing.
-Set `host` explicitly only when you want LAN binding from config:
+The `[remote]` table can also enable remote control automatically for a project or user config:
 
 ```toml
 [remote]
@@ -128,58 +123,19 @@ token = "choose-a-long-random-token"
 allow_unauthenticated_loopback = false
 ```
 
-Custom remote tokens may contain only ASCII letters and digits.
-
-The same `dais` binary can send remote commands:
-
-```powershell
-dais remote state
-dais remote action next_slide
-dais remote goto 12
-dais remote pointer 0.5 0.5
-dais remote timer toggle
-```
-
-Open the browser remote at:
-
-```text
-http://127.0.0.1:4317/remote
-```
-
-When token authentication is required, append the token shown in the Dais log:
-
-```text
-http://192.168.1.24:4317/remote?token=<token>
-```
-
-When remote mode is enabled, the presenter console shows a `Remote` status item in the bottom bar.
-Click it to view pairing URLs and QR codes.
-The status text also shows active remote event clients and the last remote command received.
-When bound to `0.0.0.0`, Dais shows usable loopback/LAN URLs rather than advertising `0.0.0.0` itself.
-
-REST endpoints use `/api/v1`:
-
-```powershell
-curl http://127.0.0.1:4317/api/v1/state
-curl -X POST http://127.0.0.1:4317/api/v1/actions/next_slide
-curl -X POST http://127.0.0.1:4317/api/v1/commands/goto -H "Content-Type: application/json" -d "{\"slide\":12}"
-curl http://127.0.0.1:4317/api/v1/events
-curl http://127.0.0.1:4317/api/v1/slides/current.png --output current.png
-```
-
-For token-protected sessions, send `Authorization: Bearer <token>` or `X-Dais-Token: <token>`.
-Browser endpoints also accept `?token=<token>` so the built-in web remote can connect from a second device.
-
-Slide image endpoints are rendered on demand for the remote:
-
-| Endpoint | Description |
+| Field | Description |
 |---|---|
-| `/api/v1/slides/current.png` | Current presenter page |
-| `/api/v1/slides/next.png` | First page of the next logical slide, or current page at the end |
-| `/api/v1/slides/<n>/thumbnail.png` | First page of 1-based logical slide `n` |
+| `enabled` | Starts the remote server when a presentation starts. |
+| `host` | Bind address. `127.0.0.1` is local-only, while `0.0.0.0` accepts connections on all interfaces. |
+| `port` | TCP port. Use `0` to ask the OS for a free port. |
+| `token` | Authentication token. Empty means `dais` generates a short pairing code per launch. Custom tokens may contain only ASCII letters and digits. |
+| `allow_unauthenticated_loopback` | Allows same-machine requests without a token. |
 
-Remote slide PNGs are cached in-memory during the session.
-State and command requests opportunistically warm the current and next slide images so the web remote stays responsive during navigation.
+By default, the server binds to `127.0.0.1:4317`.
+Loopback requests are allowed without a token unless `allow_unauthenticated_loopback = false`.
+Non-loopback clients always need a token.
+Use `--remote-lan` for normal phone/tablet pairing.
+Set `host` explicitly only when you want LAN binding from config.
 
 ## Display Modes
 
@@ -190,7 +146,7 @@ State and command requests opportunistically warm the current and next slide ima
 | `screen-share` | Audience window is a normal resizable window (not fullscreen). For Zoom/Teams screen sharing. Use `--screen-share` CLI flag or set in config. |
 
 CLI flags (`--single`, `--screen-share`) override config.
-If no flag is given and config is `"dual"` (default), Dais auto-detects: 2+ monitors → dual, 1 monitor → single.
+If no flag is given and config is `"dual"` (default), `dais` auto-detects: 2+ monitors → dual, 1 monitor → single.
 
 In dual mode, press **F6** to swap the presenter and audience monitors for the current session.
 This does not rewrite `dais.toml`; use `display.presenter_monitor` and `display.audience_monitor` for a permanent assignment.
@@ -269,7 +225,7 @@ Whiteboard ink uses the same `[ink]` settings as slide annotations.
 
 `colors` sets the pen color swatches shown in the toolbar when the Pen tool is active.
 Use RGB (`#RRGGBB`) or RGBA (`#RRGGBBAA`) hex strings.
-Dais pads the palette to at least six colors with red, blue, green, yellow, white, and black.
+`dais` pads the palette to at least six colors with red, blue, green, yellow, white, and black.
 Multiple colors cycle with **Ctrl+D** (pen only; the highlighter has its own swatches).
 
 `highlighter_colors` sets the highlighter swatches.
@@ -307,7 +263,7 @@ Press **Z** again to exit.
 
 - `color` accepts `#RRGGBB` or `#RRGGBBAA`
 - `background` accepts `#RRGGBB`, `#RRGGBBAA`, or `"transparent"`
-- `typst_prelude` accepts a Typst snippet inserted after Dais's page/text defaults
+- `typst_prelude` accepts a Typst snippet inserted after `dais`'s page/text defaults
 
 Example:
 
@@ -323,7 +279,7 @@ Existing boxes keep the prelude they were created with until edited in the sidec
 
 ## Export Defaults
 
-Dais can store recurring annotated export choices in the same layered TOML config used by presentation mode.
+`dais` can store recurring annotated export choices in the same layered TOML config used by presentation mode.
 Command-line export flags override these defaults for a single run.
 
 ```toml
@@ -344,11 +300,11 @@ Use `--no-handout` to export every PDF page even when `handout = true` is set in
 
 ## Sidecar Formats
 
-Dais stores slide grouping, notes, and metadata in sidecar files next to your PDF.
+`dais` stores slide grouping, notes, and metadata in sidecar files next to your PDF.
 
 | Format | Extension | Description |
 |---|---|---|
-| `dais` | `.dais` | Native EON-based format with versioning for Dais annotations and text boxes. Default save format. |
+| `dais` | `.dais` | Native EON-based format with versioning for `dais` annotations and text boxes. Default save format. |
 | `pdfpc` | `.pdfpc` | Compatible with pdfpc for notes and overlay grouping. |
 
 Set the save format in config:
@@ -357,7 +313,7 @@ Set the save format in config:
 sidecar_format = "pdfpc"   # "dais" (default) or "pdfpc"
 ```
 
-When loading, Dais checks in order: `.dais` sidecar → `.pdfpc` sidecar → embedded PDF metadata.
+When loading, `dais` checks in order: `.dais` sidecar → `.pdfpc` sidecar → embedded PDF metadata.
 The grouping editor and `save_sidecar` action both use `sidecar_format` when choosing what to write.
 Set `save_slide_timings = false`, or run with `--time-ignore`, to save sidecars without updating the `slide_timings` data.
 In `.dais` files, page and slide references use one-based numbers that match the slide numbers shown in the presenter UI.
@@ -373,7 +329,7 @@ slide_target_durations: {
 }
 ```
 
-Dais also imports target durations from `.pdfpc` sidecars that already contain compatible timing sections, but target durations are written only to `.dais`.
+`dais` also imports target durations from `.pdfpc` sidecars that already contain compatible timing sections, but target durations are written only to `.dais`.
 When a slide has a target duration, the presenter slide timer shows `elapsed / target` and turns red after the target is exceeded.
 
 ## Single-Monitor Presentation Mode (F5)
@@ -396,7 +352,7 @@ In dual-monitor mode, F5 is available but the audience already has a dedicated s
 
 ## Monitor Recovery
 
-If a configured audience monitor is missing at launch, Dais:
+If a configured audience monitor is missing at launch, `dais`:
 
 - Falls back gracefully to another display or single-monitor mode
 - Shows a startup dialog in the presenter window so you can reassign the audience output for the current session
@@ -406,7 +362,7 @@ To persist the new monitor choice, update `display.audience_monitor` in config a
 
 ## DPI and Scaling
 
-Dais renders slides at the audience monitor's native resolution for maximum sharpness.
+`dais` renders slides at the audience monitor's native resolution for maximum sharpness.
 The presenter console uses a fixed 1920×1080 canonical render size, scaled by the GPU.
 
 On mixed-DPI setups (e.g., Retina laptop + 1080p projector):

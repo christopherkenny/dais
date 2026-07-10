@@ -1,10 +1,10 @@
 # Remote Control
 
-Dais can expose a local remote-control API while a presentation is running.
+`dais` can expose a local remote-control API while a presentation is running.
 The remote layer is designed for second-device control, local scripts, Stream Deck profiles, classroom automation, and experimental adapters that should not live inside the core presenter.
 
 Remote control is an input adapter.
-Requests become normal Dais commands, and the presentation engine remains the only owner of presentation state.
+Requests become normal `dais` commands, and the presentation engine remains the only owner of presentation state.
 
 ## Quick Start
 
@@ -20,7 +20,7 @@ For development from the repository:
 cargo run -p dais -- --remote tests/example.pdf
 ```
 
-By default, Dais listens on:
+By default, `dais` listens on:
 
 ```text
 http://127.0.0.1:4317
@@ -44,7 +44,7 @@ dais remote timer toggle
 
 ## Browser Remote
 
-The browser remote is served directly by Dais at `/remote`.
+The browser remote is served directly by `dais` at `/remote`.
 It is intended to be usable from a phone, tablet, or local browser without installing a native app.
 
 It currently shows:
@@ -100,7 +100,7 @@ Drag on empty slide space to place a new text box.
 Tap a text box to select it.
 Drag the selected box to move it, drag its lower-right handle to resize it, edit its content in the text field, and use **Save** or **Delete** to persist the change.
 
-The browser remote previews saved text boxes with SVGs rendered by Dais' Typst renderer.
+The browser remote previews saved text boxes with SVGs rendered by `dais`'s Typst renderer.
 The edit field remains plain text so Typst markup can be entered directly.
 
 ## Pairing A Second Device
@@ -115,7 +115,7 @@ When remote mode is enabled, the presenter console shows a `Remote` item in the
 bottom status bar. Click it to see copyable pairing URLs, the current pairing
 code, and QR codes for phone/tablet URLs.
 
-If Dais is bound to `0.0.0.0`, it does not advertise `0.0.0.0` as a pairing URL.
+If `dais` is bound to `0.0.0.0`, it does not advertise `0.0.0.0` as a pairing URL.
 Instead, it shows loopback and likely LAN URLs such as:
 
 ```text
@@ -127,8 +127,8 @@ Non-loopback devices always need the pairing code. If a phone cannot connect, ch
 
 - The phone and computer are on the same network.
 - The network allows devices to reach each other.
-- The OS firewall allowed Dais to accept local network connections.
-- The phone used the tokenized pairing URL or QR code from the Dais presenter UI.
+- The OS firewall allowed `dais` to accept local network connections.
+- The phone used the tokenized pairing URL or QR code from the `dais` presenter UI.
 
 ## Configuration
 
@@ -151,7 +151,7 @@ Fields:
 | `enabled` | Start the remote server when a presentation starts |
 | `host` | Bind address. `127.0.0.1` is local-only; `0.0.0.0` accepts connections on all interfaces |
 | `port` | TCP port. Use `0` to ask the OS for a free port |
-| `token` | Authentication token. Empty means Dais generates a short pairing code per launch. Custom tokens may contain only ASCII letters and digits |
+| `token` | Authentication token. Empty means `dais` generates a short pairing code per launch. Custom tokens may contain only ASCII letters and digits |
 | `allow_unauthenticated_loopback` | Allows local same-machine requests without a token |
 
 Loopback convenience only applies to loopback clients.
@@ -204,7 +204,7 @@ All API endpoints are under `/api/v1`.
 | `/api/v1/state` | `GET` | Return a stable presentation state snapshot |
 | `/api/v1/events` | `GET` | Server-sent events for browser-friendly updates |
 | `/api/v1/remote-status` | `GET` | Remote connection/status metadata |
-| `/api/v1/actions/{action_name}` | `POST` | Dispatch a public Dais action |
+| `/api/v1/actions/{action_name}` | `POST` | Dispatch a public `dais` action |
 | `/api/v1/commands/goto` | `POST` | Jump to a 1-based logical slide |
 | `/api/v1/commands/pointer` | `POST` | Set normalized pointer position |
 | `/api/v1/commands/timer` | `POST` | Start, pause, toggle, or reset the timer |
@@ -280,7 +280,7 @@ Ink stroke body fields:
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `points` | `[[f32, f32]]` | Yes | Two or more `[x, y]` pairs in normalized 0–1 coordinates |
-| `tool` | `string` | No | `"pen"` or `"highlighter"` for this stroke. When present, Dais applies the tool before color, width, and points in one command batch |
+| `tool` | `string` | No | `"pen"` or `"highlighter"` for this stroke. When present, `dais` applies the tool before color, width, and points in one command batch |
 | `color` | `[u8, u8, u8, u8]` | No | RGBA pen color; uses the active pen color if omitted. Pass alpha < 255 for highlighter strokes |
 | `width` | `f32` | No | Stroke width in logical pixels; uses the active pen width if omitted |
 
@@ -397,7 +397,7 @@ REST plus server-sent events is enough for the current second-device workflow wh
 
 ## External Controllers
 
-External controllers call the stable action API rather than adding device-specific code to Dais.
+External controllers call the stable action API rather than adding device-specific code to `dais`.
 
 Good fits include:
 
@@ -432,7 +432,7 @@ That keeps tools such as Stream Deck profiles, shell scripts, and experimental a
 ## Relationship To Clickers
 
 Traditional USB presenter clickers usually emulate keyboard keys such as `PageDown` and `PageUp`.
-Those are handled by Dais through the keybinding and clicker-profile system.
+Those are handled by `dais` through the keybinding and clicker-profile system.
 See [clicker-setup.md](clicker-setup.md).
 
 The remote API is for controls that are not naturally keyboard input: web remotes, scripts, hardware macro pads, networked control surfaces, and experimental adapters.

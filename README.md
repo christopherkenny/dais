@@ -1,21 +1,24 @@
-# Dais: A Native PDF Presenter Console <img src='assets/dais.png' align="right" height="150" />
+# `dais`: A Native PDF Presenter Console <img src='assets/dais.png' align="right" height="150" />
 
 [![CI](https://github.com/christopherkenny/dais/actions/workflows/ci.yml/badge.svg)](https://github.com/christopherkenny/dais/actions/workflows/ci.yml)
 [![Crates.io](https://img.shields.io/crates/v/dais.svg)](https://crates.io/crates/dais)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Dais is a cross-platform PDF presentation console written in Rust for researchers and academics who build slides in LaTeX/Beamer, Typst, PowerPoint, or Keynote.
-Dais is designed for straightforward installation, reliable operation in real presentation setups, and compatibility with existing slide workflows.
+`dais` is a cross-platform PDF presentation console written in Rust for researchers and academics who build slides in LaTeX/Beamer, Typst, PowerPoint, or Keynote.
+`dais` is designed for straightforward installation, reliable operation in real presentation setups, and compatibility with existing slide workflows.
 
 ## Features
 
 - Multi-monitor presenter view with an audience display and a presenter console with notes, timer, and navigation.
 - Overlay and build-step support for `pdfpc` metadata, Beamer `\pdfpc`, and manual grouping.
-- Presentation tools including a laser pointer, freehand ink, spotlight, and zoom.
+- Presentation tools including laser pointer styles, freehand ink, highlighter, eraser, whiteboard, spotlight, zoom, freeze, blackout, and a slide overview grid.
+- Browser remote at `/remote` for phone and tablet control, with slide previews, notes editing, annotation, text boxes, timer controls, navigation, pairing URLs, and QR codes.
+- Local remote-control API and `dais remote ...` subcommands for scripts, Stream Decks, classroom automation, and other external controllers.
 - Per-logical-slide target durations in `.dais` sidecars, with presenter timer color changes when a slide runs over.
+- Markdown speaker notes from `--notes <path>`, with edits saved back to the Markdown file.
+- Annotated export with saved ink annotations, Typst text boxes, whiteboard pages, SVG/PNG output, layer selection, and handout export.
 - `.pdfpc` compatibility and a native `.dais` sidecar format.
 - Fully remappable keybindings with presenter-console defaults.
-- Local remote-control API for scripts and external controllers.
 - Single-binary distribution with no runtime dependencies or installers.
 
 ## Installation
@@ -60,7 +63,7 @@ dais remote action next_slide    # Control a running presentation
 - **Screen-share** (`--screen-share`): Audience is a normal resizable window for Zoom/Teams sharing.
 - **Remote** (`--remote`, `--remote-lan`): Local HTTP API, browser remote at `/remote`, presenter QR pairing, and `dais remote ...` commands for scripts, Stream Decks, phone/tablet controls, and other external adapters.
 
-With one monitor, Dais automatically falls back to single mode.
+With one monitor, `dais` automatically falls back to single mode.
 
 ### Grouping Editor
 
@@ -70,7 +73,7 @@ For PDFs without embedded overlay metadata (e.g., PowerPoint exports), use the b
 dais --edit slides.pdf
 ```
 
-Click between thumbnails to set group boundaries. Save writes the configured sidecar format. When loading, Dais checks `.dais` before `.pdfpc`.
+Click between thumbnails to set group boundaries. Save writes the configured sidecar format. When loading, `dais` checks `.dais` before `.pdfpc`.
 
 ## Building from Source
 
@@ -95,12 +98,14 @@ The binary will be at `target/release/dais` (or `dais.exe` on Windows).
 - **macOS:** `~/Library/Application Support/dais/config.toml`
 - **Linux:** `~/.config/dais/config.toml`
 
-Dais also reads a project-local `dais.toml` next to the PDF you open, and `--config <path>` can override both.
+`dais` also reads a project-local `dais.toml` next to the PDF you open, and `--config <path>` can override both.
 Use `--portable` to skip the OS user config layer while still reading project-local and explicit config files.
 
-Use `--notes <path>` to keep speaker notes in a Markdown file that Dais can load, edit, and save during the presentation.
+Use `--notes <path>` to keep speaker notes in a Markdown file that `dais` can load, edit, and save during the presentation.
 
 See [docs/configuration.md](docs/configuration.md) for the full reference.
+See [docs/notes.md](docs/notes.md) for Markdown speaker notes.
+See [docs/export.md](docs/export.md) for annotated PDF, SVG, PNG, whiteboard, and handout export.
 
 For display assignment, `audience_monitor` and `presenter_monitor` can be monitor names or simple display numbers like `"1"` and `"2"`.
 
@@ -115,7 +120,7 @@ See [docs/remote.md](docs/remote.md) for the browser remote, REST API, CLI remot
 
 ## Architecture
 
-Dais is organized as an 8-crate Cargo workspace:
+`dais` is organized as an 8-crate Cargo workspace:
 
 | Crate | Role |
 |---|---|
@@ -133,7 +138,7 @@ Key architectural decisions:
 - **Command bus**: All user actions flow through a `Command` enum dispatched via `crossbeam-channel`. New input sources (REST API, remote control) just get another sender.
 - **State broadcast**: The engine owns the authoritative `PresentationState`. UI reads via `Arc<RwLock<>>` and never mutates state directly.
 - **`DocumentSource` trait**: PDF rendering is isolated behind a document-source abstraction. The default backend is `hayro`.
-- **`SidecarFormat` trait**: Pluggable sidecar formats for `.pdfpc` compatibility and Dais-native metadata.
+- **`SidecarFormat` trait**: Pluggable sidecar formats for `.pdfpc` compatibility and `dais`-native metadata.
 
 ## Contributing
 

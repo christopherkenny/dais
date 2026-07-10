@@ -1,19 +1,24 @@
 ---
-title: "Dais: A Native PDF Presenter Console"
+title: "`dais`: A Native PDF Presenter Console"
 ---
 
 [![CI](https://github.com/christopherkenny/dais/actions/workflows/ci.yml/badge.svg)](https://github.com/christopherkenny/dais/actions/workflows/ci.yml)
 [![Crates.io](https://img.shields.io/crates/v/dais.svg)](https://crates.io/crates/dais)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Dais is a cross-platform PDF presentation console written in Rust for researchers and academics who build slides in LaTeX/Beamer, Typst, PowerPoint, or Keynote.
-Dais is designed for straightforward installation, reliable operation in real presentation setups, and compatibility with existing slide workflows.
+`dais` is a cross-platform PDF presentation console written in Rust for researchers and academics who build slides in LaTeX/Beamer, Typst, PowerPoint, or Keynote.
+`dais` is designed for straightforward installation, reliable operation in real presentation setups, and compatibility with existing slide workflows.
 
 ## Features
 
 - Multi-monitor presenter view with an audience display and a presenter console with notes, timer, and navigation.
 - Overlay and build-step support for `pdfpc` metadata, Beamer `\pdfpc`, and manual grouping.
-- Presentation tools including a laser pointer, freehand ink, spotlight, zoom, and a slide overview grid.
+- Presentation tools including laser pointer styles, freehand ink, highlighter, eraser, whiteboard, spotlight, zoom, freeze, blackout, and a slide overview grid.
+- Browser remote at `/remote` for phone and tablet control, with slide previews, notes editing, annotation, text boxes, timer controls, navigation, pairing URLs, and QR codes.
+- Local remote-control API and `dais remote ...` subcommands for scripts, Stream Decks, classroom automation, and other external controllers.
+- Per-logical-slide target durations in `.dais` sidecars, with presenter timer color changes when a slide runs over.
+- Markdown speaker notes from `--notes <path>`, with edits saved back to the Markdown file.
+- Annotated export with saved ink annotations, Typst text boxes, whiteboard pages, SVG/PNG output, layer selection, and handout export.
 - `.pdfpc` compatibility and a native `.dais` sidecar format.
 - Fully remappable keybindings with presenter-console defaults.
 - Single-binary distribution with no runtime dependencies or installers.
@@ -42,10 +47,15 @@ dais --single <file.pdf>         # Single-monitor mode (no audience window)
 dais --screen-share <file.pdf>   # Screen-share mode (audience as normal window)
 dais --edit <file.pdf>           # Open the slide grouping editor
 dais --config <path> <file.pdf>  # Use a specific config file
+dais --notes <path> <file.pdf>   # Use a Markdown speaker notes file
+dais --portable <file.pdf>       # Skip OS user config for portable/USB use
 dais --time-ignore <file.pdf>    # Do not update slide timing data on save
 dais --test-input                # Diagnostic mode for clicker/remote setup
 dais export <file.pdf> --out <file.pdf> [--handout]
                                   # Export a copy with annotations and text boxes applied
+dais --remote <file.pdf>         # Start the local remote-control API and web remote
+dais --remote-lan <file.pdf>     # Start the web remote for phone/tablet pairing
+dais remote action next_slide    # Control a running presentation
 ```
 
 ## Display Modes
@@ -53,8 +63,9 @@ dais export <file.pdf> --out <file.pdf> [--handout]
 - **Dual**: presenter console on the primary monitor, audience fullscreen on a secondary monitor. Press `F6` to swap them for the current session.
 - **Single**: one-window mode. Press `F5` to switch between the presenter console and the configured single-monitor presentation surface.
 - **Screen-share**: the audience view is a normal resizable window for Zoom/Teams sharing.
+- **Remote**: local HTTP API, browser remote at `/remote`, presenter QR pairing, and `dais remote ...` commands for scripts, phone/tablet controls, and external adapters.
 
-With one monitor, Dais automatically falls back to single mode.
+With one monitor, `dais` automatically falls back to single mode.
 
 ## Grouping Editor
 
@@ -66,7 +77,7 @@ dais --edit slides.pdf
 
 Use the "Split after" buttons beneath each thumbnail to split a group, and the "Merge" buttons between groups to combine them.
 Save writes the configured sidecar format.
-When loading, Dais checks `.dais` before `.pdfpc`.
+When loading, `dais` checks `.dais` before `.pdfpc`.
 
 ## Building From Source
 
@@ -84,13 +95,14 @@ The binary will be at `target/release/dais`, or `dais.exe` on Windows.
 
 - [Configuration](configuration.md)
 - [Markdown Notes](notes.md)
+- [Export](export.md)
 - [Keybindings](keybindings.md)
 - [Clicker & Remote Setup](clicker-setup.md)
 - [Remote Control](remote.md)
 
 ## Architecture
 
-Dais is organized as an 8-crate Cargo workspace:
+`dais` is organized as an 8-crate Cargo workspace:
 
 | Crate | Role |
 |---|---|
