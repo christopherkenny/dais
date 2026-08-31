@@ -87,7 +87,7 @@ cargo install --path crates/dais
 To install from the git repository without cloning:
 
 ```bash
-cargo install --git https://github.com/christopherkenny/dais.git --package dais --bin dais
+cargo install --git https://github.com/christopherkenny/dais.git dais --bin dais
 ```
 
 The binary will be at `target/release/dais` (or `dais.exe` on Windows).
